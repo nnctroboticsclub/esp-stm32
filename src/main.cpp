@@ -12,6 +12,8 @@
 #include "./config.hpp"
 #include <lwip/sockets.h>
 
+#include <optional>
+
 #define WRITING_BAUD 115200
 
 using namespace app;
@@ -20,15 +22,25 @@ app::Wifi network{};
 
 class Server {
   int server_sock;
+  int int_regs[32];
+  float float_regs[32];
 
  private:
   struct ClientHandler {
+    enum class Opcode {
+      RegWriteInt,
+      RegWriteFloat,
+      RegWriteString,
+      RegReadInt,
+      RegReadFloat,
+      RegReadString,
+    };
+
     Server& server;
     int client;
 
-    template <int N>
-    int TryRecv(char (&buf)[N]) {
-      auto len = recv(this->client, buf, N, 0);
+    int TryRecv(char* buf, int size) {
+      auto len = recv(this->client, buf, size, 0);
       if (len < 0) {
         printf("E: [NW-Wd] (%3d) Failed to receive data.\n", this->client);
         return -1;
@@ -40,9 +52,8 @@ class Server {
       return len;
     }
 
-    template <int N>
-    int TrySend(char (&buf)[N]) {
-      auto sent = send(this->client, buf, N, 0);
+    int TrySend(char* buf, int size) {
+      auto sent = send(this->client, buf, size, 0);
       if (sent < 0) {
         printf("E: [NW-Wd] (%3d) Failed to send data.\n", client);
         return -1;
@@ -50,21 +61,145 @@ class Server {
       return sent;
     }
 
+    template <int N>
+    int TrySend(char (&buf)[N]) {
+      return this->TrySend(buf, N);
+    }
+
+    template <int N>
+    int TryRecv(char (&buf)[N]) {
+      return this->TryRecv(buf, N);
+    }
+
+    std::optional<char> TryRecvChar() {
+      char ch;
+      auto len = this->TryRecv(&ch, 1);
+      if (len == -1) return std::nullopt;
+      return ch;
+    }
+
+    int TrySendChar(char ch) { return this->TrySend(&ch, 1); }
+
+    int TrySendInt(int ch) {
+      this->TrySendChar((ch >> 24) & 0xff);
+      this->TrySendChar((ch >> 16) & 0xff);
+      this->TrySendChar((ch >> 8) & 0xff);
+      return this->TrySendChar(ch & 0xff) ? 4 : -1;
+    }
+
+    int TrySendFloat(float ch) { return this->TrySendInt(*(int*)&ch); }
+
+    std::optional<int> RecvRegisterNumber() {
+      auto reg = this->TryRecvChar();
+      if (!reg) {
+        printf("E: [NW-Wd] (%3d) Failed to receive register number.\n",
+               this->client);
+        return std::nullopt;
+      }
+
+      if (*reg < 0 || *reg >= 32) {
+        printf("E: [NW-Wd] (%3d) Invalid register number (reg = %d)\n",
+               this->client, *reg);
+        return std::nullopt;
+      }
+
+      return reg;
+    }
+
+    std::optional<int32_t> TryRecvInt() {
+      auto a = this->TryRecvChar();
+      auto b = this->TryRecvChar();
+      auto c = this->TryRecvChar();
+      auto d = this->TryRecvChar();
+
+      // if a, b, c fails to receive, d will be failed
+      if (!d) return std::nullopt;
+
+      return (*a << 24) | (*b << 16) | (*c << 8) | *d;
+    }
+
+    std::optional<float> TryRecvFloat() {
+      auto ieee = this->TryRecvInt();
+      if (!ieee) return std::nullopt;
+
+      return *(float*)&ieee;
+    }
+
     static void HandleClient(ClientHandler* args) {
       int client = args->client;
       // Server& server = args->server;
 
-      // Simple Echo back
-      char buf[1024];
-
       while (1) {
-        auto len = args->TryRecv(buf);
-        if (len == -1) break;
-        printf("I: [NW-Wd] (%3d) Received %d bytes.\n", client, len);
+        auto opcode_raw = args->TryRecvChar();
+        if (!opcode_raw) break;
 
-        auto sent = args->TrySend(buf);
-        if (sent == -1) break;
-        printf("I: [NW-Wd] (%3d) Sent %d bytes.\n", client, sent);
+        Opcode opcode = static_cast<Opcode>(*opcode_raw);
+
+        switch (opcode) {
+          case Opcode::RegWriteInt: {
+            auto reg = args->RecvRegisterNumber();
+            if (!reg) break;
+
+            auto val = args->TryRecvInt();
+            if (!val) {
+              printf("E: [NW-Wd] (%3d) Failed to receive the value\n", client);
+              break;
+            }
+
+            args->server.int_regs[*reg] = *val;
+
+            break;
+          }
+          case Opcode::RegWriteFloat: {
+            auto reg = args->RecvRegisterNumber();
+            if (!reg) break;
+
+            auto val = args->TryRecvFloat();
+            if (!val) {
+              printf("E: [NW-Wd] (%3d) Failed to receive the value\n", client);
+              break;
+            }
+
+            args->server.float_regs[*reg] = *val;
+
+            break;
+          }
+          case Opcode::RegWriteString: {
+            printf("I: [NW-Wd] (%3d) RegWriteString is not implemented\n",
+                   client);
+            break;
+          }
+          case Opcode::RegReadInt: {
+            auto reg = args->RecvRegisterNumber();
+            if (!reg) break;
+
+            auto val = args->server.int_regs[*reg];
+            args->TrySendInt(val);
+
+            break;
+          }
+          case Opcode::RegReadFloat: {
+            auto reg = args->RecvRegisterNumber();
+            if (!reg) break;
+
+            auto val = args->server.float_regs[*reg];
+            args->TrySendFloat(val);
+
+            break;
+          }
+          case Opcode::RegReadString: {
+            printf("I: [NW-Wd] (%3d) RegReadString is not implemented\n",
+                   client);
+            auto reg = args->RecvRegisterNumber();
+            if (!reg) break;
+            break;
+          }
+          default: {
+            printf("E: [NW-Wd] (%3d) Unknown opcode (opcode = %d)\n", client,
+                   *opcode_raw);
+            break;
+          }
+        }
       }
 
       close(client);
@@ -101,12 +236,11 @@ class Server {
         printf("E: [NW-Wd] Failed to accept client.\n");
         continue;
       }
-      printf("I: [NW-Wd] Accepted client.\n");
 
+      printf("I: [NW-Wd] Connection established.\n");
       auto args = new ClientHandler{.server = *this, .client = client};
       xTaskCreate((TaskFunction_t)ClientHandler::HandleClient, "Client", 4096,
                   args, 1, NULL);
-      printf("T: [NW-Wd] Created client task.\n");
     }
   }
 };
