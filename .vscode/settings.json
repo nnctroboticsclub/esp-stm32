@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.meson": "meson",
+    "new": "cpp",
+    "type_traits": "cpp"
+  }
+}

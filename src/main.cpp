@@ -22,43 +22,57 @@ class Server {
   int server_sock;
 
  private:
-  struct ClientHandlerArguments {
+  struct ClientHandler {
     Server& server;
     int client;
-  };
 
-  static void HandleClient(ClientHandlerArguments* args) {
-    int client = args->client;
-    // Server& server = args->server;
-
-    // Simple Echo back
-    char buf[1024];
-
-    while (1) {
-      auto len = recv(client, buf, sizeof(buf), 0);
+    template <int N>
+    int TryRecv(char (&buf)[N]) {
+      auto len = recv(this->client, buf, N, 0);
       if (len < 0) {
-        printf("E: [NW-Wd] (%3d) Failed to receive data.\n", client);
-        break;
+        printf("E: [NW-Wd] (%3d) Failed to receive data.\n", this->client);
+        return -1;
       }
       if (len == 0) {
-        printf("I: [NW-Wd] (%3d) Client disconnected.\n", client);
-        break;
+        printf("I: [NW-Wd] (%3d) Client disconnected.\n", this->client);
+        return -1;
       }
-
-      printf("I: [NW-Wd] (%3d) Received %d bytes.\n", client, len);
-      auto sent = send(client, buf, len, 0);
-      if (sent < 0) {
-        printf("E: [NW-Wd] (%3d) Failed to send data.\n", client);
-        break;
-      }
-      printf("I: [NW-Wd] (%3d) Sent %d bytes.\n", client, sent);
+      return len;
     }
 
-    close(client);
-    delete args;
+    template <int N>
+    int TrySend(char (&buf)[N]) {
+      auto sent = send(this->client, buf, N, 0);
+      if (sent < 0) {
+        printf("E: [NW-Wd] (%3d) Failed to send data.\n", client);
+        return -1;
+      }
+      return sent;
+    }
 
-    vTaskDelete(NULL);
-  }
+    static void HandleClient(ClientHandler* args) {
+      int client = args->client;
+      // Server& server = args->server;
+
+      // Simple Echo back
+      char buf[1024];
+
+      while (1) {
+        auto len = args->TryRecv(buf);
+        if (len == -1) break;
+        printf("I: [NW-Wd] (%3d) Received %d bytes.\n", client, len);
+
+        auto sent = args->TrySend(buf);
+        if (sent == -1) break;
+        printf("I: [NW-Wd] (%3d) Sent %d bytes.\n", client, sent);
+      }
+
+      close(client);
+      delete args;
+
+      vTaskDelete(NULL);
+    }
+  };
 
  public:
   Server() : server_sock(socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) {
@@ -89,8 +103,9 @@ class Server {
       }
       printf("I: [NW-Wd] Accepted client.\n");
 
-      auto args = new ClientHandlerArguments{.server = *this, .client = client};
-      xTaskCreate((TaskFunction_t)HandleClient, "Client", 4096, args, 1, NULL);
+      auto args = new ClientHandler{.server = *this, .client = client};
+      xTaskCreate((TaskFunction_t)ClientHandler::HandleClient, "Client", 4096,
+                  args, 1, NULL);
       printf("T: [NW-Wd] Created client task.\n");
     }
   }
