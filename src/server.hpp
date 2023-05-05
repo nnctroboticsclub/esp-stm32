@@ -1,26 +1,9 @@
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <driver/gptimer.h>
-#include <driver/gpio.h>
-#include <sdkconfig.h>
-#include <esp_event.h>
-#include <mdns.h>
-#include "./measure.hpp"
-#include "nvs_flash.h"
-#include "libs/wifi.hpp"
-#include "./config.hpp"
+#include <esp_log.h>
 #include <lwip/sockets.h>
-
 #include <optional>
 
-#define WRITING_BAUD 115200
-
-using namespace app;
-
-// app::Wifi network{};
-
 class Server {
+  static constexpr const char* TAG = "NW-Wd";
   int server_sock;
   int int_regs[32];
   float float_regs[32];
@@ -42,11 +25,11 @@ class Server {
     int TryRecv(char* buf, int size) {
       auto len = recv(this->client, buf, size, 0);
       if (len < 0) {
-        printf("E: [NW-Wd] (%3d) Failed to receive data.\n", this->client);
+        ESP_LOGE(TAG, "(%3d) Failed to receive data.\n", this->client);
         return -1;
       }
       if (len == 0) {
-        printf("I: [NW-Wd] (%3d) Client disconnected.\n", this->client);
+        ESP_LOGI(TAG, "(%3d) Client disconnected.\n", this->client);
         return -1;
       }
       return len;
@@ -55,7 +38,7 @@ class Server {
     int TrySend(char* buf, int size) {
       auto sent = send(this->client, buf, size, 0);
       if (sent < 0) {
-        printf("E: [NW-Wd] (%3d) Failed to send data.\n", client);
+        ESP_LOGE(TAG, "(%3d) Failed to send data.\n", client);
         return -1;
       }
       return sent;
@@ -92,14 +75,14 @@ class Server {
     std::optional<int> RecvRegisterNumber() {
       auto reg = this->TryRecvChar();
       if (!reg) {
-        printf("E: [NW-Wd] (%3d) Failed to receive register number.\n",
-               this->client);
+        ESP_LOGE(TAG, "(%3d) Failed to receive register number.\n",
+                 this->client);
         return std::nullopt;
       }
 
-      if (*reg < 0 || *reg >= 32) {
-        printf("E: [NW-Wd] (%3d) Invalid register number (reg = %d)\n",
-               this->client, *reg);
+      if (*reg >= 32) {
+        ESP_LOGE(TAG, "(%3d) Invalid register number (reg = %d)\n",
+                 this->client, *reg);
         return std::nullopt;
       }
 
@@ -142,7 +125,7 @@ class Server {
 
             auto val = args->TryRecvInt();
             if (!val) {
-              printf("E: [NW-Wd] (%3d) Failed to receive the value\n", client);
+              ESP_LOGE(TAG, "(%3d) Failed to receive the value\n", client);
               break;
             }
 
@@ -156,7 +139,7 @@ class Server {
 
             auto val = args->TryRecvFloat();
             if (!val) {
-              printf("E: [NW-Wd] (%3d) Failed to receive the value\n", client);
+              ESP_LOGE(TAG, "(%3d) Failed to receive the value\n", client);
               break;
             }
 
@@ -165,8 +148,7 @@ class Server {
             break;
           }
           case Opcode::RegWriteString: {
-            printf("I: [NW-Wd] (%3d) RegWriteString is not implemented\n",
-                   client);
+            ESP_LOGI(TAG, "(%3d) RegWriteString is not implemented\n", client);
             break;
           }
           case Opcode::RegReadInt: {
@@ -188,15 +170,14 @@ class Server {
             break;
           }
           case Opcode::RegReadString: {
-            printf("I: [NW-Wd] (%3d) RegReadString is not implemented\n",
-                   client);
+            ESP_LOGI(TAG, "(%3d) RegReadString is not implemented\n", client);
             auto reg = args->RecvRegisterNumber();
             if (!reg) break;
             break;
           }
           default: {
-            printf("E: [NW-Wd] (%3d) Unknown opcode (opcode = %d)\n", client,
-                   *opcode_raw);
+            ESP_LOGE(TAG, "(%3d) Unknown opcode (opcode = %d)\n", client,
+                     *opcode_raw);
             break;
           }
         }
@@ -211,7 +192,7 @@ class Server {
 
  public:
   Server() : server_sock(socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) {
-    printf("T: [NW-Wd] Server socket: %d\n", this->server_sock);
+    ESP_LOGD(TAG, "Server socket: %d\n", this->server_sock);
   }
 
   [[nodiscard]] bool bind(int port) {
@@ -233,116 +214,14 @@ class Server {
     while (1) {
       auto client = accept(this->server_sock, NULL, NULL);
       if (client < 0) {
-        printf("E: [NW-Wd] Failed to accept client.\n");
+        ESP_LOGE(TAG, "Failed to accept client.\n");
         continue;
       }
 
-      printf("I: [NW-Wd] Connection established.\n");
+      ESP_LOGI(TAG, "Connection established.\n");
       auto args = new ClientHandler{.server = *this, .client = client};
       xTaskCreate((TaskFunction_t)ClientHandler::HandleClient, "Client", 4096,
                   args, 1, NULL);
     }
   }
 };
-
-void BootStrap() {
-  esp_err_t err;
-
-  printf("I: [ Main] 1. Initializing Hardware/Softwares...\n");
-  printf("I: [ Main]   1. GPIO\n");
-  gpio_set_direction(led, GPIO_MODE_OUTPUT);
-
-  printf("I: [ Main]   2. NVS Flush\n");
-  err = nvs_flash_init();
-  if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
-      err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    err = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(err);
-
-  printf("I: [ Main]   3. Net Interface\n");
-  ESP_ERROR_CHECK(esp_netif_init());
-
-  printf("I: [ Main]   4. Event loop\n");
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-  printf("I: [ Main]   5. Wi-Fi\n");
-  network.Init();
-
-  printf("I: [ Main]   6. MDns\n");
-  ESP_ERROR_CHECK(mdns_init());
-
-  printf("I: [ Main] 2. Setup Hardware/Softwares...\n");
-  printf("I: [ Main]   1. Setting up WiFi\n");
-  network.Setup();
-  printf("I: [ Main]   2. Connecting Wi-Fi\n");
-  network.Connect();
-  printf("I: [ Main]   2. ...\n");
-  network.WaitConnection();
-
-    printf("I: [ Main]   3. Setting up MDns\n");
-  mdns_hostname_set("esp32");
-  mdns_instance_name_set("ESP32");
-  mdns_service_add(NULL, "_tcp", "_tcp", 2000, NULL, 0);
-  //
-  printf("I: [ Main] 3. Starting Network EventLoop Task.\n");
-  network.StartEventLoop();
-}
-
-void Main() {
-  Server server;
-  printf("I: [ Main] 4. Starting Server\n");
-  printf("I: [ Main]   1. bind...\n");
-  if (!server.bind(4007)) {
-    printf("I: [ Main] E: [NW-Wd] Failed to bind server.\n");
-    return;
-  }
-  printf("I: [ Main]   2. listen...\n");
-  if (!server.listen()) {
-    printf("I: [ Main] E: [NW-Wd] Failed to listen server.\n");
-    return;
-  }
-  printf("I: [ Main] 5. Enter the ClientLoop\n");
-  server.ClientLoop();
-}
-
-void GPIOTest() {
-  printf("I: [ Main] 4. GPIO Serial test\n");
-
-  gpio_set_direction(tx_data, GPIO_MODE_OUTPUT);
-  gpio_set_direction(tx_clock, GPIO_MODE_OUTPUT);
-  gpio_set_direction(tx_check, GPIO_MODE_INPUT);
-
-  printf("Pins\n");
-  printf("  -  tx_data: %d\n", tx_data);
-  printf("  - tx_clock: %d\n", tx_clock);
-  printf("  - tx_check: %d\n", tx_check);
-  printf("  -      led: %d\n", led);
-
-  while (1) {
-    gpio_set_level(led, 1);
-    gpio_set_level(tx_data, 1);
-    gpio_set_level(tx_clock, 1);
-    printf("Waiting tx_check = 1\n");
-    while (!gpio_get_level(tx_check)) vTaskDelay(1);
-    printf("Waiting tx_check = 0\n");
-    while (gpio_get_level(tx_check)) vTaskDelay(1);
-
-    gpio_set_level(led, 0);
-    gpio_set_level(tx_data, 0);
-    gpio_set_level(tx_clock, 1);
-    printf("Waiting tx_check = 1\n");
-    while (!gpio_get_level(tx_check)) vTaskDelay(1);
-    printf("Waiting tx_check = 0\n");
-    while (gpio_get_level(tx_check)) vTaskDelay(1);
-
-    vTaskDelay(1);
-  }
-}
-
-extern "C" void app_main() {
-  BootStrap();
-  GPIOTest();
-  // Main();
-}

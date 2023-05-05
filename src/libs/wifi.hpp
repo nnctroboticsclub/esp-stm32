@@ -10,6 +10,9 @@
 
 namespace app {
 class Wifi {
+  static constexpr const char* TAG = "Wi-Fi";
+  const char* ssid;
+  const char* password;
   EventGroupHandle_t s_wifi_event_group;
 
   static void event_handler(void* arg, esp_event_base_t event_base,
@@ -17,7 +20,7 @@ class Wifi {
   static void EventLoopTask(void* pvWifi);
 
  public:
-  Wifi();
+  Wifi(const char* ssid, const char* password);
   ~Wifi();
   void Init();
   void Setup();

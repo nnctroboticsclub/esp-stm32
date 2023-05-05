@@ -46,7 +46,7 @@ class Tx {
 
  public:
   Tx(gpio_num_t data, gpio_num_t clock, gpio_num_t check);
-
+  void Init();
   void Send(char *buffer, int len);
 };
 
@@ -95,6 +95,7 @@ class Rx {
  public:
   Rx(gpio_num_t data, gpio_num_t clock, gpio_num_t check);
 
+  void Init();
   void Receive(char **buffer, int *len);
 };
 }  // namespace simple_serial

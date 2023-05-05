@@ -9,6 +9,9 @@
 namespace simple_serial {
 Tx::Tx(gpio_num_t data, gpio_num_t clock, gpio_num_t check)
     : data(data), clock(clock), check(check) {
+  this->Init();
+}
+void Tx::Init() {
   gpio_set_direction(data, GPIO_MODE_OUTPUT);
   gpio_set_direction(clock, GPIO_MODE_OUTPUT);
   gpio_set_direction(check, GPIO_MODE_INPUT);
@@ -31,6 +34,10 @@ void Tx::Send(char *buffer, int len) {
 }
 Rx::Rx(gpio_num_t data, gpio_num_t clock, gpio_num_t check)
     : data(data), clock(clock), check(check) {
+  this->Init();
+}
+
+void Rx::Init() {
   gpio_set_direction(data, GPIO_MODE_INPUT);
   gpio_set_direction(clock, GPIO_MODE_INPUT);
   gpio_set_direction(check, GPIO_MODE_OUTPUT);

@@ -1,4 +1,7 @@
 #include "wifi.hpp"
+#include <cstring>
+
+#include <esp_log.h>
 
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
@@ -16,8 +19,8 @@ void Wifi::event_handler(void* arg, esp_event_base_t event_base,
     xEventGroupClearBits(that.s_wifi_event_group, WIFI_CONNECTED_BIT);
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
-    printf("I: [Wi-Fi] Connected to Wifi\n");
-    printf("D: [Wi-Fi] - Got IP: " IPSTR "\n", IP2STR(&event->ip_info.ip));
+    ESP_LOGI(TAG, "Connected to Wi-Fi AP");
+    ESP_LOGI(TAG, "  - IP: " IPSTR, IP2STR(&event->ip_info.ip));
     xEventGroupSetBits(that.s_wifi_event_group, WIFI_CONNECTED_BIT);
   }
 }
@@ -27,11 +30,12 @@ void Wifi::EventLoopTask(void* pvWifi) {
   while (true) {
     auto a = xEventGroupWaitBits(wifi.s_wifi_event_group, 0x00ffffff, pdFALSE,
                                  pdTRUE, portMAX_DELAY);
-    printf("V: [Wi-Fi] WaitBits returns %ld\n", a);
+    ESP_LOGD(TAG, "EventLoopTask: bits = %#08lx", a);
   }
 }
 
-Wifi::Wifi() {}
+Wifi::Wifi(const char* ssid, const char* password)
+    : ssid(ssid), password(password) {}
 
 Wifi::~Wifi() {
   vEventGroupDelete(this->s_wifi_event_group);
@@ -64,8 +68,8 @@ void Wifi::Connect() {
   wifi_config_t wifi_config = {
       .sta =
           {
-              .ssid = "***REMOVED***",
-              .password = "***REMOVED***",
+              .ssid = "",
+              .password = "",
               .threshold =
                   {
                       .authmode = WIFI_AUTH_WPA2_PSK,
@@ -74,6 +78,11 @@ void Wifi::Connect() {
               .pmf_cfg = {.capable = true, .required = false},
           },
   };
+  strncpy((char*)wifi_config.sta.ssid, this->ssid,
+          sizeof(wifi_config.sta.ssid));
+  strncpy((char*)wifi_config.sta.password, this->password,
+          sizeof(wifi_config.sta.password));
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
@@ -84,11 +93,11 @@ void Wifi::WaitConnection() {
                                          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                          pdFALSE, pdFALSE, portMAX_DELAY);
   if (bits & WIFI_CONNECTED_BIT) {
-    printf("I: [Wi-Fi] connected to AP \n");
+    ESP_LOGI(TAG, "Connected to AP");
   } else if (bits & WIFI_FAIL_BIT) {
-    printf("E: [Wi-Fi] Failed to connect to Wifi\n");
+    ESP_LOGE(TAG, "Failed to connect to AP");
   } else {
-    printf("F: [Wi-Fi] UNEXPECTED EVENT (bits = %ld)\n", bits);
+    ESP_LOGE(TAG, "UNEXPECTED EVENT bits: %#08lx", bits);
     exit(1);
   }
 }
