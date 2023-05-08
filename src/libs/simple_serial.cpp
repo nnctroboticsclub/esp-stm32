@@ -21,7 +21,6 @@ void Tx::Send(char *buffer, int len) {
   gpio_num_t data = this->data;
   gpio_num_t clock = this->clock;
   gpio_num_t check = this->check;
-
   Tx::SendBitWithWait(data, clock, check, 1);  // StartBit
   Tx::SendByte(data, clock, check, (len >> 24) & 0xff);
   Tx::SendByte(data, clock, check, (len >> 16) & 0xff);
@@ -56,6 +55,11 @@ void Rx::Receive(char **buffer, int *len) {
   length |= ReceiveByte(data, clock, check) << 16;
   length |= ReceiveByte(data, clock, check) << 8;
   length |= ReceiveByte(data, clock, check);
+  if (length == 0) {
+    *buffer = NULL;
+    *len = 0;
+    return;
+  }
 
   *buffer = (char *)malloc(length);
 

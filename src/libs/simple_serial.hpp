@@ -4,6 +4,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <esp_log.h>
+
 namespace simple_serial {
 /**
  * Protocol: [1; 1] [data byte; 8]
@@ -23,6 +25,7 @@ class Tx {
     gpio_set_level(clock, 1);
     while (!gpio_get_level(check))
       ;
+
     gpio_set_level(clock, 0);
     while (gpio_get_level(check))
       ;
