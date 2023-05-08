@@ -69,7 +69,7 @@ class Rx {
     gpio_set_level(check, 1);
     while (gpio_get_level(clock))
       ;
-
+    gpio_set_level(check, 0);
     return value;
   }
 
@@ -82,7 +82,7 @@ class Rx {
 
     gpio_set_level(check, 1);
     while (gpio_get_level(clock)) vTaskDelay(1);
-
+    gpio_set_level(check, 0);
     return value;
   }
 
