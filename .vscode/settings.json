@@ -51,5 +51,8 @@
     "typeinfo": "cpp",
     "gpio_types.h": "c",
     "init_wifi": "cpp"
-  }
+  },
+  "cSpell.words": [
+    "cmdq"
+  ]
 }
