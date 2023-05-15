@@ -30,6 +30,8 @@ void Tx::Send(char *buffer, int len) {
   for (int i = 0; i < len; i++) {
     Tx::SendByte(data, clock, check, buffer[i]);
   }
+
+  gpio_set_level(data, 0);
 }
 Rx::Rx(gpio_num_t data, gpio_num_t clock, gpio_num_t check)
     : data(data), clock(clock), check(check) {
@@ -63,9 +65,12 @@ void Rx::Receive(char **buffer, int *len) {
 
   *buffer = (char *)malloc(length);
 
+  printf("RX << ");
   for (int i = 0; i < length; i++) {
     (*buffer)[i] = ReceiveByte(data, clock, check);
+    printf("%c", (*buffer)[i]);
   }
+  printf("\n");
   *len = length;
 }
 }  // namespace simple_serial

@@ -17,6 +17,7 @@ class Server {
       RegReadInt,
       RegReadFloat,
       RegReadString,
+      ReadMemoryU32,
       UserMessage = 0x80
     };
 
@@ -187,6 +188,7 @@ class Server {
 
             int val_nucleo = (rx_buf[0] << 24) | (rx_buf[1] << 16) |
                              (rx_buf[2] << 8) | rx_buf[3];
+            free(rx_buf);
 
             auto val_local = args->server.int_regs[*reg];
             if (val_nucleo != val_local) {
@@ -216,7 +218,7 @@ class Server {
 
             uint32_t val_nucleo_ieee = (rx_buf[0] << 24) | (rx_buf[1] << 16) |
                                        (rx_buf[2] << 8) | rx_buf[3];
-
+            free(rx_buf);
             float val_nucleo = *(float*)&val_nucleo_ieee;
             auto val_local = args->server.float_regs[*reg];
 
@@ -226,6 +228,29 @@ class Server {
               args->server.float_regs[*reg] = val_nucleo;
             }
             args->TrySendFloat(val_nucleo);
+
+            break;
+          }
+          case Opcode::ReadMemoryU32: {
+            auto addr = args->TryRecvInt();
+            if (!addr) break;
+            buf[0] = 0x12;
+            buf[1] = (*addr >> 24) & 0xff;
+            buf[2] = (*addr >> 16) & 0xff;
+            buf[3] = (*addr >> 8) & 0xff;
+            buf[4] = (*addr) & 0xff;
+            config::tx.Send(buf, 5);
+
+            char* rx_buf;
+            int received;
+            config::rx.Receive(&rx_buf, &received);
+            if (received != 4) {
+              ESP_LOGE(TAG, "(%3d) Failed to receive the value", client);
+              break;
+            }
+
+            args->TrySend(rx_buf, 4);
+            free(rx_buf);
 
             break;
           }
@@ -239,7 +264,12 @@ class Server {
             auto length = args->TryRecvInt();
             if (!length) break;
 
-            char tcp_buffer[1024];
+            char* tcp_buffer = new char[*length + 1];
+            if (tcp_buffer == nullptr) {
+              ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
+              break;
+            }
+
             int tcp_received = 0;
             while (tcp_received < *length) {
               auto ret = recv(client, tcp_buffer + 1 + tcp_received,
@@ -256,10 +286,13 @@ class Server {
             tcp_buffer[0] = 0x80;
             config::tx.Send(tcp_buffer, *length + 1);
 
+            delete[] tcp_buffer;
+
             char* rx_buffer;
             int rx_received;
             config::rx.Receive(&rx_buffer, &rx_received);
             args->TrySend(rx_buffer, rx_received);
+            free(rx_buffer);
             break;
           }
           default: {
@@ -276,6 +309,22 @@ class Server {
       vTaskDelete(NULL);
     }
   };
+
+  static void ClientLoop(void* obj) {
+    auto server = reinterpret_cast<Server*>(obj);
+    while (1) {
+      auto client = accept(server->server_sock, NULL, NULL);
+      if (client < 0) {
+        ESP_LOGE(TAG, "Failed to accept client.");
+        continue;
+      }
+
+      ESP_LOGI(TAG, "Connection established.");
+      auto args = new ClientHandler{.server = *server, .client = client};
+      xTaskCreate((TaskFunction_t)ClientHandler::HandleClient, "Client", 4096,
+                  args, 1, NULL);
+    }
+  }
 
  public:
   Server() : server_sock(socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) {
@@ -297,18 +346,9 @@ class Server {
     return !(ret < 0);
   }
 
-  void ClientLoop() {
-    while (1) {
-      auto client = accept(this->server_sock, NULL, NULL);
-      if (client < 0) {
-        ESP_LOGE(TAG, "Failed to accept client.");
-        continue;
-      }
-
-      ESP_LOGI(TAG, "Connection established.");
-      auto args = new ClientHandler{.server = *this, .client = client};
-      xTaskCreate((TaskFunction_t)ClientHandler::HandleClient, "Client", 4096,
-                  args, 1, NULL);
-    }
+  void StartClientLoop() {
+    xTaskCreate(&Server::ClientLoop, "Server Loop", 4096, this, 1, NULL);
   }
+
+  void StartClientLoopAtForeground() { Server::ClientLoop(this); }
 };

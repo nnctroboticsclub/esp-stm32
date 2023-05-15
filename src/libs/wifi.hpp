@@ -19,7 +19,13 @@ class Wifi {
                             int32_t event_id, void* event_data);
   static void EventLoopTask(void* pvWifi);
 
+  bool is_ap_mode;
+
+  void ConnectToAP();
+  void ConnectMake();
+
  public:
+  Wifi();
   Wifi(const char* ssid, const char* password);
   ~Wifi();
   void Init();
@@ -28,6 +34,8 @@ class Wifi {
 
   void WaitConnection();
   void StartEventLoop();
+
+  bool IsAPMode();
 };
 }  // namespace app
 

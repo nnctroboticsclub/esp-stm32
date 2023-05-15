@@ -34,8 +34,10 @@ void Wifi::EventLoopTask(void* pvWifi) {
   }
 }
 
+Wifi::Wifi() : ssid(""), password(""), is_ap_mode(true) {}
+
 Wifi::Wifi(const char* ssid, const char* password)
-    : ssid(ssid), password(password) {}
+    : ssid(ssid), password(password), is_ap_mode(false) {}
 
 Wifi::~Wifi() {
   vEventGroupDelete(this->s_wifi_event_group);
@@ -46,7 +48,11 @@ Wifi::~Wifi() {
 void Wifi::Init() {
   this->s_wifi_event_group = xEventGroupCreate();
 
-  esp_netif_create_default_wifi_sta();
+  if (this->is_ap_mode) {
+    esp_netif_create_default_wifi_ap();
+  } else {
+    esp_netif_create_default_wifi_sta();
+  }
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -64,7 +70,7 @@ void Wifi::Setup() {
       &instance_got_ip));
 }
 
-void Wifi::Connect() {
+void Wifi::ConnectToAP() {
   wifi_config_t wifi_config = {
       .sta =
           {
@@ -87,8 +93,36 @@ void Wifi::Connect() {
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 }
+void Wifi::ConnectMake() {
+  wifi_config_t wifi_config = {
+      .ap =
+          {
+              .ssid = "ESP32",
+              .password = "APaPapAp",
+              .ssid_len = strlen("ESP32"),
+              .channel = 11,
+              .authmode = WIFI_AUTH_WPA_WPA2_PSK,
+              .max_connection = 11,
+          },
+  };
+
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+}
+
+void Wifi::Connect() {
+  if (this->is_ap_mode) {
+    this->ConnectMake();
+  } else {
+    this->ConnectToAP();
+  }
+}
 
 void Wifi::WaitConnection() {
+  if (this->is_ap_mode) {
+    return;
+  }
   EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                          pdFALSE, pdFALSE, portMAX_DELAY);
