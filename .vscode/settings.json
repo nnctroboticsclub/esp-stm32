@@ -1,4 +1,9 @@
 {
+  "explorer.fileNesting.patterns": {
+    "Cargo.toml": "Cargo.lock",
+    "*.c": "$(capture).h",
+    "*.cpp": "$(capture).hpp"
+  },
   "files.associations": {
     "*.meson": "meson",
     "new": "cpp",
@@ -50,7 +55,9 @@
     "cinttypes": "cpp",
     "typeinfo": "cpp",
     "gpio_types.h": "c",
-    "init_wifi": "cpp"
+    "init_wifi": "cpp",
+    "stm_pro_mode.h": "c",
+    "esp_log.h": "c"
   },
   "cSpell.words": [
     "cmdq"
