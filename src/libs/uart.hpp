@@ -4,13 +4,12 @@ class UART {
   static constexpr const char* TAG = "UART";
   uart_port_t port;
   size_t buf_size;
-  QueueHandle_t queue;
 
  private:
   static void EventLoop(void*);
 
  public:
-  UART(uart_port_t port, int baud_rate);
+  UART(uart_port_t port, int tx, int rx, int baud_rate);
 
   size_t GetRXBufferDataLength();
 

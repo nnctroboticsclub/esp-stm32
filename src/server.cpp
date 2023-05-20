@@ -17,7 +17,10 @@ struct ClientHandler {
     RegReadFloat,
     RegReadString,
     ReadMemoryU32,
-    UserMessage = 0x80
+    BootBootLoader,
+    UploadProgram,
+    GoProgram,
+    UserMessage = 0x80,
   };
 
   Server& server;
@@ -251,6 +254,61 @@ struct ClientHandler {
           args->TrySend(rx_buf, 4);
           free(rx_buf);
 
+          break;
+        }
+        case Opcode::BootBootLoader: {
+          config::loader.BootBootLoader();
+          vTaskDelay(200 / portTICK_PERIOD_MS);
+          config::loader.Sync();
+          config::loader.Get();
+          config::loader.GetVersion();
+
+          ESP_LOGI(TAG, "Boot Loader version = %d.%d",
+                   config::loader.GetVersion()->major,
+                   config::loader.GetVersion()->minor);
+
+          if (config::loader.in_error_state) {
+            args->TrySend("Boot Loader is in error state", 30);
+            break;
+          }
+          args->TrySend("OK", 2);
+          break;
+        }
+
+        case Opcode::UploadProgram: {
+          auto length = args->TryRecvInt();
+          if (!length) break;
+
+          config::loader.Erase(USER_PROGRAM_START, *length);
+          if (config::loader.in_error_state) {
+            args->TrySend("Boot Loader is in error state", 30);
+            break;
+          }
+
+          unsigned char* tcp_buffer = new unsigned char[1024];
+          if (tcp_buffer == nullptr) {
+            ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
+            break;
+          }
+
+          int end = USER_PROGRAM_START + *length;
+          int ptr = USER_PROGRAM_START;
+          while (ptr < end) {
+            auto received = recv(client, tcp_buffer, 1024, 0);
+            if (received < 0) {
+              ESP_LOGE(TAG, "(%3d) Failed to receive the message", client);
+              break;
+            }
+
+            config::loader.WriteMemory(ptr, tcp_buffer, received);
+            ptr += received;
+          }
+          args->TrySend("OK", 2);
+          break;
+        }
+        case Opcode::GoProgram: {
+          config::loader.Go(USER_PROGRAM_START);
+          args->TrySend("OK", 2);
           break;
         }
         case Opcode::RegReadString: {

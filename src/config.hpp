@@ -4,25 +4,28 @@
 
 #include <driver/gpio.h>
 #include "libs/simple_serial.hpp"
+#include "libs/stmbootloader.hpp"
 #include "libs/wifi.hpp"
 #include "server.hpp"
 
+//* constant
+#define USER_PROGRAM_START 0x08000000
+
+//* features
 // #define USE_NETWORK
+#define USE_DATA_SERVER
 
-// #define USE_DATA_SERVER
-
+//! global variables
 #if !defined(USE_NETWORK) && defined(USE_DATA_SERVER)
-#error "USE_DATA_SERVER requires USE_NETWORK"
+#define USE_NETWORK
 #endif
-
-#define RESET GPIO_NUM_19
-#define BOOT0 GPIO_NUM_21
-#define led GPIO_NUM_2
 
 namespace config {
 
 extern simple_serial::Rx rx;
 extern simple_serial::Tx tx;
+
+extern STMBootLoader loader;
 
 #ifdef USE_NETWORK
 extern app::Wifi network;
