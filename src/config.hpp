@@ -3,7 +3,6 @@
 #define CONFIG_HPP
 
 #include <driver/gpio.h>
-#include "libs/simple_serial.hpp"
 #include "libs/stmbootloader.hpp"
 #include "libs/wifi.hpp"
 #include "server.hpp"
@@ -21,9 +20,6 @@
 #endif
 
 namespace config {
-
-extern simple_serial::Rx rx;
-extern simple_serial::Tx tx;
 
 extern STMBootLoader loader;
 

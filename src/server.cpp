@@ -49,8 +49,8 @@ struct ClientHandler {
   }
 
   template <int N>
-  int TrySend(char (&buf)[N]) {
-    return this->TrySend(buf, N);
+  int TrySend(const char (&buf)[N]) {
+    return this->TrySend((char*)buf, N);
   }
 
   template <int N>
@@ -139,7 +139,8 @@ struct ClientHandler {
           buf[3] = (*val >> 16) & 0xff;
           buf[4] = (*val >> 8) & 0xff;
           buf[5] = *val & 0xff;
-          config::tx.Send(buf, 6);
+          // TODO: Fix This
+          // config::tx.Send(buf, 6);
 
           break;
         }
@@ -164,7 +165,8 @@ struct ClientHandler {
           buf[3] = (ieee >> 16) & 0xff;
           buf[4] = (ieee >> 8) & 0xff;
           buf[5] = ieee & 0xff;
-          config::tx.Send(buf, 6);
+          // TODO: Fix This
+          // config::tx.Send(buf, 6);
 
           break;
         }
@@ -178,11 +180,13 @@ struct ClientHandler {
 
           buf[0] = 0x10;
           buf[1] = *reg;
-          config::tx.Send(buf, 2);
+          // TODO: Fix This
+          // config::tx.Send(buf, 2);
 
-          char* rx_buf;
-          int received;
-          config::rx.Receive(&rx_buf, &received);
+          char* rx_buf = nullptr;
+          int received = 0;
+          // TODO: Fix This
+          // config::rx.Receive(&rx_buf, &received);
           if (received != 4) {
             ESP_LOGE(TAG, "(%3d) Failed to receive the value", client);
             break;
@@ -208,11 +212,13 @@ struct ClientHandler {
 
           buf[0] = 0x10;
           buf[1] = *reg;
-          config::tx.Send(buf, 2);
+          // TODO: Fix This
+          // config::tx.Send(buf, 2);
 
-          char* rx_buf;
-          int received;
-          config::rx.Receive(&rx_buf, &received);
+          char* rx_buf = nullptr;
+          int received = 0;
+          // TODO: Fix This
+          // config::rx.Receive(&rx_buf, &received);
           if (received != 4) {
             ESP_LOGE(TAG, "(%3d) Failed to receive the value", client);
             break;
@@ -241,11 +247,13 @@ struct ClientHandler {
           buf[2] = (*addr >> 16) & 0xff;
           buf[3] = (*addr >> 8) & 0xff;
           buf[4] = (*addr) & 0xff;
-          config::tx.Send(buf, 5);
+          // TODO: Fix This
+          // config::tx.Send(buf, 5);
 
-          char* rx_buf;
-          int received;
-          config::rx.Receive(&rx_buf, &received);
+          char* rx_buf = nullptr;
+          int received = 0;
+          // TODO: Fix This
+          // config::rx.Receive(&rx_buf, &received);
           if (received != 4) {
             ESP_LOGE(TAG, "(%3d) Failed to receive the value", client);
             break;
@@ -268,10 +276,10 @@ struct ClientHandler {
                    config::loader.GetVersion()->minor);
 
           if (config::loader.in_error_state) {
-            args->TrySend("Boot Loader is in error state", 30);
+            args->TrySend("Boot Loader is in error state");
             break;
           }
-          args->TrySend("OK", 2);
+          args->TrySend("OK");
           break;
         }
 
@@ -281,7 +289,7 @@ struct ClientHandler {
 
           config::loader.Erase(USER_PROGRAM_START, *length);
           if (config::loader.in_error_state) {
-            args->TrySend("Boot Loader is in error state", 30);
+            args->TrySend("Boot Loader is in error state");
             break;
           }
 
@@ -303,12 +311,12 @@ struct ClientHandler {
             config::loader.WriteMemory(ptr, tcp_buffer, received);
             ptr += received;
           }
-          args->TrySend("OK", 2);
+          args->TrySend("OK");
           break;
         }
         case Opcode::GoProgram: {
           config::loader.Go(USER_PROGRAM_START);
-          args->TrySend("OK", 2);
+          args->TrySend("OK");
           break;
         }
         case Opcode::RegReadString: {
@@ -341,13 +349,15 @@ struct ClientHandler {
           if (tcp_received != *length) break;
 
           tcp_buffer[0] = 0x80;
-          config::tx.Send(tcp_buffer, *length + 1);
+          // TODO: Fix This
+          // config::tx.Send(tcp_buffer, *length + 1);
 
           delete[] tcp_buffer;
 
-          char* rx_buffer;
-          int rx_received;
-          config::rx.Receive(&rx_buffer, &rx_received);
+          char* rx_buffer = nullptr;
+          int rx_received = 0;
+          // TODO: Fix This
+          // config::rx.Receive(&rx_buffer, &rx_received);
           args->TrySend(rx_buffer, rx_received);
           free(rx_buffer);
           break;

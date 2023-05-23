@@ -11,6 +11,7 @@ void init::init_serial() {
 
   ESP_LOGI(TAG, "Initializing Serial pins");
 
-  config::tx.Init();
-  config::rx.Init();
+  // TODO: Fix this or remove this
+  // config::tx.Init();
+  // config::rx.Init();
 }
