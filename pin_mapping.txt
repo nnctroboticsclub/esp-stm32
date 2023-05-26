@@ -1,0 +1,5 @@
+Function | ESP32  | STM32 | Volt |Description
+---------+--------+-------+------+-----------
+Debugger | GPIO27 | PC_9  | 3.3V | MOSI Clock (CS)
+= Simple | GPIO26 | PC_8  | 3.3V | MISO Clock
+  Serial | GPIO25 | PC_6  | 3.3V | Data

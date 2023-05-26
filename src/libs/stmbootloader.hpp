@@ -50,7 +50,7 @@ class STMBootLoader {
 
   ACK RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
 
-  void SendWithChecksum(char* buf, size_t size);
+  void SendWithChecksum(uint8_t* buf, size_t size);
 
   void SendU16(uint8_t high, uint8_t low, bool with_checksum = false);
 

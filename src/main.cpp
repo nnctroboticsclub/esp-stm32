@@ -10,64 +10,60 @@ using namespace app;
 
 const char* TAG = "Main";
 
-void UARTReadLoop(void* param) {
-  uint8_t* data = (uint8_t*)malloc(1024);
-  while (1) {
-    int len = uart_read_bytes(UART_NUM_2, data, 1024, 100 / portTICK_PERIOD_MS);
-    if (len > 0) {
-      ESP_LOGI(TAG, "Read %d bytes", len);
-      for (int i = 0; i < len; i++) {
-        printf("%02x ", data[i]);
-        if (i % 16 == 15) {
-          printf("\n");
-        }
-      }
-      printf("\n");
+class DebuggerMaster {
+  static constexpr const char* TAG = "DebuggerMaster";
+  UART uart;
+
+  std::optional<std::vector<uint8_t>> ui_cache;
+
+ private:
+  void ReadExactly(uint8_t* buf, size_t size,
+                   TickType_t timeout = portMAX_DELAY) {
+    size_t read = 0;
+    while (read < size) {
+      read += uart.Recv(buf + read, size - read, timeout);
     }
   }
-  free(data);
-}
+
+ public:
+  DebuggerMaster(uart_port_t port, int tx, int rx)
+      : uart(port, tx, rx, 9600, UART_PARITY_DISABLE), ui_cache(std::nullopt) {}
+
+  std::vector<uint8_t>& GetUI() {
+    ESP_LOGI(TAG, "Getting UI");
+    if (ui_cache.has_value()) {
+      return ui_cache.value();
+    }
+
+    uart.Send((uint8_t*)"\x01", 1);
+
+    uint8_t length_buf[4]{};
+    this->ReadExactly(length_buf, 4);
+    uint32_t length = length_buf[0] << 24 | length_buf[1] << 16 |
+                      length_buf[2] << 8 | length_buf[3];
+    ESP_LOGI(TAG, "UI length: %ld", length);
+
+    ui_cache = std::vector<uint8_t>(length);
+    this->ReadExactly(ui_cache.value().data(), length);
+
+    ESP_LOGI(TAG, "UI received");
+    return ui_cache.value();
+  }
+};
+DebuggerMaster dbg(UART_NUM_2, 5, 4);
 
 void BootStrap() {
   // init::init_serial();
   // init::init_mdns();
   // init::init_data_server();
-
-  uart_config_t uart_config = {
-      .baud_rate = 9600,
-      .data_bits = UART_DATA_8_BITS,
-      .parity = UART_PARITY_ODD,
-      .stop_bits = UART_STOP_BITS_1,
-      .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-      .source_clk = UART_SCLK_DEFAULT,
-  };
-  ESP_ERROR_CHECK(uart_param_config(UART_NUM_2, &uart_config));
-
-  QueueHandle_t uart_queue;
-  uart_set_pin(UART_NUM_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
-  ESP_ERROR_CHECK(
-      uart_driver_install(UART_NUM_2, 1024 * 2, 0, 10, &uart_queue, 0));
-  xTaskCreate(UARTReadLoop, "UARTReadLoop", 1024 * 2, NULL, 10, NULL);
 }
 
 void Main() {
   // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   // config::server.StartClientLoopAtForeground();
-
-  gpio_set_direction(GPIO_NUM_18, GPIO_MODE_INPUT);
-  while (1) {
-    if (gpio_get_level(GPIO_NUM_18) != 1) {
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-      continue;
-    }
-    ESP_LOGI(TAG, "Send a command...");
-    char bin[] = "\xff\xfb\xfa\xfd\x01";
-    uart_write_bytes(UART_NUM_2, (const char*)bin, sizeof(bin));
-    while (gpio_get_level(GPIO_NUM_18) == 1) {
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
-    ESP_LOGI(TAG, "Waiting for the response...");
+  auto ui = dbg.GetUI();
+  for (auto& byte : ui) {
+    printf("%#02x ", byte);
   }
 }
 
