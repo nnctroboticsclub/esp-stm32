@@ -3,16 +3,19 @@
 #include <esp_log.h>
 #include <memory.h>
 
-STMBootLoader::ACK STMBootLoader::RecvACK(TickType_t timeout) {
-  auto ack = this->uart.RecvChar(timeout);
+TaskResult STMBootLoader::RecvACK(TickType_t timeout) {
+  RUN_TASK(this->uart.RecvChar(timeout), ack);
 
-  if (ack == 0x79) return ACK::ACK;
-  if (ack == 0x1f) return ACK::NACK;
+  if (ack == 0x79) return TaskResult::Ok();
+  if (ack == 0x1f) {
+    this->in_error_state = true;
+    ESP_LOGE(TAG, "Received NACK");
+    return ESP_ERR_INVALID_STATE;
+  }
 
   ESP_LOGE(TAG, "Failed to receive ACK");
   this->in_error_state = true;
-  // while (1) vTaskDelay(100 / portTICK_PERIOD_MS);
-  return ACK::NACK;
+  return ESP_ERR_INVALID_RESPONSE;
 }
 
 void STMBootLoader::SendWithChecksum(uint8_t* buf, size_t size) {
@@ -45,21 +48,17 @@ void STMBootLoader::SendCommand(uint8_t command) {
 
 void STMBootLoader::SendAddress(uint32_t address) {
   uint8_t buf[5];
-  buf[0] = (address >> 24) & 0xff;
-  buf[1] = (address >> 16) & 0xff;
-  buf[2] = (address >> 8) & 0xff;
-  buf[3] = (address >> 0) & 0xff;
+  buf[0] = (address >> 0x1c) & 0xff;
+  buf[1] = (address >> 0x10) & 0xff;
+  buf[2] = (address >> 0x08) & 0xff;
+  buf[3] = (address >> 0x00) & 0xff;
   buf[4] = buf[0] ^ buf[1] ^ buf[2] ^ buf[3];
   this->uart.Send(buf, 5);
 }
 
-void STMBootLoader::DoGetVersion() {
+TaskResult STMBootLoader::DoGetVersion() {
   this->SendCommand(this->get_version);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Get Version command");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   uint8_t buf[3];
   this->uart.Recv(buf, 3, 500 / portTICK_PERIOD_MS);
@@ -67,32 +66,24 @@ void STMBootLoader::DoGetVersion() {
   this->version.major = buf[0] >> 4;
   this->version.option1 = buf[1];
   this->version.option1 = buf[2];
-  this->RecvACK();
+  RUN_TASK_V(this->RecvACK());
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::DoExtendedErase(FlashPage page) {
+TaskResult STMBootLoader::DoExtendedErase(FlashPage page) {
   this->SendCommand(this->erase);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Extended Erase command (command)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   this->SendU16(page, true);
-  if (this->RecvACK(10000 / portTICK_PERIOD_MS) == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Extended Erase command (bank)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::DoExtendedErase(std::vector<uint16_t> pages) {
+TaskResult STMBootLoader::DoExtendedErase(std::vector<uint16_t> pages) {
   this->SendCommand(this->erase);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Extended Erase command (command)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   uint8_t* buffer = new uint8_t[pages.size() * 2 + 2];
   buffer[0] = (pages.size() - 1) >> 8;
@@ -106,18 +97,18 @@ void STMBootLoader::DoExtendedErase(std::vector<uint16_t> pages) {
 
   delete buffer;
 
-  if (this->RecvACK(10000 / portTICK_PERIOD_MS) == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Extended Erase command (bank)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::DoErase(FlashPage page) {
+TaskResult STMBootLoader::DoErase(FlashPage page) {
   // TODO(syoch): Impl
+  return ESP_ERR_NOT_SUPPORTED;
 }
-void STMBootLoader::DoErase(std::vector<uint16_t> pages) {
+TaskResult STMBootLoader::DoErase(std::vector<uint16_t> pages) {
   // TODO(syoch): Impl
+  return ESP_ERR_NOT_SUPPORTED;
 }
 
 STMBootLoader::STMBootLoader(gpio_num_t reset, gpio_num_t boot0,
@@ -160,44 +151,35 @@ void STMBootLoader::BootBootLoader() {
   this->uart.Flush();
 }
 
-void STMBootLoader::Sync() {
+TaskResult STMBootLoader::Sync() {
   this->uart.Send((uint8_t*)"\x7f", 1);
-  auto ret = this->uart.RecvChar();
 
+  RUN_TASK(this->uart.RecvChar(), ret);
   if (ret == 0x79) {
-    ESP_LOGI(TAG, "Synced");
-    return;
+    return TaskResult::Ok();
   } else if (ret == 0x1f) {
-    ESP_LOGE(TAG, "Failed to sync (NACK)");
     this->in_error_state = true;
-    return;
-  } else if (ret == -1) {
-    ESP_LOGE(TAG, "Failed to sync (timeout)");
-    this->in_error_state = true;
-    return;
+    return ESP_ERR_INVALID_STATE;
   } else {
-    ESP_LOGW(TAG, "Failed to sync (unknown %#02x)", ret);
-    return;
+    ESP_LOGW(TAG, "Unknown sync byte %#02x", ret);
+    return TaskResult::Ok();
   }
 }
 
-void STMBootLoader::Get() {
+TaskResult STMBootLoader::Get() {
   this->SendCommand(this->get);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Get command");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
 
-  this->ack = this->uart.RecvChar();
-  auto n = this->uart.RecvChar();
+  RUN_TASK_TO(this->uart.RecvChar(), this->ack);
 
-  auto byte = this->uart.RecvChar();
+  RUN_TASK(this->uart.RecvChar(), n);
+
+  RUN_TASK(this->uart.RecvChar(), byte);
   this->version.major = byte >> 4;
   this->version.minor = byte & 0xf;
 
   char buf[16];
-  this->uart.Recv((uint8_t*)buf, n, 100 / portTICK_PERIOD_MS);
+  RUN_TASK_V(this->uart.Recv((uint8_t*)buf, n, 100 / portTICK_PERIOD_MS));
 
   this->get = buf[0];
   this->get_version = buf[1];
@@ -213,29 +195,23 @@ void STMBootLoader::Get() {
   // TODO: Add GetChecksum command
   // this->get_checksum = buf[11];
 
-  this->RecvACK();
+  RUN_TASK_V(this->RecvACK());
 
   if (this->erase == 0x44) {
     this->use_extended_erase = true;
   }
+
+  return TaskResult::Ok();
 }
 
 int STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
                                     size_t size) {
   ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, size);
   this->uart.Send((uint8_t*)"\x31\xce", 2);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Write Memory command (command byte)");
-    this->in_error_state = true;
-    return -1;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   this->SendAddress(address);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Write Memory command (address)");
-    this->in_error_state = true;
-    return -2;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   this->uart.SendChar(size - 1);
 
@@ -246,13 +222,7 @@ int STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
   this->uart.Send((uint8_t*)buffer, size);
   this->uart.SendChar(checksum);
 
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Write Memory command(data bytes)");
-    this->in_error_state = true;
-    ESP_LOGE(TAG, "  - chunksum: %02x", checksum);
-    this->in_error_state = true;
-    return -3;
-  }
+  RUN_TASK_V(this->RecvACK());
   return size;
 }
 
@@ -273,40 +243,38 @@ int STMBootLoader::WriteMemory(uint32_t address, unsigned char* buffer,
   return size;
 }
 
-void STMBootLoader::Go(uint32_t address) {
+TaskResult STMBootLoader::Go(uint32_t address) {
   ESP_LOGI(TAG, "Go command");
   this->uart.Send((uint8_t*)"\x21\xde", 2);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Go command (command byte)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
 
   this->SendAddress(address);
-  if (this->RecvACK() == STMBootLoader::ACK::NACK) {
-    ESP_LOGE(TAG, "Failed to Go command (address)");
-    this->in_error_state = true;
-    return;
-  }
+  RUN_TASK_V(this->RecvACK());
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::Erase(FlashPage page) {
+TaskResult STMBootLoader::Erase(FlashPage page) {
   if (this->use_extended_erase) {
-    this->DoExtendedErase(page);
+    RUN_TASK_V(this->DoExtendedErase(page));
   } else {
-    this->DoErase(page);
+    RUN_TASK_V(this->DoErase(page));
   }
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::Erase(std::vector<uint16_t> pages) {
+TaskResult STMBootLoader::Erase(std::vector<uint16_t> pages) {
   if (this->use_extended_erase) {
-    this->DoExtendedErase(pages);
+    RUN_TASK_V(this->DoExtendedErase(pages));
   } else {
-    this->DoErase(pages);
+    RUN_TASK_V(this->DoErase(pages));
   }
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
+TaskResult STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
   int all_pages = pages.size();
 
   std::vector<uint16_t> sub_pages;
@@ -318,7 +286,7 @@ void STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
     }
     ESP_LOGI(TAG, "Erasing pages... (%d to %d pages, remains %d page)", i,
              i + 4, all_pages - i - 4);
-    this->Erase(sub_pages);
+    RUN_TASK_V(this->Erase(sub_pages));
   }
 
   if (all_pages % 4 != 0) {
@@ -327,11 +295,13 @@ void STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
       sub_pages.push_back(pages[i + j]);
     }
     ESP_LOGI(TAG, "Erasing pages... (All %d pages)", all_pages);
-    this->Erase(sub_pages);
+    RUN_TASK_V(this->Erase(sub_pages));
   }
+
+  return TaskResult::Ok();
 }
 
-void STMBootLoader::Erase(uint32_t address, uint32_t length) {
+TaskResult STMBootLoader::Erase(uint32_t address, uint32_t length) {
   if (address + length > 0x0804'0000) {
     // bulk erase bank1
     this->Erase(STMBootLoader::bank1);
@@ -344,7 +314,7 @@ void STMBootLoader::Erase(uint32_t address, uint32_t length) {
     for (int i = bank2_erase_start; i < bank2_erase_end; i++) {
       pages.push_back(i);
     }
-    this->BulkErase(pages);
+    RUN_TASK_V(this->BulkErase(pages));
   } else {
     int bank1_erase_start = (address - 0x0800'0000) >> 11;
     int bank1_erase_end = (address + length - 0x08'000000) >> 11;
@@ -353,6 +323,8 @@ void STMBootLoader::Erase(uint32_t address, uint32_t length) {
     for (int i = bank1_erase_start; i < bank1_erase_end; i++) {
       pages.push_back(i);
     }
-    this->BulkErase(pages);
+    RUN_TASK_V(this->BulkErase(pages));
   }
+
+  return TaskResult::Ok();
 }

@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <driver/gpio.h>
 #include <freertos/FreeRTOS.h>
+#include <result.hpp>
 
 #include <vector>
 
@@ -17,8 +18,6 @@ class STMBootLoader {
     uint8_t option1;
     uint8_t option2;
   };
-
-  enum class ACK { ACK, NACK };
 
   bool in_error_state = false;
 
@@ -48,7 +47,7 @@ class STMBootLoader {
   UART uart;
   gpio_num_t reset, boot0;
 
-  ACK RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
+  TaskResult RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
 
   void SendWithChecksum(uint8_t* buf, size_t size);
 
@@ -60,14 +59,11 @@ class STMBootLoader {
 
   void SendAddress(uint32_t address);
 
-  void DoGetVersion();
-
-  void DoExtendedErase(FlashPage page);
-
-  void DoExtendedErase(std::vector<uint16_t> pages);
-
-  void DoErase(FlashPage page);
-  void DoErase(std::vector<uint16_t> pages);
+  TaskResult DoGetVersion();
+  TaskResult DoExtendedErase(FlashPage page);
+  TaskResult DoExtendedErase(std::vector<uint16_t> pages);
+  TaskResult DoErase(FlashPage page);
+  TaskResult DoErase(std::vector<uint16_t> pages);
 
  public:
   STMBootLoader(gpio_num_t reset, gpio_num_t boot0, uart_port_t num, int tx,
@@ -77,21 +73,16 @@ class STMBootLoader {
 
   void BootBootLoader();
 
-  void Sync();
-
-  void Get();
+  TaskResult Sync();
+  TaskResult Get();
 
   int WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
 
   int WriteMemory(uint32_t address, unsigned char* buffer, size_t size);
 
-  void Go(uint32_t address);
-
-  void Erase(FlashPage page);
-
-  void Erase(std::vector<uint16_t> pages);
-
-  void BulkErase(std::vector<uint16_t> pages);
-
-  void Erase(uint32_t address, uint32_t length);
+  TaskResult Go(uint32_t address);
+  TaskResult Erase(FlashPage page);
+  TaskResult Erase(std::vector<uint16_t> pages);
+  TaskResult BulkErase(std::vector<uint16_t> pages);
+  TaskResult Erase(uint32_t address, uint32_t length);
 };

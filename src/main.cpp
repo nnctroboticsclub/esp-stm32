@@ -17,37 +17,44 @@ class DebuggerMaster {
   std::optional<std::vector<uint8_t>> ui_cache;
 
  private:
-  void ReadExactly(uint8_t* buf, size_t size,
-                   TickType_t timeout = portMAX_DELAY) {
+  TaskResult ReadExactly(uint8_t* buf, size_t size,
+                         TickType_t timeout = portMAX_DELAY) {
     size_t read = 0;
     while (read < size) {
-      read += uart.Recv(buf + read, size - read, timeout);
+      RUN_TASK(uart.Recv(buf + read, size - read, timeout), ret);
+
+      read += ret;
     }
+
+    return TaskResult::Ok();
   }
 
  public:
   DebuggerMaster(uart_port_t port, int tx, int rx)
       : uart(port, tx, rx, 9600, UART_PARITY_DISABLE), ui_cache(std::nullopt) {}
 
-  std::vector<uint8_t>& GetUI() {
+  Result<std::vector<uint8_t>> GetUI() {
     ESP_LOGI(TAG, "Getting UI");
     if (ui_cache.has_value()) {
-      return ui_cache.value();
+      return Result<std::vector<uint8_t>>::Ok(ui_cache.value());
     }
 
     uart.Send((uint8_t*)"\x01", 1);
 
     uint8_t length_buf[4]{};
-    this->ReadExactly(length_buf, 4);
+
+    RUN_TASK_V(this->ReadExactly(length_buf, 4, 200 / portTICK_PERIOD_MS));
+
     uint32_t length = length_buf[0] << 24 | length_buf[1] << 16 |
                       length_buf[2] << 8 | length_buf[3];
     ESP_LOGI(TAG, "UI length: %ld", length);
 
     ui_cache = std::vector<uint8_t>(length);
-    this->ReadExactly(ui_cache.value().data(), length);
+
+    RUN_TASK_V(this->ReadExactly(ui_cache.value().data(), length));
 
     ESP_LOGI(TAG, "UI received");
-    return ui_cache.value();
+    return Result<std::vector<uint8_t>>::Ok(ui_cache.value());
   }
 };
 DebuggerMaster dbg(UART_NUM_2, 5, 4);
@@ -61,8 +68,12 @@ void BootStrap() {
 void Main() {
   // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   // config::server.StartClientLoopAtForeground();
-  auto ui = dbg.GetUI();
-  for (auto& byte : ui) {
+  auto res = dbg.GetUI();
+  if (res.IsErr()) {
+    ESP_LOGE(TAG, "Failed to get UI: %s", esp_err_to_name(res.Error()));
+    return;
+  }
+  for (auto& byte : *res) {
     printf("%#02x ", byte);
   }
 }
