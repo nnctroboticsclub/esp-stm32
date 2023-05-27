@@ -5,3 +5,5 @@
 .vscode/ipch
 build
 components/mdns
+
+.embuild
