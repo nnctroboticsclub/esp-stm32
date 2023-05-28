@@ -50,7 +50,13 @@ size_t UART::Send(uint8_t* buf, size_t size) {
 }
 Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
   memset((void*)buf, 0, size);
+
   size_t bytes = uart_read_bytes(this->port, (void*)buf, size, timeout);
+  if (bytes == 0) {
+    ESP_LOGE(TAG, "Failed to receive data (timeout)");
+    return Result<ssize_t>::Err(ESP_ERR_TIMEOUT);
+  }
+
   printf("%d, *%d* )<-- \n  ", tx, rx);
   if (size > 30) {
     printf("(*snip*)");
@@ -63,23 +69,13 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
     }
   }
   printf("\n");
-  if (bytes == 0) {
-    ESP_LOGE(TAG, "Failed to receive data (timeout)");
-    return Result<ssize_t>::Err(ESP_ERR_TIMEOUT);
-  }
   return Result<ssize_t>::Ok(bytes);
 }
 
 Result<uint8_t> UART::RecvChar(TickType_t timeout) {
   uint8_t c = 0;
   RUN_TASK(this->Recv((uint8_t*)&c, 1, timeout), ret);
-
-  if (ret < 0) {
-    return -1;
-  } else if (ret == 0) {
-    return -1;
-  }
-  return c;
+  return Result<uint8_t>::Ok(c);
 }
 void UART::SendChar(uint8_t ch) {
   uint8_t c = ch;

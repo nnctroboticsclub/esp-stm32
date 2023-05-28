@@ -45,7 +45,7 @@ class Result {
   // Result(T value) : value(value), error(ESP_OK) {}
   Result(esp_err_t error) : value(std::nullopt), error(error) {}
 
-  inline bool IsOk() { return error == ESP_OK; }
+  inline bool IsOk() { return value.has_value(); }
   inline bool IsErr() { return error != ESP_OK; }
 
   inline T& Value() { return value.value(); }

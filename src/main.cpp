@@ -36,10 +36,17 @@ class DebuggerMaster {
   Result<std::vector<uint8_t>> GetUI() {
     ESP_LOGI(TAG, "Getting UI");
     if (ui_cache.has_value()) {
+      ESP_LOGI(TAG, "Using cached UI");
       return Result<std::vector<uint8_t>>::Ok(ui_cache.value());
     }
 
     uart.Send((uint8_t*)"\x01", 1);
+
+    RUN_TASK(this->uart.RecvChar(1000 / portTICK_PERIOD_MS), c);
+    if (c != 0) {
+      ESP_LOGE(TAG, "Invalid UI command: %#02x", c);
+      return Result<std::vector<uint8_t>>::Err(ESP_ERR_INVALID_RESPONSE);
+    }
 
     uint8_t length_buf[4]{};
 
@@ -57,7 +64,7 @@ class DebuggerMaster {
     return Result<std::vector<uint8_t>>::Ok(ui_cache.value());
   }
 };
-DebuggerMaster dbg(UART_NUM_2, 5, 4);
+DebuggerMaster dbg(UART_NUM_2, 17, 16);
 
 void BootStrap() {
   // init::init_serial();
@@ -68,13 +75,27 @@ void BootStrap() {
 void Main() {
   // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   // config::server.StartClientLoopAtForeground();
-  auto res = dbg.GetUI();
-  if (res.IsErr()) {
-    ESP_LOGE(TAG, "Failed to get UI: %s", esp_err_to_name(res.Error()));
-    return;
-  }
-  for (auto& byte : *res) {
-    printf("%#02x ", byte);
+
+  gpio_set_direction(GPIO_NUM_18, GPIO_MODE_INPUT);
+  while (1) {
+    if (gpio_get_level(GPIO_NUM_18) == 0) {
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      continue;
+    }
+    while (gpio_get_level(GPIO_NUM_18) == 1) {
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+
+    auto res = dbg.GetUI();
+    if (res.IsErr()) {
+      ESP_LOGE(TAG, "Failed to get UI: %s", esp_err_to_name(res.Error()));
+      continue;
+    }
+
+    for (auto& byte : *res) {
+      printf("%#02x ", byte);
+    }
+    printf("\n");
   }
 }
 
