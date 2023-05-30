@@ -86,14 +86,14 @@ void Main() {
       vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    auto res = dbg.GetUI();
+    auto res = dbg.DateUpdate(1, 2);
     if (res.IsErr()) {
       ESP_LOGE(TAG, "Failed to get UI: %s", esp_err_to_name(res.Error()));
       continue;
     }
 
     for (auto& byte : *res) {
-      printf("%#02x ", byte);
+      printf("%02x ", byte);
     }
     printf("\n");
   }
