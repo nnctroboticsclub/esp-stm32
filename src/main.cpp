@@ -33,6 +33,26 @@ class DebuggerMaster {
   DebuggerMaster(uart_port_t port, int tx, int rx)
       : uart(port, tx, rx, 9600, UART_PARITY_DISABLE), ui_cache(std::nullopt) {}
 
+  void DataUpdate(int cid, uint8_t* value, size_t len) {
+    uint8_t buf[10];
+    buf[0] = 0x02;
+    buf[1] = (cid >> 24) & 0xff;
+    buf[2] = (cid >> 16) & 0xff;
+    buf[3] = (cid >> 8) & 0xff;
+    buf[4] = (cid >> 0) & 0xff;
+
+    buf[5] = (len >> 24) & 0xff;
+    buf[6] = (len >> 16) & 0xff;
+    buf[7] = (len >> 8) & 0xff;
+    buf[8] = (len >> 0) & 0xff;
+
+    uart.Send(buf, 9);
+
+    uart.Send(value, len);
+
+    return;
+  }
+
   Result<std::vector<uint8_t>> GetUI() {
     ESP_LOGI(TAG, "Getting UI");
     if (ui_cache.has_value()) {
@@ -63,6 +83,43 @@ class DebuggerMaster {
     ESP_LOGI(TAG, "UI received");
     return Result<std::vector<uint8_t>>::Ok(ui_cache.value());
   }
+
+  TaskResult Idle() {
+    auto buffer_length = uart.GetRXBufferDataLength();
+    if (buffer_length > 0) {
+      ESP_LOGI(TAG, "RX buffer length: %d", buffer_length);
+    } else {
+      return TaskResult::Ok();
+    }
+
+    RUN_TASK(uart.RecvChar(1000 / portTICK_PERIOD_MS), op);
+
+    switch (op) {
+      case 2: {
+        uint8_t cid_buf[4];
+        uint8_t len_buf[4];
+
+        RUN_TASK_V(this->ReadExactly(cid_buf, 4, 200 / portTICK_PERIOD_MS));
+        RUN_TASK_V(this->ReadExactly(len_buf, 4, 200 / portTICK_PERIOD_MS));
+
+        uint32_t cid =
+            cid_buf[0] << 24 | cid_buf[1] << 16 | cid_buf[2] << 8 | cid_buf[3];
+        uint32_t len =
+            len_buf[0] << 24 | len_buf[1] << 16 | len_buf[2] << 8 | len_buf[3];
+
+        ESP_LOGI(TAG, "Data update: cid=%ld, len=%ld", cid, len);
+
+        uint8_t* data = (uint8_t*)malloc(len);
+        RUN_TASK_V(this->ReadExactly(data, len, 200 / portTICK_PERIOD_MS));
+
+        // TODO: Do notify Date update
+
+        free(data);
+        break;
+      }
+    }
+    return TaskResult::Ok();
+  }
 };
 DebuggerMaster dbg(UART_NUM_2, 17, 16);
 
@@ -78,6 +135,7 @@ void Main() {
 
   gpio_set_direction(GPIO_NUM_18, GPIO_MODE_INPUT);
   while (1) {
+    dbg.Idle();
     if (gpio_get_level(GPIO_NUM_18) == 0) {
       vTaskDelay(100 / portTICK_PERIOD_MS);
       continue;
@@ -86,16 +144,9 @@ void Main() {
       vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    auto res = dbg.DateUpdate(1, 2);
-    if (res.IsErr()) {
-      ESP_LOGE(TAG, "Failed to get UI: %s", esp_err_to_name(res.Error()));
-      continue;
-    }
+    uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
 
-    for (auto& byte : *res) {
-      printf("%02x ", byte);
-    }
-    printf("\n");
+    dbg.DataUpdate(1, data, 4);
   }
 }
 
