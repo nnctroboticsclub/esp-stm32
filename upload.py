@@ -24,15 +24,15 @@ with open(filename, "rb") as f:
 
 
 print("[+] Booting BootLoader...")
-sock.send(b"\x07")
+sock.send(b"\x10")
 wait_ok(sock, "BootLoader")
 
 print("[+] Uploading...")
-sock.send(b"\x08")
+sock.send(b"\x11")
 sock.send(len(flash).to_bytes(4, "big"))
 sock.send(flash)
 wait_ok(sock, "Upload")
 
 print("[+] Go!")
-sock.send(b"\x09")
+sock.send(b"\x12")
 wait_ok(sock, "Go")

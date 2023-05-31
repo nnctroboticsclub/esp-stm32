@@ -17,7 +17,7 @@ struct ClientHandler {
     RegReadFloat,
     RegReadString,
     ReadMemoryU32,
-    BootBootLoader,
+    BootBootLoader = 0x10,
     UploadProgram,
     GoProgram,
     UserMessage = 0x80,
