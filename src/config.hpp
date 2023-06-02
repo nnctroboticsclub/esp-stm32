@@ -6,12 +6,12 @@
 #include "libs/stmbootloader.hpp"
 #include "libs/wifi.hpp"
 #include "server.hpp"
+#include "libs/debugger_master.hpp"
 
 //* constant
 #define USER_PROGRAM_START 0x08000000
 
 //* features
-// #define USE_NETWORK
 #define USE_DATA_SERVER
 
 //! global variables
@@ -22,6 +22,7 @@
 namespace config {
 
 extern STMBootLoader loader;
+extern DebuggerMaster debugger;
 
 #ifdef USE_NETWORK
 extern app::Wifi network;

@@ -1,6 +1,6 @@
 #include <driver/uart.h>
 
-#include <result.hpp>
+#include "result.hpp"
 
 class UART {
   static constexpr const char* TAG = "UART";
@@ -23,4 +23,7 @@ class UART {
 
   Result<uint8_t> RecvChar(TickType_t timeout = 1000 / portTICK_PERIOD_MS);
   void SendChar(uint8_t);
+
+  TaskResult RecvExactly(uint8_t* buf, size_t size,
+                         TickType_t timeout = portMAX_DELAY);
 };

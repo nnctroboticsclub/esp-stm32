@@ -7,10 +7,6 @@ class Server {
   static constexpr const char* TAG = "NW-Wd";
   int server_sock;
 
- public:
-  int int_regs[32];
-  float float_regs[32];
-
  private:
   static void ClientLoop(void* obj);
 

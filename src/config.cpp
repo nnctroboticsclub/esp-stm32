@@ -10,6 +10,7 @@ app::Wifi network("***REMOVED***", "***REMOVED***");
 // app::Wifi network;
 
 STMBootLoader loader(RESET, BOOT0, UART_NUM_1, 5, 4);
+DebuggerMaster debugger(UART_NUM_2, 17, 16);
 
 #ifdef USE_DATA_SERVER
 Server server;

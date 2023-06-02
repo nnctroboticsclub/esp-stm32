@@ -74,10 +74,21 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
 
 Result<uint8_t> UART::RecvChar(TickType_t timeout) {
   uint8_t c = 0;
-  RUN_TASK(this->Recv((uint8_t*)&c, 1, timeout), ret);
+  RUN_TASK_V(this->Recv((uint8_t*)&c, 1, timeout));
   return Result<uint8_t>::Ok(c);
 }
 void UART::SendChar(uint8_t ch) {
   uint8_t c = ch;
   this->Send(&c, 1);
+}
+
+TaskResult UART::RecvExactly(uint8_t* buf, size_t size, TickType_t timeout) {
+  size_t read = 0;
+  while (read < size) {
+    RUN_TASK(this->Recv(buf + read, size - read, timeout), ret);
+
+    read += ret;
+  }
+
+  return TaskResult::Ok();
 }
