@@ -75,7 +75,7 @@ class StringError : public ErrorBase {
 
 class NoError : public ErrorBase {
  private:
-  static NoError instance;
+  static NoError* instance;
 
   NoError() {}
 
@@ -84,7 +84,10 @@ class NoError : public ErrorBase {
 
   bool IsError() override { return false; }
 
-  static NoError& Get() { return instance; }
+  static NoError& Get() {
+    if (instance == nullptr) instance = new NoError();
+    return *instance;
+  }
 };
 
 class ErrorType {
