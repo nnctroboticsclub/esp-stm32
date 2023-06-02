@@ -1,3 +1,5 @@
+#pragma once
+
 #include <driver/uart.h>
 
 #include "result.hpp"

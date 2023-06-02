@@ -4,9 +4,6 @@
 #include <vector>
 #include <unordered_set>
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/atomic.h>
-
 #include "mutex.hpp"
 
 class DebuggerMaster {

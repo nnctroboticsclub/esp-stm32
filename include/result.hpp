@@ -3,6 +3,8 @@
 #include <optional>
 #include <esp_err.h>
 #include <string>
+#include <memory>
+#include <string.h>
 
 // Macros for unwrapping result
 #define CAT_IMPL(s1, s2) s1##s2
@@ -33,46 +35,121 @@
 #define RUN_TASK(result, var) _RUN_TASK(result, var, UNIQUE_NAME(res))
 #define RUN_TASK_TO(result, var) _RUN_TASK_TO(result, var, UNIQUE_NAME(res))
 
+class ErrorBase {
+ public:
+  virtual const char* what() = 0;
+
+  virtual bool IsError() { return true; }
+};
+
+class EspError : public ErrorBase {
+  esp_err_t err;
+
+ public:
+  EspError(esp_err_t err) : err(err) {}
+
+  const char* what() override { return esp_err_to_name(err); }
+
+  bool IsError() override { return err != ESP_OK; }
+};
+
+class ErrnoError : public ErrorBase {
+  int err;
+
+ public:
+  ErrnoError(int err) : err(err) {}
+
+  const char* what() override { return strerror(err); }
+
+  bool IsError() override { return err != 0; }
+};
+
+class StringError : public ErrorBase {
+  std::string err;
+
+ public:
+  StringError(std::string err) : err(err) {}
+
+  const char* what() override { return err.c_str(); }
+};
+
+class NoError : public ErrorBase {
+ private:
+  static NoError instance;
+
+  NoError() {}
+
+ public:
+  const char* what() override { return "No Error"; }
+
+  bool IsError() override { return false; }
+
+  static NoError& Get() { return instance; }
+};
+
+class ErrorType {
+  std::shared_ptr<ErrorBase> error;
+
+ public:
+  ErrorType(ErrorBase& error) : error(&error) {}
+  ErrorType(ErrorBase* error) : error(error) {}
+  ErrorType(esp_err_t err) : error(std::make_shared<EspError>(err)) {}
+  ErrorType(std::string err) : error(std::make_shared<StringError>(err)) {}
+  ErrorType() : error(std::make_shared<NoError>(NoError::Get())) {}
+
+  bool IsError() { return this->error.get()->IsError(); }
+  const char* what() { return this->error.get()->what(); }
+};
+
 template <typename T>
 class Result {
   std::optional<T> value;
-  esp_err_t error;
-
-  Result(std::optional<T> value, esp_err_t error)
-      : value(value), error(error) {}
+  ErrorType error;
 
  public:
-  // Result(T value) : value(value), error(ESP_OK) {}
-  Result(esp_err_t error) : value(std::nullopt), error(error) {}
+  Result(ErrorType& error, std::optional<T> value = std::nullopt)
+      : value(value), error(error) {}
+
+  Result(ErrorBase& error, std::optional<T> value = std::nullopt)
+      : value(value), error(error) {}
+  Result(ErrorBase* error, std::optional<T> value = std::nullopt)
+      : value(value), error(error) {}
+
+  Result(esp_err_t error, std::optional<T> value = std::nullopt)
+      : value(value), error(error) {}
+
+  Result(std::string error, std::optional<T> value = std::nullopt)
+      : value(value), error(error) {}
+
+  static Result<T> Ok(T value) { return Result<T>(NoError::Get(), value); }
+  Result(std::optional<T> value) : value(value), error(NoError::Get()) {}
 
   inline bool IsOk() { return value.has_value(); }
-  inline bool IsErr() { return error != ESP_OK; }
+  inline bool IsErr() { return this->error.IsError(); }
 
   inline T& Value() { return value.value(); }
-  inline esp_err_t Error() { return error; }
+  inline ErrorType& Error() { return this->error; }
 
   inline T& operator*() { return value.value(); }
   inline T* operator->() { return &value.value(); }
-
-  inline static Result<T> Ok(T value) { return Result<T>(value, ESP_OK); }
-  inline static Result<T> Err(esp_err_t error) {
-    return Result<T>(std::nullopt, error);
-  }
 };
 
 template <>
 class Result<void> {
-  esp_err_t error;
+  ErrorType error;
 
  public:
+  Result(ErrorBase& error) : error(error) {}
+  Result(ErrorType& error) : error(error) {}
   Result(esp_err_t error) : error(error) {}
-  Result() : error(ESP_OK) {}
+  Result(std::string error) : error(error) {}
+  Result() : error(NoError::Get()) {}
 
-  inline bool IsOk() { return error == ESP_OK; }
-  inline bool IsErr() { return error != ESP_OK; }
+  inline bool IsOk() { return !this->error.IsError(); }
+  inline bool IsErr() { return this->error.IsError(); }
 
-  inline esp_err_t Error() { return error; }
+  inline ErrorType& Error() { return this->error; }
 
-  inline static Result<void> Ok() { return Result<void>(ESP_OK); }
+  inline static Result<void> Ok() { return Result<void>(); }
 };
 using TaskResult = Result<void>;

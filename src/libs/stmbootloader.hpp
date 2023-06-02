@@ -19,8 +19,6 @@ class STMBootLoader {
     uint8_t option2;
   };
 
-  bool in_error_state = false;
-
  private:
   bool use_extended_erase = false;
 
@@ -76,7 +74,7 @@ class STMBootLoader {
   TaskResult Sync();
   TaskResult Get();
 
-  int WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
+  TaskResult WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
 
   int WriteMemory(uint32_t address, unsigned char* buffer, size_t size);
 

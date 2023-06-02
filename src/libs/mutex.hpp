@@ -1,7 +1,11 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#pragma GCC diagnostic pop
 
 #include "result.hpp"
 
@@ -34,7 +38,7 @@ class Mutex {
   Result<MutexGuard<T>> Lock() {
     auto ret = xSemaphoreTake(this->mutex, portMAX_DELAY);
     if (ret != pdTRUE) {
-      return Result<MutexGuard<T>>::Err(ESP_ERR_TIMEOUT);
+      return ESP_ERR_TIMEOUT;
     }
 
     return Result<MutexGuard<T>>::Ok(MutexGuard<T>(this->data, this->mutex));

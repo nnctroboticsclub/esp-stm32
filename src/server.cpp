@@ -26,82 +26,90 @@ struct ClientHandler {
   Server& server;
   int client;
 
-  int TryRecv(char* buf, int size) {
+  Result<int> TryRecv(uint8_t* buf, int size) {
     auto len = recv(this->client, buf, size, 0);
     if (len < 0) {
       ESP_LOGE(TAG, "(%3d) Failed to receive data.", this->client);
-      return -1;
+      return new ErrnoError(errno);
     }
     if (len == 0) {
       ESP_LOGI(TAG, "(%3d) Client disconnected.", this->client);
-      return -1;
+      return ESP_ERR_INVALID_STATE;
     }
-    return len;
+    return std::optional(len);
   }
 
-  int TrySend(char* buf, int size) {
+  Result<int> TryRecv(char* buf, int size) {
+    return this->TryRecv((uint8_t*)buf, size);
+  }
+
+  Result<int> TrySend(uint8_t* buf, int size) {
     auto sent = send(this->client, buf, size, 0);
     if (sent < 0) {
       ESP_LOGE(TAG, "(%3d) Failed to send data.", client);
-      return -1;
+      return new ErrnoError(errno);
     }
-    return sent;
+    return std::optional(sent);
   }
 
   template <int N>
-  int TrySend(const char (&buf)[N]) {
-    return this->TrySend((char*)buf, N);
+  Result<int> TrySend(const uint8_t (&buf)[N]) {
+    return this->TrySend((uint8_t*)buf, N);
+  }
+  template <int N>
+  Result<int> TrySend(const char (&buf)[N]) {
+    return this->TrySend((uint8_t*)buf, N);
   }
 
   template <int N>
-  int TryRecv(char (&buf)[N]) {
+  Result<int> TryRecv(uint8_t (&buf)[N]) {
     return this->TryRecv(buf, N);
   }
 
-  std::optional<char> TryRecvChar() {
+  Result<char> TryRecvChar() {
     char ch = 0;
-    auto len = this->TryRecv(&ch, 1);
-    if (len == -1) return std::nullopt;
+    RUN_TASK_V(this->TryRecv((uint8_t*)&ch, 1));
     return ch;
   }
 
-  int TrySendChar(char ch) { return this->TrySend(&ch, 1); }
-
-  int TrySendInt(int ch) {
-    this->TrySendChar((ch >> 24) & 0xff);
-    this->TrySendChar((ch >> 16) & 0xff);
-    this->TrySendChar((ch >> 8) & 0xff);
-    return this->TrySendChar(ch & 0xff) ? 4 : -1;
+  TaskResult TrySendChar(char ch) {
+    RUN_TASK_V(this->TrySend((uint8_t*)&ch, 1));
+    return TaskResult::Ok();
   }
 
-  int TrySendFloat(float ch) { return this->TrySendInt(*(int*)&ch); }
+  TaskResult TrySendInt(int ch) {
+    RUN_TASK_V(this->TrySendChar((ch >> 24) & 0xff));
+    RUN_TASK_V(this->TrySendChar((ch >> 16) & 0xff));
+    RUN_TASK_V(this->TrySendChar((ch >> 8) & 0xff));
+    RUN_TASK_V(this->TrySendChar((ch >> 0) & 0xff));
 
-  std::optional<int32_t> TryRecvInt() {
-    auto a = this->TryRecvChar();
-    auto b = this->TryRecvChar();
-    auto c = this->TryRecvChar();
-    auto d = this->TryRecvChar();
-
-    // if a, b, c fails to receive, d will be failed
-    if (!d) return std::nullopt;
-
-    return (*a << 24) | (*b << 16) | (*c << 8) | *d;
+    return TaskResult::Ok();
   }
 
-  void HandleClient() {
+  TaskResult TrySendFloat(float ch) { return this->TrySendInt(*(int*)&ch); }
+
+  Result<int32_t> TryRecvInt() {
+    RUN_TASK(this->TryRecvChar(), a);
+    RUN_TASK(this->TryRecvChar(), b);
+    RUN_TASK(this->TryRecvChar(), c);
+    RUN_TASK(this->TryRecvChar(), d);
+
+    return (a << 24) | (b << 16) | (c << 8) | d;
+  }
+
+  TaskResult HandleClient() {
     int client = this->client;
-    // Server& server = this->server;
-    esp_err_t err = ESP_OK;
     while (1) {
-      auto opcode_raw = this->TryRecvChar();
-      if (!opcode_raw) break;
+      RUN_TASK(this->TryRecvChar(), opcode_raw);
 
-      Opcode opcode = static_cast<Opcode>(*opcode_raw);
+      Opcode opcode = static_cast<Opcode>(opcode_raw);
 
       switch (opcode) {
         case Opcode::ReadMemoryU32: {
-          auto addr = this->TryRecvInt();
-          if (!addr) break;
+          return ESP_ERR_NOT_SUPPORTED;
+          /*
+          RUN_TASK(this->TryRecvInt(), addr);
+
           // buf[0] = 0x12;
           // buf[1] = (*addr >> 24) & 0xff;
           // buf[2] = (*addr >> 16) & 0xff;
@@ -110,7 +118,7 @@ struct ClientHandler {
           // TODO: Fix This
           // config::tx.Send(buf, 5);
 
-          char* rx_buf = nullptr;
+          uint8_t* rx_buf = nullptr;
           int received = 0;
           // TODO: Fix This
           // config::rx.Receive(&rx_buf, &received);
@@ -119,8 +127,10 @@ struct ClientHandler {
             break;
           }
 
-          this->TrySend(rx_buf, 4);
+          RUN_TASK_V(this->TrySend(rx_buf, 4));
           free(rx_buf);
+
+          */
 
           break;
         }
@@ -131,57 +141,44 @@ struct ClientHandler {
         case Opcode::BootBootLoader: {
           config::loader.BootBootLoader();
           vTaskDelay(200 / portTICK_PERIOD_MS);
-          config::loader.Sync();
-          config::loader.Get();
+          RUN_TASK_V(config::loader.Sync());
+          RUN_TASK_V(config::loader.Get());
           config::loader.GetVersion();
 
           ESP_LOGI(TAG, "Boot Loader version = %d.%d",
                    config::loader.GetVersion()->major,
                    config::loader.GetVersion()->minor);
 
-          if (config::loader.in_error_state) {
-            this->TrySend("Boot Loader is in error state");
-            break;
-          }
-          this->TrySend("OK");
+          RUN_TASK_V(this->TrySend("OK"));
           break;
         }
 
         case Opcode::UploadProgram: {
-          auto length = this->TryRecvInt();
-          if (!length) break;
+          RUN_TASK(this->TryRecvInt(), length);
 
-          config::loader.Erase(USER_PROGRAM_START, *length);
-          if (config::loader.in_error_state) {
-            this->TrySend("Boot Loader is in error state");
-            break;
-          }
+          RUN_TASK_V(config::loader.Erase(USER_PROGRAM_START, length));
 
-          unsigned char* tcp_buffer = new unsigned char[1024];
+          uint8_t* tcp_buffer = new unsigned char[1024];
           if (tcp_buffer == nullptr) {
             ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
             break;
           }
 
-          int end = USER_PROGRAM_START + *length;
+          int end = USER_PROGRAM_START + length;
           int ptr = USER_PROGRAM_START;
           while (ptr < end) {
-            auto received = recv(client, tcp_buffer, 1024, 0);
-            if (received < 0) {
-              ESP_LOGE(TAG, "(%3d) Failed to receive the message", client);
-              break;
-            }
+            RUN_TASK(this->TryRecv(tcp_buffer, 1024), received);
 
             config::loader.WriteMemory(ptr, tcp_buffer, received);
             ptr += received;
           }
-          this->TrySend("OK");
+          RUN_TASK_V(this->TrySend("OK"));
           break;
         }
 
         case Opcode::GoProgram: {
-          config::loader.Go(USER_PROGRAM_START);
-          this->TrySend("OK");
+          RUN_TASK_V(config::loader.Go(USER_PROGRAM_START));
+          RUN_TASK_V(this->TrySend("OK"));
           break;
         }
 
@@ -189,84 +186,100 @@ struct ClientHandler {
          * The opcodes related to the debugger
          */
         case Opcode::UserMessage: {
-          auto length = this->TryRecvInt();
-          if (!length) break;
+          RUN_TASK(this->TryRecvInt(), length);
 
-          char* tcp_buffer = new char[*length + 1];
+          uint8_t* tcp_buffer = new uint8_t[length + 1];
           if (tcp_buffer == nullptr) {
             ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
             break;
           }
 
           int tcp_received = 0;
-          while (tcp_received < *length) {
-            auto ret = recv(client, tcp_buffer + 1 + tcp_received,
-                            *length - tcp_received, 0);
-            if (ret < 0) {
-              ESP_LOGE(TAG, "(%3d) Failed to receive the message", client);
-              break;
-            }
+          while (tcp_received < length) {
+            RUN_TASK(this->TryRecv(tcp_buffer + 1 + tcp_received,
+                                   length - tcp_received),
+                     ret);
             tcp_received += ret;
           }
 
-          if (tcp_received != *length) break;
+          if (tcp_received != length) break;
 
           tcp_buffer[0] = 0x80;
           // TODO: Fix This
-          // config::tx.Send(tcp_buffer, *length + 1);
+          // config::tx.Send(tcp_buffer, length + 1);
 
           delete[] tcp_buffer;
 
-          char* rx_buffer = nullptr;
+          uint8_t* rx_buffer = nullptr;
           int rx_received = 0;
           // TODO: Fix This
           // config::rx.Receive(&rx_buffer, &rx_received);
-          this->TrySend(rx_buffer, rx_received);
+          RUN_TASK_V(this->TrySend(rx_buffer, rx_received));
           free(rx_buffer);
-          break;
-        }
-        case Opcode::GetUI: {
-          auto ret = config::debugger.GetUI();
-          if (ret.IsErr()) {
-            err = ret.Error();
-            goto error;
-          }
 
-          auto ui = ret.Value();
-          this->TrySend((char*)ui.data(), ui.size());
+          RUN_TASK_V(this->TrySend("OK"));
           break;
         }
+
+        case Opcode::GetUI: {
+          RUN_TASK(config::debugger.GetUI(), ui);
+
+          RUN_TASK_V(this->TrySendInt(ui.size()));
+          RUN_TASK_V(this->TrySend(ui.data(), ui.size()));
+          break;
+        }
+
         case Opcode::ListenDataUpdate: {
           config::debugger.AddListener(this->client);
-          auto _ch = this->TryRecvChar();
+          RUN_TASK_V(this->TryRecvChar());
           config::debugger.RemoveListener(this->client);
 
           break;
         }
 
         case Opcode::DataUpdate: {
+          RUN_TASK(this->TryRecvInt(), cid);
+          RUN_TASK(this->TryRecvInt(), length);
+
+          uint8_t* tcp_buffer = new uint8_t[length + 1];
+          if (tcp_buffer == nullptr) {
+            ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
+            break;
+          }
+
+          int tcp_received = 0;
+          while (tcp_received < length) {
+            RUN_TASK(this->TryRecv(tcp_buffer + 1 + tcp_received,
+                                   length - tcp_received),
+                     ret);
+            tcp_received += ret;
+          }
+
+          if (tcp_received != length) break;
+
+          config::debugger.DataUpdate(cid, tcp_buffer, length);
+          break;
         }
 
         default: {
           ESP_LOGE(TAG, "(%3d) Unknown opcode (opcode = %d)", client,
-                   *opcode_raw);
+                   opcode_raw);
           break;
         }
       }
 
       continue;
-    error:
-      ESP_LOGE(TAG, "(%3d) Failed %s", esp_err_to_name(err))
     }
-
-    close(client);
-    delete this;
-
-    vTaskDelete(NULL);
   }
 };
 
-void ClientHandlerWrapper(ClientHandler* args) { args->HandleClient(); }
+void ClientHandlerWrapper(ClientHandler* args) {
+  args->HandleClient();
+  close(args->client);
+  delete args;
+
+  vTaskDelete(NULL);
+}
 }  // namespace
 
 void Server::ClientLoop(void* obj) {
@@ -280,7 +293,8 @@ void Server::ClientLoop(void* obj) {
 
     ESP_LOGI(TAG, "Connection established.");
     auto args = new ClientHandler{.server = *server, .client = client};
-    xTaskCreate(ClientHandlerWrapper, "Client", 4096, args, 1, NULL);
+    xTaskCreate((TaskFunction_t)ClientHandlerWrapper, "Client", 4096, args, 1,
+                NULL);
   }
 }
 

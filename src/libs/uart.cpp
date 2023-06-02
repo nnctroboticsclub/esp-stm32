@@ -54,7 +54,7 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
   size_t bytes = uart_read_bytes(this->port, (void*)buf, size, timeout);
   if (bytes == 0) {
     ESP_LOGE(TAG, "Failed to receive data (timeout)");
-    return Result<ssize_t>::Err(ESP_ERR_TIMEOUT);
+    return ESP_ERR_TIMEOUT;
   }
 
   printf("%d, *%d* )<-- \n  ", tx, rx);

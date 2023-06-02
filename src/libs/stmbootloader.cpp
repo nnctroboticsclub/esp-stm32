@@ -8,13 +8,11 @@ TaskResult STMBootLoader::RecvACK(TickType_t timeout) {
 
   if (ack == 0x79) return TaskResult::Ok();
   if (ack == 0x1f) {
-    this->in_error_state = true;
     ESP_LOGE(TAG, "Received NACK");
     return ESP_ERR_INVALID_STATE;
   }
 
   ESP_LOGE(TAG, "Failed to receive ACK");
-  this->in_error_state = true;
   return ESP_ERR_INVALID_RESPONSE;
 }
 
@@ -131,8 +129,6 @@ STMBootLoader::Version* STMBootLoader::GetVersion() {
 
 void STMBootLoader::BootBootLoader() {
   ESP_LOGI(TAG, "Booting BootLoader");
-  this->in_error_state = false;
-
   ESP_LOGI(TAG, "- reset = 0");
   gpio_set_level(this->reset, 0);
   vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -158,7 +154,6 @@ TaskResult STMBootLoader::Sync() {
   if (ret == 0x79) {
     return TaskResult::Ok();
   } else if (ret == 0x1f) {
-    this->in_error_state = true;
     return ESP_ERR_INVALID_STATE;
   } else {
     ESP_LOGW(TAG, "Unknown sync byte %#02x", ret);
@@ -204,8 +199,8 @@ TaskResult STMBootLoader::Get() {
   return TaskResult::Ok();
 }
 
-int STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
-                                    size_t size) {
+TaskResult STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
+                                           size_t size) {
   ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, size);
   this->uart.Send((uint8_t*)"\x31\xce", 2);
   RUN_TASK_V(this->RecvACK());
@@ -223,7 +218,8 @@ int STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
   this->uart.SendChar(checksum);
 
   RUN_TASK_V(this->RecvACK());
-  return size;
+
+  return TaskResult::Ok();
 }
 
 int STMBootLoader::WriteMemory(uint32_t address, unsigned char* buffer,

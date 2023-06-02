@@ -44,7 +44,7 @@ Result<std::vector<uint8_t>> DebuggerMaster::GetUI() {
   RUN_TASK(uart->RecvChar(1000 / portTICK_PERIOD_MS), c);
   if (c != 0) {
     ESP_LOGE(TAG, "Invalid UI command: %#02x", c);
-    return Result<std::vector<uint8_t>>::Err(ESP_ERR_INVALID_RESPONSE);
+    return ESP_ERR_INVALID_RESPONSE;
   }
 
   uint8_t length_buf[4]{};
