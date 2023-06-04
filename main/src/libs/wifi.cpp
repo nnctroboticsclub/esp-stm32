@@ -35,10 +35,15 @@ void Wifi::EventLoopTask(void* pvWifi) {
   }
 }
 
-Wifi::Wifi() : ssid(""), password(""), is_ap_mode(true) {}
+#ifdef CONFIG_NETWORK_MODE_AP
+Wifi::Wifi(const char* ssid, const char* password)
+    : ssid(ssid), password(password), is_ap_mode(true) {}
+#endif
 
+#ifdef CONFIG_NETWORK_MODE_STA
 Wifi::Wifi(const char* ssid, const char* password)
     : ssid(ssid), password(password), is_ap_mode(false) {}
+#endif
 
 Wifi::~Wifi() {
   vEventGroupDelete(this->s_wifi_event_group);
@@ -108,14 +113,19 @@ void Wifi::ConnectMake() {
   wifi_config_t wifi_config = {
       .ap =
           {
-              .ssid = "ESP32",
-              .password = "APaPapAp",
-              .ssid_len = strlen("ESP32"),
+              .ssid = "",
+              .password = "",
               .channel = 11,
               .authmode = WIFI_AUTH_WPA_WPA2_PSK,
               .max_connection = 11,
           },
   };
+
+  strncpy((char*)wifi_config.ap.ssid, this->ssid, sizeof(wifi_config.ap.ssid));
+  strncpy((char*)wifi_config.ap.password, this->password,
+          sizeof(wifi_config.ap.password));
+
+  wifi_config.ap.ssid_len = strlen(this->ssid);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));

@@ -32,10 +32,10 @@ struct ClientHandler {
       ESP_LOGE(TAG, "(%3d) Failed to receive data.", this->client);
       return new ErrnoError(errno);
     }
-    if (len == 0) {
-      ESP_LOGI(TAG, "(%3d) Client disconnected.", this->client);
-      return ESP_ERR_INVALID_STATE;
-    }
+    // if (len == 0) {
+    //   ESP_LOGI(TAG, "(%3d) Client disconnected.", this->client);
+    //   return ESP_ERR_INVALID_STATE;
+    // }
     return Result<int>::Ok(len);
   }
 
@@ -66,12 +66,20 @@ struct ClientHandler {
     return this->TryRecv(buf, N);
   }
 
-  Result<char> TryRecvChar() {
+  Result<int> TryRecvChar() {
     char ch = 0;
-    ESP_LOGI(TAG, "TryRecvChar called 1");
-    RUN_TASK_V(this->TryRecv((uint8_t*)&ch, 1));
-    ESP_LOGI(TAG, "TryRecvChar called 2");
-    return Result<char>::Ok(ch);
+    RUN_TASK(this->TryRecv((uint8_t*)&ch, 1), receipt);
+
+    int ret = ch;
+    if (ret < 0) {
+      ret = 0x100 + ch;
+    }
+
+    if (receipt == 0) {
+      ret = -1;
+    }
+
+    return Result<int>::Ok(ret);
   }
 
   TaskResult TrySendChar(char ch) {
@@ -103,21 +111,18 @@ struct ClientHandler {
     int client = this->client;
     while (1) {
       ESP_LOGI(TAG, "(%3d) Waiting for opcode...", client);
-      // RUN_TASK(this->TryRecvChar(), opcode_raw);
-      auto res111499 = this->TryRecvChar();
-      ESP_LOGI(TAG, "L1");
-      if (res111499.IsErr()) {
-        ESP_LOGI(TAG, "L2");
-        return res111499.Error();
+      RUN_TASK(this->TryRecvChar(), opcode_raw);
+
+      if (opcode_raw == -1) {
+        ESP_LOGI(TAG, "(%3d) Client disconnected", client);
+        break;
       }
-      ESP_LOGI(TAG, "L3");
-      auto opcode_raw = res111499.Value();
-      ESP_LOGI(TAG, "(%3d) Received opcode: %d", client, opcode_raw);
 
       Opcode opcode = static_cast<Opcode>(opcode_raw);
 
       switch (opcode) {
         case Opcode::ReadMemoryU32: {
+          ESP_LOGE(TAG, "Read Memory is not supported");
           return ESP_ERR_NOT_SUPPORTED;
           /*
           RUN_TASK(this->TryRecvInt(), addr);
@@ -168,7 +173,7 @@ struct ClientHandler {
         case Opcode::UploadProgram: {
           RUN_TASK(this->TryRecvInt(), length);
 
-          RUN_TASK_V(config::loader.Erase(USER_PROGRAM_START, length));
+          RUN_TASK_V(config::loader.Erase(CONFIG_STM32_PROGRAM_START, length));
 
           uint8_t* tcp_buffer = new unsigned char[1024];
           if (tcp_buffer == nullptr) {
@@ -176,8 +181,8 @@ struct ClientHandler {
             break;
           }
 
-          int end = USER_PROGRAM_START + length;
-          int ptr = USER_PROGRAM_START;
+          int end = CONFIG_STM32_PROGRAM_START + length;
+          int ptr = CONFIG_STM32_PROGRAM_START;
           while (ptr < end) {
             RUN_TASK(this->TryRecv(tcp_buffer, 1024), received);
 
@@ -189,7 +194,7 @@ struct ClientHandler {
         }
 
         case Opcode::GoProgram: {
-          RUN_TASK_V(config::loader.Go(USER_PROGRAM_START));
+          RUN_TASK_V(config::loader.Go(CONFIG_STM32_PROGRAM_START));
           RUN_TASK_V(this->TrySend("OK"));
           break;
         }
@@ -283,6 +288,8 @@ struct ClientHandler {
 
       continue;
     }
+
+    return TaskResult::Ok();
   }
 };
 
@@ -291,6 +298,8 @@ void ClientHandlerWrapper(ClientHandler* args) {
   if (ret.IsErr()) {
     ESP_LOGE(ClientHandler::TAG, "(%3d) Error: %s", args->client,
              ret.Error().what());
+    auto raw_error = ret.Error().GetRawError().get();
+    ESP_LOGE(ClientHandler::TAG, "     Type: %s", typeid(raw_error).name());
   }
   close(args->client);
   delete args;

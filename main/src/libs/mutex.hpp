@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wall"
 #pragma GCC diagnostic ignored "-Wextra"
@@ -9,16 +11,32 @@
 
 #include "result.hpp"
 
+class MutexReleaser {
+ private:
+  SemaphoreHandle_t mutex;
+
+ public:
+ public:
+  MutexReleaser(const MutexReleaser&) = delete;
+  MutexReleaser& operator=(const MutexReleaser&) = delete;
+
+  MutexReleaser(MutexReleaser&&) = delete;
+  MutexReleaser& operator=(MutexReleaser&&) = delete;
+
+  MutexReleaser(SemaphoreHandle_t mutex) : mutex(mutex) {}
+
+  ~MutexReleaser() { xSemaphoreGive(this->mutex); }
+};
+
 template <typename T>
 class MutexGuard {
  private:
-  SemaphoreHandle_t mutex;
+  std::shared_ptr<MutexReleaser> mutex_guard;
   T& data;
 
  public:
-  MutexGuard(T& data, SemaphoreHandle_t mutex) : mutex(mutex), data(data) {}
-
-  ~MutexGuard() { xSemaphoreGive(mutex); }
+  MutexGuard(T& data, SemaphoreHandle_t mutex)
+      : mutex_guard(new MutexReleaser(mutex)), data(data) {}
 
   T& operator*() { return this->data; }
   T* operator->() { return &this->data; }

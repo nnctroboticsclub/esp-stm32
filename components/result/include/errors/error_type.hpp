@@ -21,4 +21,6 @@ class ErrorType {
 
   bool IsError();
   const char* what();
+
+  inline std::shared_ptr<ErrorBase>& GetRawError() { return this->error; }
 };

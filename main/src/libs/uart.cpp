@@ -34,6 +34,7 @@ size_t UART::GetRXBufferDataLength() {
 
 void UART::Flush() { uart_flush_input(this->port); }
 size_t UART::Send(uint8_t* buf, size_t size) {
+#ifdef ENABLE_UART_DEBUG
   printf("*%d*, %d )--> \n  ", tx, rx);
   if (size > 30) {
     printf("(*snip*)");
@@ -46,6 +47,7 @@ size_t UART::Send(uint8_t* buf, size_t size) {
     }
   }
   printf("\n");
+#endif
   return uart_write_bytes(this->port, buf, size);
 }
 Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
@@ -57,6 +59,7 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
     return ESP_ERR_TIMEOUT;
   }
 
+#ifdef ENABLE_UART_DEBUG
   printf("%d, *%d* )<-- \n  ", tx, rx);
   if (size > 30) {
     printf("(*snip*)");
@@ -69,6 +72,7 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
     }
   }
   printf("\n");
+#endif
   return Result<ssize_t>::Ok(bytes);
 }
 

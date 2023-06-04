@@ -84,17 +84,21 @@ TaskResult DebuggerMaster::Idle() {
 
       len = len_buf[0] << 24 | len_buf[1] << 16 | len_buf[2] << 8 | len_buf[3];
 
-      uint8_t* data = (uint8_t*)malloc(len);
-      RUN_TASK_V(uart->RecvExactly(data, len, 200 / portTICK_PERIOD_MS));
+      uint8_t* buffer = (uint8_t*)malloc(len + 8);
+      RUN_TASK_V(uart->RecvExactly(buffer + 8, len, 200 / portTICK_PERIOD_MS));
+
+      memcpy(buffer, cid_buf, 4);
+      memcpy(buffer + 4, len_buf, 4);
 
       for (auto listener : listeners) {
-        send(listener, cid_buf, 4, 0);
-        send(listener, len_buf, 4, 0);
-        send(listener, data, len, 0);
+        auto ret = send(listener, buffer, len + 8, 0);
       }
 
-      free(data);
+      free(buffer);
       break;
+    }
+    default: {
+      ESP_LOGW(TAG, "Unknown Opcode %#02x", op);
     }
   }
   return TaskResult::Ok();

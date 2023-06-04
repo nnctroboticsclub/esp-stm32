@@ -25,7 +25,6 @@ class Wifi {
   void ConnectMake();
 
  public:
-  Wifi();
   Wifi(const char* ssid, const char* password);
   ~Wifi();
   void Init();

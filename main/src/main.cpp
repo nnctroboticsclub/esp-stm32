@@ -12,6 +12,14 @@ void BootStrap() {
   // init::init_serial();
   init::init_mdns();
   init::init_data_server();
+
+  xTaskCreate((TaskFunction_t)([](void* args) {
+                while (1) {
+                  ((DebuggerMaster*)args)->Idle();
+                }
+                return;
+              }),
+              "Debugger Idling Thread", 0x1000, &config::debugger, 1, nullptr);
 }
 
 void Main() {
