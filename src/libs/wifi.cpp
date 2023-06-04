@@ -1,5 +1,6 @@
 #include "wifi.hpp"
 #include <cstring>
+#include <lwip/netif.h>
 
 #include <esp_log.h>
 
@@ -52,6 +53,17 @@ void Wifi::Init() {
     esp_netif_create_default_wifi_ap();
   } else {
     esp_netif_create_default_wifi_sta();
+
+    auto netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    esp_netif_dhcpc_stop(netif);
+
+    esp_netif_ip_info_t ip_info;
+
+    ip_info.ip.addr = ipaddr_addr("172.16.34.90");
+    ip_info.gw.addr = ipaddr_addr("172.16.34.254");
+    ip_info.netmask.addr = ipaddr_addr("255.255.255.00");
+
+    esp_netif_set_ip_info(netif, &ip_info);
   }
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -78,7 +90,7 @@ void Wifi::ConnectToAP() {
               .password = "",
               .threshold =
                   {
-                      .authmode = WIFI_AUTH_WPA2_PSK,
+                      .authmode = WIFI_AUTH_WPA_WPA2_PSK,
                   },
 
               .pmf_cfg = {.capable = true, .required = false},
@@ -88,7 +100,6 @@ void Wifi::ConnectToAP() {
           sizeof(wifi_config.sta.ssid));
   strncpy((char*)wifi_config.sta.password, this->password,
           sizeof(wifi_config.sta.password));
-
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());

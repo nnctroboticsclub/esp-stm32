@@ -1,10 +1,13 @@
 #pragma once
 
+#include <string.h>
+
 #include <optional>
-#include <esp_err.h>
 #include <string>
 #include <memory>
-#include <string.h>
+
+#include <esp_err.h>
+#include <esp_log.h>
 
 // Macros for unwrapping result
 #define CAT_IMPL(s1, s2) s1##s2
@@ -85,7 +88,10 @@ class NoError : public ErrorBase {
   bool IsError() override { return false; }
 
   static NoError& Get() {
-    if (instance == nullptr) instance = new NoError();
+    if (instance == nullptr) {
+      instance = new NoError();
+      ESP_LOGW("NoError", "NoError instance: %p", instance);
+    }
     return *instance;
   }
 };
@@ -99,6 +105,11 @@ class ErrorType {
   ErrorType(esp_err_t err) : error(std::make_shared<EspError>(err)) {}
   ErrorType(std::string err) : error(std::make_shared<StringError>(err)) {}
   ErrorType() : error(std::make_shared<NoError>(NoError::Get())) {}
+
+  ~ErrorType() {
+    ESP_LOGI("ErrorType", "ErrorType destructor called error=%p (%s)", &*error,
+             error->what());
+  }
 
   bool IsError() { return this->error.get()->IsError(); }
   const char* what() { return this->error.get()->what(); }
@@ -124,7 +135,14 @@ class Result {
   Result(std::string error, std::optional<T> value = std::nullopt)
       : value(value), error(error) {}
 
-  static Result<T> Ok(T value) { return Result<T>(NoError::Get(), value); }
+  static Result<T> Ok(T value) {
+    ESP_LOGI("Result", "Ok L1");
+    auto ne = NoError::Get();
+    ESP_LOGI("Result", "Ok L2");
+    auto v = std::optional<T>(value);
+    ESP_LOGI("Result", "Ok L3");
+    return Result<T>(ne, v);
+  }
   Result(std::optional<T> value) : value(value), error(NoError::Get()) {}
 
   inline bool IsOk() { return value.has_value(); }

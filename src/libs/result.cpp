@@ -1,3 +1,3 @@
 #include <result.hpp>
 
-NoError *NoError::instance;
+NoError *NoError::instance = nullptr;

@@ -36,7 +36,7 @@ struct ClientHandler {
       ESP_LOGI(TAG, "(%3d) Client disconnected.", this->client);
       return ESP_ERR_INVALID_STATE;
     }
-    return std::optional(len);
+    return Result<int>::Ok(len);
   }
 
   Result<int> TryRecv(char* buf, int size) {
@@ -68,8 +68,10 @@ struct ClientHandler {
 
   Result<char> TryRecvChar() {
     char ch = 0;
+    ESP_LOGI(TAG, "TryRecvChar called 1");
     RUN_TASK_V(this->TryRecv((uint8_t*)&ch, 1));
-    return ch;
+    ESP_LOGI(TAG, "TryRecvChar called 2");
+    return Result<char>::Ok(ch);
   }
 
   TaskResult TrySendChar(char ch) {
@@ -100,7 +102,17 @@ struct ClientHandler {
   TaskResult HandleClient() {
     int client = this->client;
     while (1) {
-      RUN_TASK(this->TryRecvChar(), opcode_raw);
+      ESP_LOGI(TAG, "(%3d) Waiting for opcode...", client);
+      // RUN_TASK(this->TryRecvChar(), opcode_raw);
+      auto res111499 = this->TryRecvChar();
+      ESP_LOGI(TAG, "L1");
+      if (res111499.IsErr()) {
+        ESP_LOGI(TAG, "L2");
+        return res111499.Error();
+      }
+      ESP_LOGI(TAG, "L3");
+      auto opcode_raw = res111499.Value();
+      ESP_LOGI(TAG, "(%3d) Received opcode: %d", client, opcode_raw);
 
       Opcode opcode = static_cast<Opcode>(opcode_raw);
 
@@ -222,6 +234,7 @@ struct ClientHandler {
         }
 
         case Opcode::GetUI: {
+          ESP_LOGI(TAG, "GetUI called");
           RUN_TASK(config::debugger.GetUI(), ui);
 
           RUN_TASK_V(this->TrySendInt(ui.size()));
@@ -274,7 +287,11 @@ struct ClientHandler {
 };
 
 void ClientHandlerWrapper(ClientHandler* args) {
-  args->HandleClient();
+  auto ret = args->HandleClient();
+  if (ret.IsErr()) {
+    ESP_LOGE(ClientHandler::TAG, "(%3d) Error: %s", args->client,
+             ret.Error().what());
+  }
   close(args->client);
   delete args;
 
