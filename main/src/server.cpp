@@ -155,6 +155,7 @@ struct ClientHandler {
         /*
          * The opcodes related STM32 BootLoader
          */
+#ifdef CONFIG_STM32_BOOTLOADER_DRIVER
         case Opcode::BootBootLoader: {
           config::loader.BootBootLoader();
           vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -198,10 +199,25 @@ struct ClientHandler {
           RUN_TASK_V(this->TrySend("OK"));
           break;
         }
+#else
+        case Opcode::BootBootLoader: {
+          ESP_LOGE(TAG, "BootBootLoader is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+        case Opcode::UploadProgram: {
+          ESP_LOGE(TAG, "UploadProgram is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+        case Opcode::GoProgram: {
+          ESP_LOGE(TAG, "GoProgram is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+#endif
 
         /*
          * The opcodes related to the debugger
          */
+#ifdef CONFIG_STM32_REMOTE_CONTROLLER_DRIVER
         case Opcode::UserMessage: {
           RUN_TASK(this->TryRecvInt(), length);
 
@@ -278,6 +294,24 @@ struct ClientHandler {
           config::debugger.DataUpdate(cid, tcp_buffer, length);
           break;
         }
+#else
+        case Opcode::UserMessage: {
+          ESP_LOGE(TAG, "UserMessage is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+        case Opcode::GetUI: {
+          ESP_LOGE(TAG, "GetUI is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+        case Opcode::ListenDataUpdate: {
+          ESP_LOGE(TAG, "ListenDataUpdate is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+        case Opcode::DataUpdate: {
+          ESP_LOGE(TAG, "DataUpdate is Disabled in this build");
+          return ESP_ERR_NOT_SUPPORTED;
+        }
+#endif
 
         default: {
           ESP_LOGE(TAG, "(%3d) Unknown opcode (opcode = %d)", client,
