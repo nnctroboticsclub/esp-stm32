@@ -10,7 +10,7 @@ void init::init_data_server() {
   if (initialized) return;
   initialized = true;
 
-#ifdef USE_DATA_SERVER
+#ifdef CONFIG_USE_DATA_SERVER
   init_wifi();
 
   ESP_LOGI(TAG, "Initializing DataServer(TCP[4007])");

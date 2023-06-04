@@ -8,6 +8,7 @@ void init::init_mdns() {
   if (initialized) return;
   initialized = true;
 
+#ifdef CONFIG_USE_MDNS
   init_wifi();
 
   ESP_LOGI(TAG, "Initializing mDNS");
@@ -20,4 +21,7 @@ void init::init_mdns() {
   ESP_LOGI(TAG, "- 2/3 Add service...");
   mdns_service_add(NULL, "_tcp", "_tcp", 2000, NULL, 0);
   ESP_LOGI(TAG, "- 3/3 mDNS is setted up!...");
+#else
+  ESP_LOGW(TAG, "mDNS is disabled.");
+#endif
 }

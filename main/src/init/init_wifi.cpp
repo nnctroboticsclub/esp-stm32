@@ -10,7 +10,7 @@ void init::init_wifi() {
   if (initialized) return;
   initialized = true;
 
-#ifdef USE_NETWORK
+#ifdef CONFIG_USE_NETWORK
   init_netif();
   init_eventloop();
 

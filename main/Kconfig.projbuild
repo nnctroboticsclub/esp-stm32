@@ -58,7 +58,7 @@ menu "main"
         Enable STM32 REMOTE_CONTROLLER driver
     config STM32_REMOTE_CONTROLLER_UART
       int "UART port"
-      default 1
+      default 2
       depends on STM32_REMOTE_CONTROLLER_DRIVER
       help
         STM32 REMOTE_CONTROLLER UART port number
@@ -115,6 +115,20 @@ menu "main"
         help
           WiFi password
     endmenu
+  endmenu
+
+  menu "mDNS"
+    config USE_MDNS
+      bool "Enable mDNS"
+      default y
+      help
+        Enable mDNS
+    config MDNS_HOSTNAME
+      string "mDNS hostname"
+      default "esp32"
+      depends on USE_MDNS
+      help
+        mDNS hostname
   endmenu
 
   config USE_DATA_SERVER

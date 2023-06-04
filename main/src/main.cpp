@@ -15,6 +15,7 @@ void BootStrap() {
 
   xTaskCreate((TaskFunction_t)([](void* args) {
                 while (1) {
+                  vTaskDelay(50 / portTICK_PERIOD_MS);
                   ((DebuggerMaster*)args)->Idle();
                 }
                 return;
