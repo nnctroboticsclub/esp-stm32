@@ -1,9 +1,9 @@
 # This file was automatically generated for projects
 # without default 'CMakeLists.txt' file.
 
-# FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)
-# idf_component_register(SRCS ${app_sources})
+FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/main/src/*.*)
 
+# idf_component_register(SRCS ${app_sources})
 idf_component_register(SRCS ${app_sources}
   INCLUDE_DIRS "include"
-  REQUIRES mdns)
+  REQUIRES mdns esp_wifi driver nvs_flash)
