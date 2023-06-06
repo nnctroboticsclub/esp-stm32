@@ -19,7 +19,7 @@ void init::init_mdns() {
   mdns_hostname_set(CONFIG_MDNS_HOSTNAME);
   mdns_instance_name_set("ESP32");
   ESP_LOGI(TAG, "- 2/3 Add service...");
-  mdns_service_add(NULL, "_tcp", "_tcp", 4007, 2, 0);
+  mdns_service_add(NULL, "_tcp", "_tcp", 4007, NULL, 0);
   ESP_LOGI(TAG, "- 3/3 mDNS is setted up!...");
 #else
   ESP_LOGW(TAG, "mDNS is disabled.");

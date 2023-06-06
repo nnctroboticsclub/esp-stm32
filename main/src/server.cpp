@@ -69,7 +69,6 @@ struct ClientHandler {
   Result<int> TryRecvChar() {
     char ch = 0;
     RUN_TASK(this->TryRecv((uint8_t*)&ch, 1), receipt);
-
     int ret = ch;
     if (ret < 0) {
       ret = 0x100 + ch;
@@ -104,13 +103,12 @@ struct ClientHandler {
     RUN_TASK(this->TryRecvChar(), c);
     RUN_TASK(this->TryRecvChar(), d);
 
-    return (a << 24) | (b << 16) | (c << 8) | d;
+    return Result<int32_t>::Ok((a << 24) | (b << 16) | (c << 8) | d);
   }
 
   TaskResult HandleClient() {
     int client = this->client;
     while (1) {
-      ESP_LOGI(TAG, "(%3d) Waiting for opcode...", client);
       RUN_TASK(this->TryRecvChar(), opcode_raw);
 
       if (opcode_raw == -1) {
@@ -275,7 +273,7 @@ struct ClientHandler {
           RUN_TASK(this->TryRecvInt(), cid);
           RUN_TASK(this->TryRecvInt(), length);
 
-          uint8_t* tcp_buffer = new uint8_t[length + 1];
+          uint8_t* tcp_buffer = new uint8_t[length];
           if (tcp_buffer == nullptr) {
             ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
             break;
@@ -283,15 +281,15 @@ struct ClientHandler {
 
           int tcp_received = 0;
           while (tcp_received < length) {
-            RUN_TASK(this->TryRecv(tcp_buffer + 1 + tcp_received,
-                                   length - tcp_received),
-                     ret);
+            RUN_TASK(
+                this->TryRecv(tcp_buffer + tcp_received, length - tcp_received),
+                ret);
             tcp_received += ret;
           }
 
           if (tcp_received != length) break;
 
-          config::debugger.DataUpdate(cid, tcp_buffer, length);
+          RUN_TASK_V(config::debugger.DataUpdate(cid, tcp_buffer, length));
           break;
         }
 #else

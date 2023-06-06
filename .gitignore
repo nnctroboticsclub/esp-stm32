@@ -7,3 +7,5 @@ build
 components/mdns
 
 .embuild
+
+sdkconfig*
