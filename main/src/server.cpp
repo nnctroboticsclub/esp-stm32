@@ -174,7 +174,7 @@ struct ClientHandler {
 
           RUN_TASK_V(config::loader.Erase(CONFIG_STM32_PROGRAM_START, length));
 
-          uint8_t* tcp_buffer = new unsigned char[1024];
+          uint8_t* tcp_buffer = new unsigned char[0x1000];
           if (tcp_buffer == nullptr) {
             ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
             break;
@@ -183,7 +183,7 @@ struct ClientHandler {
           int end = CONFIG_STM32_PROGRAM_START + length;
           int ptr = CONFIG_STM32_PROGRAM_START;
           while (ptr < end) {
-            RUN_TASK(this->TryRecv(tcp_buffer, 1024), received);
+            RUN_TASK(this->TryRecv(tcp_buffer, 0x1000), received);
 
             config::loader.WriteMemory(ptr, tcp_buffer, received);
             ptr += received;
@@ -331,7 +331,6 @@ void ClientHandlerWrapper(ClientHandler* args) {
     ESP_LOGE(ClientHandler::TAG, "(%3d) Error: %s", args->client,
              ret.Error().what());
     auto raw_error = ret.Error().GetRawError().get();
-    ESP_LOGE(ClientHandler::TAG, "     Type: %s", typeid(raw_error).name());
   }
   close(args->client);
   delete args;
