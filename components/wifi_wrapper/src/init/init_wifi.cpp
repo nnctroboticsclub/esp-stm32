@@ -2,10 +2,9 @@
 
 #include <esp_log.h>
 
-#include "../libs/wifi.hpp"
-#include "../config.hpp"
+#include <wifi.hpp>
 
-void init::init_wifi() {
+void wifi_init::init_wifi() {
   static bool initialized = false;
   if (initialized) return;
   initialized = true;

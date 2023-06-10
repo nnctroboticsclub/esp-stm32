@@ -3,7 +3,7 @@
 #include <esp_log.h>
 #include <esp_netif.h>
 
-void init::init_netif() {
+void wifi_init::init_netif() {
   static bool initialized = false;
   if (initialized) return;
   initialized = true;

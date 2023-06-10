@@ -1,8 +1,9 @@
-#include "wifi.hpp"
+#include <wifi.hpp>
 #include <cstring>
 #include <lwip/netif.h>
 
 #include <esp_log.h>
+#include "init/init.hpp"
 
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
@@ -52,6 +53,8 @@ Wifi::~Wifi() {
 }
 
 void Wifi::Init() {
+  wifi_init::init_eventloop();
+  wifi_init::init_netif();
   this->s_wifi_event_group = xEventGroupCreate();
 
   if (this->is_ap_mode) {
