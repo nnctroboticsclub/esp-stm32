@@ -5,7 +5,9 @@
 namespace config {
 
 NetworkProfile::NetworkProfile(nvs::Namespace* ns)
-    : mode(ns, "mode"),
+    : ns_(ns),
+      mode(ns, "mode"),
+      ip_mode(ns, "ip_mode"),
       name(ns, "name"),
       ssid(ns, "ssid"),
       password(ns, "password"),
@@ -13,6 +15,8 @@ NetworkProfile::NetworkProfile(nvs::Namespace* ns)
       ip(ns, "ip"),
       subnet(ns, "subnet"),
       gateway(ns, "gateway") {}
+
+void NetworkProfile::Save() { this->ns_->Commit(); }
 
 ServerProfile::ServerProfile(nvs::Namespace* ns)
     : ip(ns, "ip"), port(ns, "port") {}

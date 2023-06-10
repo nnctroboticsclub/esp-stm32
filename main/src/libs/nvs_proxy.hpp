@@ -3,6 +3,7 @@
 #include <memory>
 #include <esp_system.h>
 #include <nvs_flash.h>
+#include <string.h>
 namespace nvs {
 class Namespace {
   static constexpr const char* TAG = "nvs::Namespace";
@@ -12,8 +13,11 @@ class Namespace {
   const char* ns;
 
  public:
-  Namespace(const char* ns) : ns(ns) {
-    ESP_LOGI(TAG, "NVS open %s", ns);
+  Namespace(const char* ns) {
+    this->ns = new char[strlen(ns) + 1];
+    strcpy((char*)this->ns, ns);
+
+    ESP_LOGI(TAG, "open %s", ns);
     auto err = nvs_open(ns, NVS_READWRITE, &handle_);
     if (err == ESP_ERR_NVS_NOT_INITIALIZED) {
       nvs_flash_init();
@@ -26,14 +30,19 @@ class Namespace {
     }
   }
   ~Namespace() {
-    ESP_LOGI(TAG, "NVS close %s", this->ns);
+    this->Commit();
+    ESP_LOGI(TAG, "close %s", this->ns);
+    nvs_close(handle_);
+  }
+
+  void Commit() {
+    ESP_LOGI(TAG, "commit %s", ns);
     auto ret = nvs_commit(handle_);
     if (ret != ESP_OK) {
       ESP_LOGE(TAG, "NVS commit failed: %s[%d] %s", esp_err_to_name(ret), ret,
                ns);
-      esp_system_abort("NVS Commit Failed nvs_proxy.hpp:L29");
+      esp_system_abort("NVS Commit Failed nvs_proxy.hpp:L39");
     }
-    nvs_close(handle_);
   }
 };
 class _Proxy {

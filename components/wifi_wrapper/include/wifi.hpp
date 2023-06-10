@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <freertos/event_groups.h>
 #include <esp_event_base.h>
+#include <optional>
 
 namespace app {
 class Wifi {
@@ -14,9 +15,7 @@ class Wifi {
   const char* ssid;
   const char* password;
 
-  esp_ip4_addr_t ip;
-  esp_ip4_addr_t gw;
-  esp_ip4_addr_t mask;
+  std::optional<esp_netif_ip_info_t> static_ip;
 
   EventGroupHandle_t s_wifi_event_group;
 

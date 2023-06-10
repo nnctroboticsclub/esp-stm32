@@ -14,7 +14,11 @@ union Ipv4 {
   uint32_t ip;
   uint8_t ip_bytes[4];
 };
-enum NetworkMode : uint8_t { None, STA, AP };
+enum NetworkMode : uint8_t { None = 0, STA, AP };
+enum IPMode : uint8_t {
+  DHCP = 0,
+  STATIC,
+};
 }  // namespace types
 
 namespace nvs {
@@ -62,13 +66,33 @@ class Proxy<types::NetworkMode> : public Proxy<uint8_t> {
     return *this;
   }
 };
+template <>
+class Proxy<types::IPMode> : public Proxy<uint8_t> {
+ public:
+  using Proxy<uint8_t>::Proxy;
+
+  operator types::IPMode() {
+    types::IPMode value;
+    value = (types::IPMode)Proxy<uint8_t>::operator uint8_t();
+    return value;
+  }
+
+  Proxy& operator=(types::IPMode value) {
+    Proxy<uint8_t>::operator=((uint8_t)value);
+    return *this;
+  }
+};
 }  // namespace nvs
 
 namespace config {
 
 class NetworkProfile {  // a_nw%d
+ private:
+  std::shared_ptr<nvs::Namespace> ns_;
+
  public:
   nvs::Proxy<types::NetworkMode> mode;
+  nvs::Proxy<types::IPMode> ip_mode;
 
   nvs::Proxy<char[20]> name;
 
@@ -83,6 +107,7 @@ class NetworkProfile {  // a_nw%d
 
  public:
   NetworkProfile(nvs::Namespace* ns);
+  void Save();
 };
 
 class ServerProfile {
@@ -129,11 +154,21 @@ class Config {
  public:
   static Config* CreateDefaultConfig();
   static inline Config* GetInstance() {
-    static Config* instance = nullptr;
+    auto& instance = *GetInstancePtr();
     if (instance == nullptr) {
       instance = new Config();
     }
     return instance;
+  }
+  static inline void DeleteInstance() {
+    auto& instance = *GetInstancePtr();
+    delete instance;
+  }
+
+ private:
+  static inline Config** GetInstancePtr() {
+    static Config* instance = nullptr;
+    return &instance;
   }
 };
 

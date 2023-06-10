@@ -53,9 +53,7 @@ void Wifi::event_handler(void* arg, esp_event_base_t event_base,
 Wifi::Wifi()
     : ssid(nullptr),
       password(nullptr),
-      ip{0},
-      gw{0},
-      mask{0},
+      static_ip(std::nullopt),
       s_wifi_event_group(nullptr) {}
 
 Wifi::~Wifi() {
@@ -79,15 +77,20 @@ void Wifi::SetCredentials(const char* ssid, const char* password) {
 
 void Wifi::SetIP(const esp_ip4_addr_t& ip, const esp_ip4_addr_t& gw,
                  const esp_ip4_addr_t& mask) {
-  this->ip = ip;
-  this->gw = gw;
-  this->mask = mask;
+  this->static_ip = (esp_netif_ip_info_t){
+      .ip = ip,
+      .netmask = mask,
+      .gw = gw,
+  };
 }
 
 void Wifi::InitAp() {
   esp_netif_t* netif;
   esp_netif_create_default_wifi_ap();
-  SetIPToNetif("WIFI_AP_DEF", this->ip, this->gw, this->mask);
+  if (this->static_ip) {
+    SetIPToNetif("WIFI_AP_DEF", this->static_ip->ip, this->static_ip->gw,
+                 this->static_ip->netmask);
+  }
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -111,8 +114,10 @@ void Wifi::InitAp() {
 void Wifi::InitSta() {
   esp_netif_t* netif;
   esp_netif_create_default_wifi_sta();
-
-  SetIPToNetif("WIFI_STA_DEF", this->ip, this->gw, this->mask);
+  if (this->static_ip) {
+    SetIPToNetif("WIFI_STA_DEF", this->static_ip->ip, this->static_ip->gw,
+                 this->static_ip->netmask);
+  }
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));

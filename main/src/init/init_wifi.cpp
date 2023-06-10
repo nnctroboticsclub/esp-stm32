@@ -17,9 +17,11 @@ void init::init_wifi() {
   ESP_LOGI(TAG, "Initializing WiFi [%s]", name);
   config::network.InitHW();
   config::network.SetCredentials(profile.ssid, profile.password);
-  config::network.SetIP(profile.ip.ToEspIp4Addr(),
-                        profile.subnet.ToEspIp4Addr(),
-                        profile.gateway.ToEspIp4Addr());
+  if (profile.ip_mode == types::IPMode::STATIC) {
+    config::network.SetIP(profile.ip.ToEspIp4Addr(),
+                          profile.subnet.ToEspIp4Addr(),
+                          profile.gateway.ToEspIp4Addr());
+  }
 
   if (profile.mode == types::NetworkMode::AP) {
     config::network.InitAp();

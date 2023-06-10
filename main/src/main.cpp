@@ -7,16 +7,23 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <nvs.h>
+#include <esp_system.h>
 const char* TAG = "Main";
 
+void ShutdownHandler() {
+  auto reset_reason = esp_reset_reason();
+
+  config::Config::DeleteInstance();
+}
+
 void BootStrap() {
-  nvs_flash_init();
-  nvs_flash_erase();
-  nvs_flash_deinit();
+  esp_register_shutdown_handler(&ShutdownHandler);
+
   auto config = config::Config::GetInstance();
   config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
   config->server_profile.port = 8080;
   config->network_profiles[0].mode = types::NetworkMode::STA;
+  config->network_profiles[0].ip_mode = types::IPMode::DHCP;
   config->network_profiles[0].name = "Network@home";
   config->network_profiles[0].ssid = "";
   config->network_profiles[0].password = "";
