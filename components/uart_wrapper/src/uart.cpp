@@ -5,6 +5,7 @@
 #include <freertos/queue.h>
 
 #include <memory.h>
+#include <sdkconfig.h>
 
 UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
            uart_parity_t parity)
@@ -34,7 +35,7 @@ size_t UART::GetRXBufferDataLength() {
 
 void UART::Flush() { uart_flush_input(this->port); }
 size_t UART::Send(uint8_t* buf, size_t size) {
-#ifdef CONFIG_ENABLE_UART_DEBUG
+#ifdef CONFIG_UART_WRAPPER_ENABLE_DEBUG
   printf("*%d*, %d )--> \n  ", tx, rx);
   if (size > 30) {
     printf("(*snip*)");
@@ -59,7 +60,7 @@ Result<ssize_t> UART::Recv(uint8_t* buf, size_t size, TickType_t timeout) {
     return ESP_ERR_TIMEOUT;
   }
 
-#ifdef CONFIG_ENABLE_UART_DEBUG
+#ifdef CONFIG_UART_WRAPPER_ENABLE_DEBUG
   printf("%d, *%d* )<-- \n  ", tx, rx);
   if (size > 30) {
     printf("(*snip*)");
