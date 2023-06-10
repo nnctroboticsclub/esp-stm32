@@ -37,7 +37,7 @@ void Main() {
 
   config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
   config->server_profile.port = 8080;
-
+  /*
   nvs_iterator_t it;
   auto ret = nvs_entry_find(NVS_DEFAULT_PART_NAME, NULL,
                             nvs_type_t::NVS_TYPE_ANY, &it);
@@ -164,6 +164,7 @@ void Main() {
     nvs_entry_next(&it);
     nvs_close(handle);
   }
+  */
 }
 
 extern "C" int app_main() {
