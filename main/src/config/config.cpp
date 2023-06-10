@@ -4,35 +4,6 @@
 
 namespace config {
 
-NetworkProfile::NetworkProfile(nvs::Namespace* ns)
-    : ns_(ns),
-      mode(ns, "mode"),
-      ip_mode(ns, "ip_mode"),
-      name(ns, "name"),
-      ssid(ns, "ssid"),
-      password(ns, "password"),
-      hostname(ns, "hostname"),
-      ip(ns, "ip"),
-      subnet(ns, "subnet"),
-      gateway(ns, "gateway") {}
-
-void NetworkProfile::Save() { this->ns_->Commit(); }
-
-ServerProfile::ServerProfile(nvs::Namespace* ns)
-    : ip(ns, "ip"), port(ns, "port") {}
-
-STM32BootLoaderProfile::STM32BootLoaderProfile(nvs::Namespace* ns)
-    : reset(ns, "reset"),
-      boot0(ns, "boot0"),
-      uart_port(ns, "uart_port"),
-      uart_tx(ns, "uart_tx"),
-      uart_rx(ns, "uart_rx") {}
-
-STM32RemoteControllerProfile::STM32RemoteControllerProfile(nvs::Namespace* ns)
-    : uart_port(ns, "uart_port"),
-      uart_tx(ns, "uart_tx"),
-      uart_rx(ns, "uart_rx") {}
-
 Config::Config()
     : network_profiles{
           NetworkProfile(new nvs::Namespace("a_nw0")),
