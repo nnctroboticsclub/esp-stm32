@@ -1,9 +1,13 @@
+#pragma once
+
 #include <nvs.h>
 #include <esp_log.h>
 #include <memory>
 #include <esp_system.h>
 #include <nvs_flash.h>
 #include <string.h>
+#include <driver/gpio.h>
+
 namespace nvs {
 class Namespace {
   static constexpr const char* TAG = "nvs::Namespace";
@@ -175,6 +179,21 @@ class Proxy<char[N]> : public _Proxy {
 
   Proxy& operator=(const char* value) {
     nvs_set_str(ns_->handle_, key_, value);
+    return *this;
+  }
+};
+
+template <>
+class Proxy<gpio_num_t> : public Proxy<uint8_t> {
+ public:
+  using Proxy<uint8_t>::Proxy;
+
+  operator gpio_num_t() {
+    return (gpio_num_t)Proxy<uint8_t>::operator uint8_t();
+  }
+
+  Proxy& operator=(gpio_num_t value) {
+    Proxy<uint8_t>::operator=(value);
     return *this;
   }
 };

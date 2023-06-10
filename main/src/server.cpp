@@ -5,7 +5,7 @@
 #include <optional>
 
 #include <result.hpp>
-#include "config.hpp"
+#include "config/config.hpp"
 
 namespace {
 struct ClientHandler {
@@ -345,7 +345,7 @@ void Server::ClientLoop(void* obj) {
     auto client = accept(server->server_sock, NULL, NULL);
     if (client < 0) {
       ESP_LOGE(TAG, "Failed to accept client.");
-      continue;
+      break;
     }
 
     ESP_LOGI(TAG, "Connection established.");

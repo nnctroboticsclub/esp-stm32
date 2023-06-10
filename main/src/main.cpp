@@ -1,6 +1,6 @@
 #include <esp_log.h>
 
-#include "./config.hpp"
+#include "config/config.hpp"
 #include "init/init.hpp"
 #include "bin.h"
 
@@ -32,24 +32,27 @@ void BootStrap() {
   config->network_profiles[0].subnet = 0;
   config->network_profiles[0].gateway = 0;
   config->active_network_profile = 0;
+  config->stm32_bootloader_profile.reset = GPIO_NUM_19;
+  config->stm32_bootloader_profile.boot0 = GPIO_NUM_21;
+  config->stm32_bootloader_profile.uart_port = 1;
+  config->stm32_bootloader_profile.uart_tx = GPIO_NUM_5;
+  config->stm32_bootloader_profile.uart_rx = GPIO_NUM_4;
+  // init::init_data_server();
 
-  init::init_data_server();
-
-#ifdef CONFIG_STM32_BOOTLOADER_DRIVER
-  xTaskCreate((TaskFunction_t)([](void* args) {
-                while (1) {
-                  vTaskDelay(50 / portTICK_PERIOD_MS);
-                  ((DebuggerMaster*)args)->Idle();
-                }
-                return;
-              }),
-              "Debugger Idling Thread", 0x1000, &config::debugger, 1, nullptr);
-#endif
+  // xTaskCreate((TaskFunction_t)([](void* args) {
+  //             while (1) {
+  //               vTaskDelay(50 / portTICK_PERIOD_MS);
+  //               ((DebuggerMaster*)args)->Idle();
+  //             }
+  //             return;
+  //           }),
+  //           "Debugger Idling Thread", 0x1000, &config::debugger, 1,
+  //           nullptr);
 }
 
 void Main() {
-  ESP_LOGI(TAG, "Entering the Server's ClientLoop");
-  config::server.StartClientLoopAtForeground();
+  // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
+  // config::server.StartClientLoopAtForeground();
 
   /*
   nvs_iterator_t it;

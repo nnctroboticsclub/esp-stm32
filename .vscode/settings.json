@@ -1,8 +1,8 @@
 {
   "explorer.fileNesting.patterns": {
     "Cargo.toml": "Cargo.lock",
-    "*.c": "$(capture).h",
-    "*.cpp": "$(capture).hpp"
+    "*.h": "$(capture).c",
+    "*.hpp": "$(capture).cpp"
   },
   "files.associations": {
     "*.meson": "meson",

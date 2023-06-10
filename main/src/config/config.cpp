@@ -1,6 +1,8 @@
 #include "config.hpp"
-#include "init/init.hpp"
+#include "../init/init.hpp"
 #include <nvs.h>
+
+using namespace profile;
 
 namespace config {
 
@@ -17,19 +19,7 @@ Config::Config()
       stm32_bootloader_profile(new nvs::Namespace("a_s32bl")),
       stm32_remote_controller_profile(new nvs::Namespace("a_s32rc")) {}
 
-#ifdef CONFIG_STM32_BOOTLOADER_DRIVER
-STMBootLoader loader((gpio_num_t)CONFIG_STM32_BOOTLOADER_RESET,
-                     (gpio_num_t)CONFIG_STM32_BOOTLOADER_BOOT0,
-                     CONFIG_STM32_BOOTLOADER_UART,
-                     CONFIG_STM32_BOOTLOADER_UART_TX,
-                     CONFIG_STM32_BOOTLOADER_UART_RX);
-#endif
-
-#ifdef CONFIG_STM32_REMOTE_CONTROLLER_DRIVER
-DebuggerMaster debugger(CONFIG_STM32_REMOTE_CONTROLLER_UART,
-                        CONFIG_STM32_REMOTE_CONTROLLER_TX,
-                        CONFIG_STM32_REMOTE_CONTROLLER_RX);
-#endif
+// DebuggerMaster debugger(UART_NUM_2, 11, 12);
 
 app::Wifi network;
 

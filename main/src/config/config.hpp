@@ -3,11 +3,11 @@
 #define CONFIG_HPP
 
 #include <string>
-#include "libs/nvs_proxy.hpp"
+#include "../libs/nvs_proxy.hpp"
 
 #include <stmbootloader.hpp>
 #include <wifi.hpp>
-#include "server.hpp"
+#include "../server.hpp"
 #include <debugger_master.hpp>
 
 #include "network_profile.hpp"
@@ -52,8 +52,6 @@ class Config {
   }
 };
 
-extern STMBootLoader loader;
-extern DebuggerMaster debugger;
 extern app::Wifi network;
 extern Server server;
 }  // namespace config

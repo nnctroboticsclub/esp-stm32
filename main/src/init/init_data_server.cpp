@@ -3,7 +3,7 @@
 #include <esp_log.h>
 #include <esp_event.h>
 
-#include "../config.hpp"
+#include "../config/config.hpp"
 
 void init::init_data_server() {
   static bool initialized = false;

@@ -1,6 +1,6 @@
 #include "init.hpp"
 
-#include "../config.hpp"
+#include "../config/config.hpp"
 
 #include <esp_log.h>
 
