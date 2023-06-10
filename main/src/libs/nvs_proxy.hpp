@@ -13,6 +13,7 @@ class Namespace {
 
  public:
   Namespace(const char* ns) : ns(ns) {
+    ESP_LOGI(TAG, "NVS open %s", ns);
     auto err = nvs_open(ns, NVS_READWRITE, &handle_);
     if (err == ESP_ERR_NVS_NOT_INITIALIZED) {
       nvs_flash_init();
@@ -154,7 +155,7 @@ class Proxy<char[N]> : public _Proxy {
     }
 
     char* value = new char[N];
-    ret = nvs_get_str(ns_->handle_, key_, value, NULL);
+    ret = nvs_get_str(ns_->handle_, key_, value, &len);
     if (ret != ESP_OK) {
       ESP_LOGE(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
                key_);

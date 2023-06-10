@@ -10,8 +10,10 @@
 const char* TAG = "Main";
 
 void BootStrap() {
+  nvs_flash_init();
+  nvs_flash_erase();
+  nvs_flash_deinit();
   auto config = config::Config::GetInstance();
-
   config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
   config->server_profile.port = 8080;
   config->network_profiles[0].mode = types::NetworkMode::STA;

@@ -56,19 +56,20 @@ Wifi::Wifi()
       ip{0},
       gw{0},
       mask{0},
-      s_wifi_event_group(nullptr) {
+      s_wifi_event_group(nullptr) {}
+
+Wifi::~Wifi() {
+  vEventGroupDelete(this->s_wifi_event_group);
+  esp_wifi_stop();
+  esp_wifi_deinit();
+}
+void Wifi::InitHW() {
   wifi_init::init_nvs();
   ESP_LOGI(TAG, "Creating Wi-Fi event group");
   this->s_wifi_event_group = xEventGroupCreate();
 
   wifi_init::init_netif();
   wifi_init::init_eventloop();
-}
-
-Wifi::~Wifi() {
-  vEventGroupDelete(this->s_wifi_event_group);
-  esp_wifi_stop();
-  esp_wifi_deinit();
 }
 
 void Wifi::SetCredentials(const char* ssid, const char* password) {
@@ -116,8 +117,11 @@ void Wifi::InitSta() {
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+  esp_event_handler_instance_t dummy;
   ESP_ERROR_CHECK(esp_event_handler_instance_register(
-      WIFI_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this, NULL));
+      WIFI_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this, &dummy));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(
+      IP_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this, &dummy));
 
   wifi_config_t wifi_config{};
   strncpy((char*)wifi_config.sta.ssid, this->ssid,

@@ -34,6 +34,7 @@ class Wifi {
   void SetIP(const esp_ip4_addr_t& ip, const esp_ip4_addr_t& gw,
              const esp_ip4_addr_t& mask);
 
+  void InitHW();
   void InitAp();
   void InitSta();
 

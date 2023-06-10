@@ -39,8 +39,8 @@ Config::Config()
       },
       active_network_profile(new nvs::Namespace("a_conf"), "active_nw"),
       server_profile(new nvs::Namespace("a_srv")),
-      stm32_bootloader_profile(new nvs::Namespace("a_stm32_bl")),
-      stm32_remote_controller_profile(new nvs::Namespace("a_stm32_rc")) {}
+      stm32_bootloader_profile(new nvs::Namespace("a_s32bl")),
+      stm32_remote_controller_profile(new nvs::Namespace("a_s32rc")) {}
 
 #ifdef CONFIG_STM32_BOOTLOADER_DRIVER
 STMBootLoader loader((gpio_num_t)CONFIG_STM32_BOOTLOADER_RESET,
