@@ -10,7 +10,6 @@ void init::init_data_server() {
   if (initialized) return;
   initialized = true;
 
-#ifdef CONFIG_USE_DATA_SERVER
   init_wifi();
 
   ESP_LOGI(TAG, "Initializing DataServer(TCP[4007])");
@@ -25,7 +24,4 @@ void init::init_data_server() {
     ESP_LOGE(TAG, "Failed to listen server.");
     return;
   }
-#else
-  ESP_LOGW(TAG, "DataServer is disabled.");
-#endif
 }

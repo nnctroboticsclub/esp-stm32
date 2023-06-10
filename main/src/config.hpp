@@ -5,22 +5,10 @@
 #include <string>
 #include "libs/nvs_proxy.hpp"
 
-#ifdef CONFIG_STM32_BOOTLOADER_DRIVER
-#include "libs/stmbootloader.hpp"
-#endif
-
-#ifdef CONFIG_USE_NETWORK
-#include "libs/wifi.hpp"
-#endif
-
-#ifdef CONFIG_USE_DATA_SERVER
+#include <stmbootloader.hpp>
+#include <wifi.hpp>
 #include "server.hpp"
-#endif
-
-#ifdef CONFIG_STM32_REMOTE_CONTROLLER_DRIVER
-#include "libs/debugger_master.hpp"
-#endif
-
+#include <debugger_master.hpp>
 namespace types {
 union Ipv4 {
   uint32_t ip;
@@ -44,6 +32,17 @@ class Proxy<types::Ipv4> : public Proxy<uint32_t> {
   Proxy& operator=(types::Ipv4 value) {
     Proxy<uint32_t>::operator=(value.ip);
     return *this;
+  }
+
+  Proxy& operator=(uint32_t value) {
+    *this = (types::Ipv4){.ip = value};
+    return *this;
+  }
+
+  esp_ip4_addr_t ToEspIp4Addr() {
+    esp_ip4_addr_t addr;
+    addr.addr = Proxy<uint32_t>::operator uint32_t();
+    return addr;
   }
 };
 
@@ -81,7 +80,6 @@ class NetworkProfile {  // a_nw%d
   nvs::Proxy<types::Ipv4> ip;
   nvs::Proxy<types::Ipv4> subnet;
   nvs::Proxy<types::Ipv4> gateway;
-  nvs::Proxy<types::Ipv4> dns;
 
  public:
   NetworkProfile(nvs::Namespace* ns);
@@ -139,21 +137,10 @@ class Config {
   }
 };
 
-#ifdef CONFIG_STM32_BOOTLOADER_DRIVER
 extern STMBootLoader loader;
-#endif
-
-#ifdef CONFIG_STM32_REMOTE_CONTROLLER_DRIVER
 extern DebuggerMaster debugger;
-#endif
-
-#ifdef CONFIG_USE_NETWORK
 extern app::Wifi network;
-#endif
-
-#ifdef CONFIG_USE_DATA_SERVER
 extern Server server;
-#endif
 }  // namespace config
 
 #endif

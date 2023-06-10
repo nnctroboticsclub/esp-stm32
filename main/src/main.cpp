@@ -10,11 +10,21 @@
 const char* TAG = "Main";
 
 void BootStrap() {
-// init::init_serial();
-#ifdef CONFIG_USE_NETWORK
-  init::init_mdns();
+  auto config = config::Config::GetInstance();
+
+  config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
+  config->server_profile.port = 8080;
+  config->network_profiles[0].mode = types::NetworkMode::STA;
+  config->network_profiles[0].name = "Network@home";
+  config->network_profiles[0].ssid = "";
+  config->network_profiles[0].password = "";
+  config->network_profiles[0].hostname = "esp32-0610";
+  config->network_profiles[0].ip = 0;
+  config->network_profiles[0].subnet = 0;
+  config->network_profiles[0].gateway = 0;
+  config->active_network_profile = 0;
+
   init::init_data_server();
-#endif
 
 #ifdef CONFIG_STM32_BOOTLOADER_DRIVER
   xTaskCreate((TaskFunction_t)([](void* args) {
@@ -29,14 +39,9 @@ void BootStrap() {
 }
 
 void Main() {
-#ifdef CONFIG_USE_DATA_SERVER
   ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   config::server.StartClientLoopAtForeground();
-#endif
-  auto config = config::Config::GetInstance();
 
-  config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
-  config->server_profile.port = 8080;
   /*
   nvs_iterator_t it;
   auto ret = nvs_entry_find(NVS_DEFAULT_PART_NAME, NULL,

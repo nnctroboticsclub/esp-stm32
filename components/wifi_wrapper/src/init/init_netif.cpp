@@ -11,6 +11,5 @@ void wifi_init::init_netif() {
   init_nvs();
 
   ESP_LOGI(TAG, "Initializing Net If");
-
   ESP_ERROR_CHECK(esp_netif_init());
 }

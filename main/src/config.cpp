@@ -12,8 +12,7 @@ NetworkProfile::NetworkProfile(nvs::Namespace* ns)
       hostname(ns, "hostname"),
       ip(ns, "ip"),
       subnet(ns, "subnet"),
-      gateway(ns, "gateway"),
-      dns(ns, "dns") {}
+      gateway(ns, "gateway") {}
 
 ServerProfile::ServerProfile(nvs::Namespace* ns)
     : ip(ns, "ip"), port(ns, "port") {}
@@ -57,11 +56,7 @@ DebuggerMaster debugger(CONFIG_STM32_REMOTE_CONTROLLER_UART,
                         CONFIG_STM32_REMOTE_CONTROLLER_RX);
 #endif
 
-#ifdef CONFIG_USE_NETWORK
-app::Wifi network(CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
-#endif
+app::Wifi network;
 
-#ifdef CONFIG_USE_DATA_SERVER
 Server server;
-#endif
 }  // namespace config

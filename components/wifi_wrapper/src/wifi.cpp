@@ -8,7 +8,28 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
+namespace {
+constexpr const char* TAG = "Wi-Fi Lib Functions";
+void SetIPToNetif(const char* netif_name, esp_ip4_addr_t ip, esp_ip4_addr_t gw,
+                  esp_ip4_addr_t mask) {
+  ESP_LOGI(TAG, "Setting IP to netif %s", netif_name);
+  ESP_LOGI(TAG, "  - IP: " IPSTR, IP2STR(&ip));
+  ESP_LOGI(TAG, "  - GW: " IPSTR, IP2STR(&gw));
+  ESP_LOGI(TAG, "  - MASK: " IPSTR, IP2STR(&mask));
+  esp_netif_t* netif = esp_netif_get_handle_from_ifkey(netif_name);
+  esp_netif_dhcpc_stop(netif);
+  esp_netif_ip_info_t ip_info{
+      .ip = ip,
+      .netmask = mask,
+      .gw = gw,
+  };
+
+  esp_netif_set_ip_info(netif, &ip_info);
+}
+}  // namespace
+
 namespace app {
+
 void Wifi::event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data) {
   Wifi& that = *static_cast<Wifi*>(arg);
@@ -24,27 +45,25 @@ void Wifi::event_handler(void* arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "Connected to Wi-Fi AP");
     ESP_LOGI(TAG, "  - IP: " IPSTR, IP2STR(&event->ip_info.ip));
     xEventGroupSetBits(that.s_wifi_event_group, WIFI_CONNECTED_BIT);
-  }
-}
-void Wifi::EventLoopTask(void* pvWifi) {
-  Wifi& wifi = *reinterpret_cast<Wifi*>(pvWifi);
-
-  while (true) {
-    auto a = xEventGroupWaitBits(wifi.s_wifi_event_group, 0x00ffffff, pdFALSE,
-                                 pdTRUE, portMAX_DELAY);
-    ESP_LOGD(TAG, "EventLoopTask: bits = %#08lx", a);
+  } else {
+    ESP_LOGI(TAG, "UNEXPECTED EVENT base: %s, id: %lu", event_base, event_id);
   }
 }
 
-#ifdef CONFIG_NETWORK_MODE_AP
-Wifi::Wifi(const char* ssid, const char* password)
-    : ssid(ssid), password(password), is_ap_mode(true) {}
-#endif
+Wifi::Wifi()
+    : ssid(nullptr),
+      password(nullptr),
+      ip{0},
+      gw{0},
+      mask{0},
+      s_wifi_event_group(nullptr) {
+  wifi_init::init_nvs();
+  ESP_LOGI(TAG, "Creating Wi-Fi event group");
+  this->s_wifi_event_group = xEventGroupCreate();
 
-#ifdef CONFIG_NETWORK_MODE_STA
-Wifi::Wifi(const char* ssid, const char* password)
-    : ssid(ssid), password(password), is_ap_mode(false) {}
-#endif
+  wifi_init::init_netif();
+  wifi_init::init_eventloop();
+}
 
 Wifi::~Wifi() {
   vEventGroupDelete(this->s_wifi_event_group);
@@ -52,101 +71,68 @@ Wifi::~Wifi() {
   esp_wifi_deinit();
 }
 
-void Wifi::Init() {
-  wifi_init::init_eventloop();
-  wifi_init::init_netif();
-  this->s_wifi_event_group = xEventGroupCreate();
+void Wifi::SetCredentials(const char* ssid, const char* password) {
+  this->ssid = ssid;
+  this->password = password;
+}
 
-  if (this->is_ap_mode) {
-    esp_netif_create_default_wifi_ap();
-  } else {
-    esp_netif_create_default_wifi_sta();
+void Wifi::SetIP(const esp_ip4_addr_t& ip, const esp_ip4_addr_t& gw,
+                 const esp_ip4_addr_t& mask) {
+  this->ip = ip;
+  this->gw = gw;
+  this->mask = mask;
+}
 
-    auto netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
-    esp_netif_dhcpc_stop(netif);
-
-    esp_netif_ip_info_t ip_info;
-
-    ip_info.ip.addr = ipaddr_addr("172.16.34.90");
-    ip_info.gw.addr = ipaddr_addr("172.16.34.254");
-    ip_info.netmask.addr = ipaddr_addr("255.255.255.00");
-
-    esp_netif_set_ip_info(netif, &ip_info);
-  }
+void Wifi::InitAp() {
+  esp_netif_t* netif;
+  esp_netif_create_default_wifi_ap();
+  SetIPToNetif("WIFI_AP_DEF", this->ip, this->gw, this->mask);
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-}
 
-void Wifi::Setup() {
-  esp_event_handler_instance_t instance_any_id;
   ESP_ERROR_CHECK(esp_event_handler_instance_register(
-      WIFI_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this,
-      &instance_any_id));
+      WIFI_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this, NULL));
 
-  esp_event_handler_instance_t instance_got_ip;
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(
-      IP_EVENT, IP_EVENT_STA_GOT_IP, &Wifi::event_handler, (void*)this,
-      &instance_got_ip));
-}
-
-void Wifi::ConnectToAP() {
-  wifi_config_t wifi_config = {
-      .sta =
-          {
-              .ssid = "",
-              .password = "",
-              .threshold =
-                  {
-                      .authmode = WIFI_AUTH_WPA_WPA2_PSK,
-                  },
-
-              .pmf_cfg = {.capable = true, .required = false},
-          },
-  };
-  strncpy((char*)wifi_config.sta.ssid, this->ssid,
-          sizeof(wifi_config.sta.ssid));
-  strncpy((char*)wifi_config.sta.password, this->password,
-          sizeof(wifi_config.sta.password));
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-  ESP_ERROR_CHECK(esp_wifi_start());
-}
-void Wifi::ConnectMake() {
-  wifi_config_t wifi_config = {
-      .ap =
-          {
-              .ssid = "",
-              .password = "",
-              .channel = 11,
-              .authmode = WIFI_AUTH_WPA_WPA2_PSK,
-              .max_connection = 11,
-          },
-  };
-
+  wifi_config_t wifi_config{};
   strncpy((char*)wifi_config.ap.ssid, this->ssid, sizeof(wifi_config.ap.ssid));
   strncpy((char*)wifi_config.ap.password, this->password,
           sizeof(wifi_config.ap.password));
-
   wifi_config.ap.ssid_len = strlen(this->ssid);
+  wifi_config.ap.channel = 11;
+  wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+  wifi_config.ap.max_connection = 11;
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 }
+void Wifi::InitSta() {
+  esp_netif_t* netif;
+  esp_netif_create_default_wifi_sta();
 
-void Wifi::Connect() {
-  if (this->is_ap_mode) {
-    this->ConnectMake();
-  } else {
-    this->ConnectToAP();
-  }
+  SetIPToNetif("WIFI_STA_DEF", this->ip, this->gw, this->mask);
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(
+      WIFI_EVENT, ESP_EVENT_ANY_ID, &Wifi::event_handler, (void*)this, NULL));
+
+  wifi_config_t wifi_config{};
+  strncpy((char*)wifi_config.sta.ssid, this->ssid,
+          sizeof(wifi_config.sta.ssid));
+  strncpy((char*)wifi_config.sta.password, this->password,
+          sizeof(wifi_config.sta.password));
+  wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+  wifi_config.sta.pmf_cfg.capable = true;
+  wifi_config.sta.pmf_cfg.required = false;
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
 }
 
 void Wifi::WaitConnection() {
-  if (this->is_ap_mode) {
-    return;
-  }
   EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                          pdFALSE, pdFALSE, portMAX_DELAY);
@@ -158,10 +144,5 @@ void Wifi::WaitConnection() {
     ESP_LOGE(TAG, "UNEXPECTED EVENT bits: %#08lx", bits);
     exit(1);
   }
-}
-void Wifi::StartEventLoop() {
-  TaskHandle_t handle;
-  xTaskCreate(Wifi::EventLoopTask, "Wifi Eventloop", 0x10000,
-              reinterpret_cast<void*>(this), 1, &handle);
 }
 }  // namespace app

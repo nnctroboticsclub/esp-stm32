@@ -13,28 +13,31 @@ class Wifi {
   static constexpr const char* TAG = "Wi-Fi";
   const char* ssid;
   const char* password;
+
+  esp_ip4_addr_t ip;
+  esp_ip4_addr_t gw;
+  esp_ip4_addr_t mask;
+
   EventGroupHandle_t s_wifi_event_group;
 
   static void event_handler(void* arg, esp_event_base_t event_base,
                             int32_t event_id, void* event_data);
   static void EventLoopTask(void* pvWifi);
 
-  bool is_ap_mode;
-
-  void ConnectToAP();
-  void ConnectMake();
+  void InitNetif();
 
  public:
-  Wifi(const char* ssid, const char* password);
+  Wifi();
   ~Wifi();
-  void Init();
-  void Setup();
-  void Connect();
 
-  void WaitConnection();
-  void StartEventLoop();
+  void SetCredentials(const char* ssid, const char* password);
+  void SetIP(const esp_ip4_addr_t& ip, const esp_ip4_addr_t& gw,
+             const esp_ip4_addr_t& mask);
 
-  bool IsAPMode();
+  void InitAp();
+  void InitSta();
+
+  void WaitConnection();  // For sta mode!
 };
 }  // namespace app
 
