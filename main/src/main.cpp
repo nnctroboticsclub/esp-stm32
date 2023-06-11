@@ -35,8 +35,8 @@ void BootStrap() {
   config->stm32_bootloader_profile.reset = GPIO_NUM_19;
   config->stm32_bootloader_profile.boot0 = GPIO_NUM_21;
   config->stm32_bootloader_profile.uart_port = 1;
-  config->stm32_bootloader_profile.uart_tx = GPIO_NUM_5;
-  config->stm32_bootloader_profile.uart_rx = GPIO_NUM_4;
+  config->stm32_bootloader_profile.uart_tx = GPIO_NUM_17;  // TX2
+  config->stm32_bootloader_profile.uart_rx = GPIO_NUM_16;  // RX2
   // init::init_data_server();
 
   // xTaskCreate((TaskFunction_t)([](void* args) {
