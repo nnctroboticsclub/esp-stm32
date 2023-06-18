@@ -152,6 +152,41 @@ class SPI_STM32BL {
     return TaskResult::Ok();
   }
 
+  TaskResult CommandHeader(uint8_t cmd) {
+    uint8_t buf[] = {0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
+
+    RUN_TASK_V(this->device.Transfer(buf, 1));
+    RUN_TASK_V(this->device.Transfer(buf + 1, 1));
+    RUN_TASK_V(this->device.Transfer(buf + 2, 1));
+
+    if (buf[2] != 0x79) {
+      ESP_LOGW(TAG, "Command Header - buf[2] %#02x != 0x79", buf[2]);
+    }
+
+    RUN_TASK_V(this->WaitACKFrame());
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult ReadData(uint8_t* buf, size_t size) {
+    uint8_t dummy = 0;
+    RUN_TASK_V(this->device.Transfer(&dummy, 1));
+
+    memset(buf, 0x77, size);
+
+    RUN_TASK_V(this->device.Transfer(buf, size));
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult ReadDataWithoutHeader(uint8_t* buf, size_t size) {
+    memset(buf, 0x77, size);
+
+    RUN_TASK_V(this->device.Transfer(buf, size));
+
+    return TaskResult::Ok();
+  }
+
  public:
   SPI_STM32BL(gpio_num_t reset, gpio_num_t boot0, SPIMaster& spi_master, int cs)
       : device(spi_master.NewDevice(cs)), reset(reset), boot0(boot0) {
@@ -170,64 +205,33 @@ class SPI_STM32BL {
       ret = this->Synchronization();
     }
 
-    {
-      RUN_TASK_V(this->CommandHeader(0x01));
-
-      uint8_t buf1 = 0x00;
-      RUN_TASK_V(this->ReadData(&buf1, 1));
-
-      RUN_TASK_V(this->WaitACKFrame());
-
-      // uint8_t* buf2 = new uint8_t[buf[1]];
-      // memset(buf2, 0x00, buf[1]);
-      // buf2[2] = 0x79;
-      // RUN_TASK_V(this->device.Transfer(buf2, buf[1]));
-      //
-      // this->commands.get = buf2[0];
-      // this->commands.get_version = buf2[1];
-      // this->commands.get_id = buf2[2];
-      // this->commands.read_memory = buf2[3];
-      // this->commands.go = buf2[4];
-      // this->commands.write_memory = buf2[5];
-      // this->commands.write_protect = buf2[6];
-      // this->commands.write_unprotect = buf2[7];
-      // this->commands.readout_protect = buf2[8];
-      // this->commands.readout_unprotect = buf2[9];
-      // if (buf[1] >= 0x0c) {
-      //   this->commands.get_checksum = buf2[10];
-      // }
-    }
-
     return TaskResult::Ok();
   }
 
-  TaskResult CommandHeader(uint8_t cmd) {
-    uint8_t buf[] = {0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
+  TaskResult Get() {
+    RUN_TASK_V(this->CommandHeader(0x00));
 
-    RUN_TASK_V(this->device.Transfer(buf, 1));
-    RUN_TASK_V(this->device.Transfer(buf + 1, 1));
-    RUN_TASK_V(this->device.Transfer(buf + 2, 1));
-
-    if (buf[2] != 0x79) {
-      ESP_LOGE(TAG, "Command Header - buf[2] != 0x79 (actually: %#02x)",
-               buf[2]);
-      // return ESP_ERR_INVALID_RESPONSE;
-    }
+    uint8_t buf[0x10]{};
+    RUN_TASK_V(this->ReadData(buf, 2));
+    RUN_TASK_V(this->ReadDataWithoutHeader(buf + 2, buf[0]));
 
     RUN_TASK_V(this->WaitACKFrame());
 
-    return TaskResult::Ok();
-  }
+    ESP_LOGI(TAG, "Bootloader version: %d.%d", buf[1] >> 4, buf[1] & 0x0f);
 
-  TaskResult ReadData(uint8_t* buf, size_t size) {
-    uint8_t dummy = 0;
-    RUN_TASK_V(this->device.Transfer(&dummy, 1));
-
-    memset(buf, 0x77, size);
-
-    RUN_TASK_V(this->device.Transfer(buf, size));
-
-    return TaskResult::Ok();
+    this->commands.get = buf[2];
+    this->commands.get_version = buf[3];
+    this->commands.get_id = buf[4];
+    this->commands.read_memory = buf[5];
+    this->commands.go = buf[6];
+    this->commands.write_memory = buf[7];
+    this->commands.write_protect = buf[8];
+    this->commands.write_unprotect = buf[9];
+    this->commands.readout_protect = buf[10];
+    this->commands.readout_unprotect = buf[11];
+    if (buf[0] >= 0x0c) {
+      this->commands.get_checksum = buf[12];
+    }
   }
 };
 
@@ -240,6 +244,7 @@ TaskResult Main() {
   SPI_STM32BL bl(GPIO_NUM_27, GPIO_NUM_26, master, 5);
 
   bl.Connect();
+  bl.Get();
 
   /*
   nvs_iterator_t it;

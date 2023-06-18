@@ -55,24 +55,24 @@ class SPIDevice {
     // ret = spi_device_polling_transmit(this->device, &a);
     // if (ret != ESP_OK) return ret;
 
-    if (size == a.rxlength / 8) {
-      for (size_t i = 0; i < size; i++) {
-        printf("%02X <=> %2X\n", buf[i], ((uint8_t*)buffer)[i]);
-      }
-    } else {
-      printf("Sending: \n  ");
-      for (size_t i = 0; i < size; i++) {
-        printf("%02X ", buf[i]);
-        if (i % 16 == 15) printf("\n  ");
-      }
-      printf("\n");
-      printf("Received:\n  ");
-      for (size_t i = 0; i < a.rxlength / 8; i++) {
-        printf("%02x ", buf[i]);
-        if (i % 16 == 15) printf("\n  ");
-      }
-      printf("\n");
-    }
+    // if (size == a.rxlength / 8) {
+    //   for (size_t i = 0; i < size; i++) {
+    //     printf("%02X <=> %2X\n", buf[i], ((uint8_t*)buffer)[i]);
+    //   }
+    // } else {
+    //   printf("Sending: \n  ");
+    //   for (size_t i = 0; i < size; i++) {
+    //     printf("%02X ", buf[i]);
+    //     if (i % 16 == 15) printf("\n  ");
+    //   }
+    //   printf("\n");
+    //   printf("Received:\n  ");
+    //   for (size_t i = 0; i < a.rxlength / 8; i++) {
+    //     printf("%02x ", buf[i]);
+    //     if (i % 16 == 15) printf("\n  ");
+    //   }
+    //   printf("\n");
+    // }
 
     memcpy(buf, buffer, size);
     delete buffer;
