@@ -8,35 +8,50 @@
 #include <freertos/task.h>
 #include <nvs.h>
 #include <esp_system.h>
+
+#include "spi.hpp"
+#include "libs/gpio.hpp"
 const char* TAG = "Main";
 
-void ShutdownHandler() {
-  auto reset_reason = esp_reset_reason();
+class UserButton {
+  static constexpr const char* TAG = "UserButton";
 
-  config::Config::DeleteInstance();
-}
+ private:
+  gpio_num_t pin;
+
+ public:
+  UserButton(gpio_num_t button) : pin(button) {
+    ESP_LOGI(TAG, "Setting GPIO %d as input", button);
+    gpio_set_direction(button, GPIO_MODE_INPUT);
+  }
+
+  void WaitUntilPressed() {
+    while (gpio_get_level(this->pin) == 0) vTaskDelay(50 / portTICK_PERIOD_MS);
+
+    while (gpio_get_level(this->pin) == 1) vTaskDelay(50 / portTICK_PERIOD_MS);
+  }
+};
 
 void BootStrap() {
-  esp_register_shutdown_handler(&ShutdownHandler);
+  // auto config = config::Config::GetInstance();
+  // config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
+  // config->server_profile.port = 8080;
+  // config->network_profiles[0].mode = types::NetworkMode::STA;
+  // config->network_profiles[0].ip_mode = types::IPMode::DHCP;
+  // config->network_profiles[0].name = "Network@home";
+  // config->network_profiles[0].ssid = "";
+  // config->network_profiles[0].password = "";
+  // config->network_profiles[0].hostname = "esp32-0610";
+  // config->network_profiles[0].ip = 0;
+  // config->network_profiles[0].subnet = 0;
+  // config->network_profiles[0].gateway = 0;
+  // config->active_network_profile = 0;
+  // config->stm32_bootloader_profile.reset = GPIO_NUM_19;
+  // config->stm32_bootloader_profile.boot0 = GPIO_NUM_21;
+  // config->stm32_bootloader_profile.uart_port = 1;
+  // config->stm32_bootloader_profile.uart_tx = GPIO_NUM_17;  // TX2
+  // config->stm32_bootloader_profile.uart_rx = GPIO_NUM_16;  // RX2
 
-  auto config = config::Config::GetInstance();
-  config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
-  config->server_profile.port = 8080;
-  config->network_profiles[0].mode = types::NetworkMode::STA;
-  config->network_profiles[0].ip_mode = types::IPMode::DHCP;
-  config->network_profiles[0].name = "Network@home";
-  config->network_profiles[0].ssid = "";
-  config->network_profiles[0].password = "";
-  config->network_profiles[0].hostname = "esp32-0610";
-  config->network_profiles[0].ip = 0;
-  config->network_profiles[0].subnet = 0;
-  config->network_profiles[0].gateway = 0;
-  config->active_network_profile = 0;
-  config->stm32_bootloader_profile.reset = GPIO_NUM_19;
-  config->stm32_bootloader_profile.boot0 = GPIO_NUM_21;
-  config->stm32_bootloader_profile.uart_port = 1;
-  config->stm32_bootloader_profile.uart_tx = GPIO_NUM_17;  // TX2
-  config->stm32_bootloader_profile.uart_rx = GPIO_NUM_16;  // RX2
   // init::init_data_server();
 
   // xTaskCreate((TaskFunction_t)([](void* args) {
@@ -50,9 +65,181 @@ void BootStrap() {
   //           nullptr);
 }
 
-void Main() {
+class SPI_STM32BL {
+  static constexpr const char* TAG = "STM32 BootLoader[SPI]";
+
+ public:  // Debug public.
+  SPIDevice device;
+
+ private:
+  enum ACK : uint8_t {
+    ACK = 0x79,
+    NACK = 0x1f,
+  };
+  struct {
+    uint8_t get;
+    uint8_t get_version;
+    uint8_t get_id;
+    uint8_t read_memory;
+    uint8_t go;
+    uint8_t write_memory;
+    uint8_t special;
+    uint8_t extended_special;
+    uint8_t write_protect;
+    uint8_t write_unprotect;
+    uint8_t readout_protect;
+    uint8_t readout_unprotect;
+    uint8_t get_checksum;
+  } commands;
+
+  gpio_num_t reset, boot0;
+  void DoSTM32Reset() {
+    ESP_LOGI(TAG, "Booting Bootloader");
+    gpio_set_level(this->boot0, 1);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    gpio_set_level(this->reset, 0);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    gpio_set_level(this->reset, 1);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    gpio_set_level(this->boot0, 0);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+
+  TaskResult WaitACKFrame() {
+    int fail_count = 0;
+    uint8_t buf1 = 0x00;
+    RUN_TASK_V(device.Transfer(&buf1, 1))
+    while (1) {
+      uint8_t buf1 = 0x00;
+      RUN_TASK_V(device.Transfer(&buf1, 1))
+
+      if (buf1 == 0x79) {
+        break;
+      } else if (buf1 == 0x1f) {
+        ESP_LOGW(TAG, "NACK");
+        break;
+      } else {
+        fail_count++;
+        if (fail_count % 100 == 0) {
+          ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times", fail_count);
+        }
+        if (fail_count % 1000 == 0) {
+          return ESP_ERR_INVALID_STATE;
+        }
+      }
+    }
+    buf1 = 0x79;
+    RUN_TASK_V(device.Transfer(&buf1, 1));
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult Synchronization() {
+    ESP_LOGI(TAG, "Sync...");
+
+    uint8_t buf[2] = {0x5A};
+
+    RUN_TASK_V(device.Transfer(buf, 1))
+    if (buf[0] != 0xA5) {
+      ESP_LOGE(TAG, "Failed Sync (ACK Return value = %#02x != %#02x)", buf[0],
+               0xA5);
+      return ESP_ERR_INVALID_STATE;
+    }
+    this->WaitACKFrame();
+
+    ESP_LOGI(TAG, "Connection established");
+
+    return TaskResult::Ok();
+  }
+
+ public:
+  SPI_STM32BL(gpio_num_t reset, gpio_num_t boot0, SPIMaster& spi_master, int cs)
+      : device(spi_master.NewDevice(cs)), reset(reset), boot0(boot0) {
+    gpio_set_direction(this->reset, GPIO_MODE_OUTPUT);
+    gpio_set_direction(this->boot0, GPIO_MODE_OUTPUT);
+    gpio_set_level(this->reset, 1);
+    gpio_set_level(this->boot0, 0);
+  }
+
+  TaskResult Connect() {
+    ESP_LOGI(TAG, "Connect...");
+
+    TaskResult ret = ESP_ERR_INVALID_STATE;
+    while (ret.IsErr()) {
+      this->DoSTM32Reset();
+      ret = this->Synchronization();
+    }
+
+    {
+      RUN_TASK_V(this->CommandHeader(0x01));
+
+      uint8_t buf1 = 0x00;
+      RUN_TASK_V(this->ReadData(&buf1, 1));
+
+      RUN_TASK_V(this->WaitACKFrame());
+
+      // uint8_t* buf2 = new uint8_t[buf[1]];
+      // memset(buf2, 0x00, buf[1]);
+      // buf2[2] = 0x79;
+      // RUN_TASK_V(this->device.Transfer(buf2, buf[1]));
+      //
+      // this->commands.get = buf2[0];
+      // this->commands.get_version = buf2[1];
+      // this->commands.get_id = buf2[2];
+      // this->commands.read_memory = buf2[3];
+      // this->commands.go = buf2[4];
+      // this->commands.write_memory = buf2[5];
+      // this->commands.write_protect = buf2[6];
+      // this->commands.write_unprotect = buf2[7];
+      // this->commands.readout_protect = buf2[8];
+      // this->commands.readout_unprotect = buf2[9];
+      // if (buf[1] >= 0x0c) {
+      //   this->commands.get_checksum = buf2[10];
+      // }
+    }
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult CommandHeader(uint8_t cmd) {
+    uint8_t buf[] = {0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
+
+    RUN_TASK_V(this->device.Transfer(buf, 1));
+    RUN_TASK_V(this->device.Transfer(buf + 1, 1));
+    RUN_TASK_V(this->device.Transfer(buf + 2, 1));
+
+    if (buf[2] != 0x79) {
+      ESP_LOGE(TAG, "Command Header - buf[2] != 0x79 (actually: %#02x)",
+               buf[2]);
+      // return ESP_ERR_INVALID_RESPONSE;
+    }
+
+    RUN_TASK_V(this->WaitACKFrame());
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult ReadData(uint8_t* buf, size_t size) {
+    uint8_t dummy = 0;
+    RUN_TASK_V(this->device.Transfer(&dummy, 1));
+
+    memset(buf, 0x77, size);
+
+    RUN_TASK_V(this->device.Transfer(buf, size));
+
+    return TaskResult::Ok();
+  }
+};
+
+TaskResult Main() {
   // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   // config::server.StartClientLoopAtForeground();
+
+  SPIMaster master(VSPI_HOST, 23, 19, 18);
+
+  SPI_STM32BL bl(GPIO_NUM_27, GPIO_NUM_26, master, 5);
+
+  bl.Connect();
 
   /*
   nvs_iterator_t it;
@@ -182,6 +369,8 @@ void Main() {
     nvs_close(handle);
   }
   */
+
+  return TaskResult::Ok();
 }
 
 extern "C" int app_main() {
