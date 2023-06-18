@@ -32,7 +32,7 @@ class SPIDevice {
       abort();
     }
   }
-  TaskResult Transfer(uint8_t* buf, size_t size, const char* name = "SPI") {
+  TaskResult Transfer(uint8_t* buf, size_t size) {
     spi_transaction_t a{.flags = 0,
                         .cmd = 0,
                         .addr = 0,
@@ -52,48 +52,11 @@ class SPIDevice {
     auto ret = spi_device_transmit(this->device, &a);
     if (ret != ESP_OK) return ret;
 
-    // ret = spi_device_polling_transmit(this->device, &a);
-    // if (ret != ESP_OK) return ret;
-
-    if (name != nullptr) {
-      if (size == a.rxlength / 8) {
-        for (size_t i = 0; i < size; i++) {
-          printf("%10s: %02X <=> %2X\n", name, buf[i], ((uint8_t*)buffer)[i]);
-        }
-      } else {
-        printf("Sending: \n  %s", name);
-        for (size_t i = 0; i < size; i++) {
-          printf("%02X ", buf[i]);
-          if (i % 16 == 15) printf("\n  %s", name);
-        }
-        printf("\n");
-        printf("Received:\n  %s", name);
-        for (size_t i = 0; i < a.rxlength / 8; i++) {
-          printf("%02x ", buf[i]);
-          if (i % 16 == 15) printf("\n  %s", name);
-        }
-        printf("\n");
-      }
-    }
-
     memcpy(buf, buffer, size);
     delete buffer;
 
     return TaskResult::Ok();
   }
-  /*
-    size_t GetRXBufferDataLength();
-
-    void Flush();
-
-    size_t Send(uint8_t* buf, size_t size);
-    Result<ssize_t> Recv(uint8_t* buf, size_t size, TickType_t timeout);
-
-    Result<uint8_t> RecvChar(TickType_t timeout = 1000 / portTICK_PERIOD_MS);
-    void SendChar(uint8_t);
-
-    TaskResult RecvExactly(uint8_t* buf, size_t size,
-                           TickType_t timeout = portMAX_DELAY); */
 };
 
 class SPIMaster {

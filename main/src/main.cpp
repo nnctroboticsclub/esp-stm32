@@ -111,10 +111,10 @@ class SPI_STM32BL {
   TaskResult WaitACKFrame() {
     int fail_count = 0;
     uint8_t buf1 = 0x00;
-    RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"))
+    RUN_TASK_V(device.Transfer(&buf1, 1))
     while (1) {
       uint8_t buf1 = 0x00;
-      RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"))
+      RUN_TASK_V(device.Transfer(&buf1, 1))
 
       if (buf1 == 0x79) {
         break;
@@ -134,7 +134,7 @@ class SPI_STM32BL {
       }
     }
     buf1 = 0x79;
-    RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"));
+    RUN_TASK_V(device.Transfer(&buf1, 1));
     return TaskResult::Ok();
   }
 
@@ -159,7 +159,7 @@ class SPI_STM32BL {
   TaskResult CommandHeader(uint8_t cmd) {
     uint8_t buf[] = {0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
 
-    RUN_TASK_V(this->device.Transfer(buf, 3, "CMD H"));
+    RUN_TASK_V(this->device.Transfer(buf, 3));
 
     if (buf[2] != 0x79) {
       // ESP_LOGW(TAG, "Command Header - buf[2] %#02x != 0x79", buf[2]);
@@ -172,11 +172,11 @@ class SPI_STM32BL {
 
   TaskResult ReadData(uint8_t* buf, size_t size) {
     uint8_t dummy = 0;
-    RUN_TASK_V(this->device.Transfer(&dummy, 1, "Read H"));
+    RUN_TASK_V(this->device.Transfer(&dummy, 1));
 
     memset(buf, 0xee, size);
 
-    RUN_TASK_V(this->device.Transfer(buf, size, "Read"));
+    RUN_TASK_V(this->device.Transfer(buf, size));
 
     return TaskResult::Ok();
   }
@@ -184,7 +184,7 @@ class SPI_STM32BL {
   TaskResult ReadDataWithoutHeader(uint8_t* buf, size_t size) {
     memset(buf, 0x77, size);
 
-    RUN_TASK_V(this->device.Transfer(buf, size, "Read"));
+    RUN_TASK_V(this->device.Transfer(buf, size));
 
     return TaskResult::Ok();
   }
@@ -306,7 +306,7 @@ class SPI_STM32BL {
       buf[2] = addr >> 8;
       buf[3] = addr & 0xff;
       buf[4] = stm32bl::CalculateChecksum(buf, 4);
-      RUN_TASK_V(this->device.Transfer(buf, 5, nullptr));
+      RUN_TASK_V(this->device.Transfer(buf, 5));
 
       RUN_TASK_V(this->WaitACKFrame());
     }
@@ -315,9 +315,9 @@ class SPI_STM32BL {
       uint8_t size_byte = size - 1;
       uint8_t checksum = stm32bl::CalculateChecksum(buffer, size) ^ size_byte;
 
-      RUN_TASK_V(this->device.Transfer(&size_byte, 1, nullptr));
-      RUN_TASK_V(this->device.Transfer(buffer, size, nullptr));
-      RUN_TASK_V(this->device.Transfer(&checksum, 1, nullptr));
+      RUN_TASK_V(this->device.Transfer(&size_byte, 1));
+      RUN_TASK_V(this->device.Transfer(buffer, size));
+      RUN_TASK_V(this->device.Transfer(&checksum, 1));
 
       RUN_TASK_V(this->WaitACKFrame());
     }
