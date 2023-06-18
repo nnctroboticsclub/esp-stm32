@@ -55,7 +55,7 @@ class SPIDevice {
     // ret = spi_device_polling_transmit(this->device, &a);
     // if (ret != ESP_OK) return ret;
 
-    if (name != nullptr || 1) {
+    if (name != nullptr) {
       if (size == a.rxlength / 8) {
         for (size_t i = 0; i < size; i++) {
           printf("%10s: %02X <=> %2X\n", name, buf[i], ((uint8_t*)buffer)[i]);
