@@ -32,7 +32,7 @@ class SPIDevice {
       abort();
     }
   }
-  TaskResult Transfer(uint8_t* buf, size_t size) {
+  TaskResult Transfer(uint8_t* buf, size_t size, const char* name = "SPI") {
     spi_transaction_t a{.flags = 0,
                         .cmd = 0,
                         .addr = 0,
@@ -55,24 +55,26 @@ class SPIDevice {
     // ret = spi_device_polling_transmit(this->device, &a);
     // if (ret != ESP_OK) return ret;
 
-    // if (size == a.rxlength / 8) {
-    //   for (size_t i = 0; i < size; i++) {
-    //     printf("%02X <=> %2X\n", buf[i], ((uint8_t*)buffer)[i]);
-    //   }
-    // } else {
-    //   printf("Sending: \n  ");
-    //   for (size_t i = 0; i < size; i++) {
-    //     printf("%02X ", buf[i]);
-    //     if (i % 16 == 15) printf("\n  ");
-    //   }
-    //   printf("\n");
-    //   printf("Received:\n  ");
-    //   for (size_t i = 0; i < a.rxlength / 8; i++) {
-    //     printf("%02x ", buf[i]);
-    //     if (i % 16 == 15) printf("\n  ");
-    //   }
-    //   printf("\n");
-    // }
+    if (name != nullptr || 1) {
+      if (size == a.rxlength / 8) {
+        for (size_t i = 0; i < size; i++) {
+          printf("%10s: %02X <=> %2X\n", name, buf[i], ((uint8_t*)buffer)[i]);
+        }
+      } else {
+        printf("Sending: \n  %s", name);
+        for (size_t i = 0; i < size; i++) {
+          printf("%02X ", buf[i]);
+          if (i % 16 == 15) printf("\n  %s", name);
+        }
+        printf("\n");
+        printf("Received:\n  %s", name);
+        for (size_t i = 0; i < a.rxlength / 8; i++) {
+          printf("%02x ", buf[i]);
+          if (i % 16 == 15) printf("\n  %s", name);
+        }
+        printf("\n");
+      }
+    }
 
     memcpy(buf, buffer, size);
     delete buffer;

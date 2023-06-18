@@ -13,6 +13,8 @@
 #include "libs/gpio.hpp"
 const char* TAG = "Main";
 
+#include <stm32bl/helper.hpp>
+
 class UserButton {
   static constexpr const char* TAG = "UserButton";
 
@@ -83,6 +85,7 @@ class SPI_STM32BL {
     uint8_t read_memory;
     uint8_t go;
     uint8_t write_memory;
+    uint8_t erase;
     uint8_t special;
     uint8_t extended_special;
     uint8_t write_protect;
@@ -108,29 +111,31 @@ class SPI_STM32BL {
   TaskResult WaitACKFrame() {
     int fail_count = 0;
     uint8_t buf1 = 0x00;
-    RUN_TASK_V(device.Transfer(&buf1, 1))
+    RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"))
     while (1) {
       uint8_t buf1 = 0x00;
-      RUN_TASK_V(device.Transfer(&buf1, 1))
+      RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"))
 
       if (buf1 == 0x79) {
         break;
       } else if (buf1 == 0x1f) {
         ESP_LOGW(TAG, "NACK");
-        break;
+        return ESP_ERR_INVALID_STATE;
       } else {
         fail_count++;
         if (fail_count % 100 == 0) {
-          ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times", fail_count);
+          ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times (wait 0.5 seconds)",
+                   fail_count);
+          vTaskDelay(500 / portTICK_PERIOD_MS);
         }
-        if (fail_count % 1000 == 0) {
+        if (fail_count % 100000 == 0) {
           return ESP_ERR_INVALID_STATE;
         }
       }
     }
     buf1 = 0x79;
-    RUN_TASK_V(device.Transfer(&buf1, 1));
-
+    RUN_TASK_V(device.Transfer(&buf1, 1, "ACK"));
+    ESP_LOGI(TAG, "ACK ok");
     return TaskResult::Ok();
   }
 
@@ -155,9 +160,7 @@ class SPI_STM32BL {
   TaskResult CommandHeader(uint8_t cmd) {
     uint8_t buf[] = {0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
 
-    RUN_TASK_V(this->device.Transfer(buf, 1));
-    RUN_TASK_V(this->device.Transfer(buf + 1, 1));
-    RUN_TASK_V(this->device.Transfer(buf + 2, 1));
+    RUN_TASK_V(this->device.Transfer(buf, 3, "CMD H"));
 
     if (buf[2] != 0x79) {
       ESP_LOGW(TAG, "Command Header - buf[2] %#02x != 0x79", buf[2]);
@@ -170,11 +173,11 @@ class SPI_STM32BL {
 
   TaskResult ReadData(uint8_t* buf, size_t size) {
     uint8_t dummy = 0;
-    RUN_TASK_V(this->device.Transfer(&dummy, 1));
+    RUN_TASK_V(this->device.Transfer(&dummy, 1, "Read H"));
 
-    memset(buf, 0x77, size);
+    memset(buf, 0xee, size);
 
-    RUN_TASK_V(this->device.Transfer(buf, size));
+    RUN_TASK_V(this->device.Transfer(buf, size, "Read"));
 
     return TaskResult::Ok();
   }
@@ -225,13 +228,72 @@ class SPI_STM32BL {
     this->commands.read_memory = buf[5];
     this->commands.go = buf[6];
     this->commands.write_memory = buf[7];
-    this->commands.write_protect = buf[8];
-    this->commands.write_unprotect = buf[9];
-    this->commands.readout_protect = buf[10];
-    this->commands.readout_unprotect = buf[11];
-    if (buf[0] >= 0x0c) {
-      this->commands.get_checksum = buf[12];
+    this->commands.erase = buf[8];
+    this->commands.write_protect = buf[9];
+    this->commands.write_unprotect = buf[10];
+    this->commands.readout_protect = buf[11];
+    this->commands.readout_unprotect = buf[12];
+    if (buf[0] > 0x0c) {
+      this->commands.get_checksum = buf[13];
     }
+    return TaskResult::Ok();
+  }
+
+  TaskResult Erase(stm32bl::SpecialFlashPage page) {
+    ESP_LOGI(TAG, "Erasing %s",
+             stm32bl::SpecialFlashPageToString(page).c_str());
+    RUN_TASK_V(this->CommandHeader(this->commands.erase));
+
+    uint8_t buf[0x10]{};
+    buf[0] = page >> 8;
+    buf[1] = page & 0xff;
+    buf[2] = buf[0] ^ buf[1];
+    RUN_TASK_V(this->device.Transfer(buf, 2));
+    RUN_TASK_V(this->WaitACKFrame());
+    RUN_TASK_V(this->device.Transfer(buf + 2, 1));
+    RUN_TASK_V(this->WaitACKFrame());
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult Erase(std::vector<stm32bl::FlashPage> pages) {
+    ESP_LOGI(TAG, "Erasing %d pages", pages.size());
+    RUN_TASK_V(this->CommandHeader(this->commands.erase));
+
+    uint8_t buf[2 + pages.size() * 2];
+    buf[0] = pages.size() >> 8;
+    buf[1] = pages.size() & 0xff;
+    memcpy(buf + 2, pages.data(), pages.size() * 2);
+
+    // Send a pages
+    auto checksum = stm32bl::CalculateChecksum(buf, 2);
+    RUN_TASK_V(this->device.Transfer(buf, 2));
+    RUN_TASK_V(this->device.Transfer(&checksum, 1));
+    RUN_TASK_V(this->WaitACKFrame());
+
+    // Send pages and checksum
+    checksum = stm32bl::CalculateChecksum(buf + 2, sizeof(buf) - 2);
+    RUN_TASK_V(this->device.Transfer(buf + 2, pages.size() * 2));
+    RUN_TASK_V(this->device.Transfer(&checksum, 1));
+    RUN_TASK_V(this->WaitACKFrame());
+
+    return TaskResult::Ok();
+  }
+
+  TaskResult Erase(uint32_t addr, uint32_t size) {
+    auto pages = stm32bl::MemoryRangeToPages(addr, size);
+    if (pages.bank1 && pages.bank2) {
+      RUN_TASK_V(this->Erase(stm32bl::SpecialFlashPage::kGlobal));
+    } else if (pages.bank1) {
+      RUN_TASK_V(this->Erase(stm32bl::SpecialFlashPage::kBank1));
+    } else if (pages.bank2) {
+      RUN_TASK_V(this->Erase(stm32bl::SpecialFlashPage::kBank2));
+    }
+
+    if (pages.pages.size() > 0) {
+      RUN_TASK_V(this->Erase(pages.pages));
+    }
+    return TaskResult::Ok();
   }
 };
 
@@ -245,6 +307,8 @@ TaskResult Main() {
 
   bl.Connect();
   bl.Get();
+
+  bl.Erase(0x08000000, new_flash_len);
 
   /*
   nvs_iterator_t it;
