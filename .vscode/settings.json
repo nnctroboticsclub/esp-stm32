@@ -60,7 +60,12 @@
     "esp_log.h": "c"
   },
   "cSpell.words": [
-    "cmdq"
+    "bootloader",
+    "cmdq",
+    "LOGI",
+    "LOGW",
+    "ssid",
+    "unprotect"
   ],
   "idf.adapterTargetName": "esp32",
   "idf.port": "/dev/ttyUSB0",

@@ -5,6 +5,6 @@ FILE(GLOB_RECURSE stm32_bl_sources ${CMAKE_SOURCE_DIR}/components/stm32_bootload
 
 idf_component_register(
   SRCS ${stm32_bl_sources}
-  REQUIRES result uart_wrapper
+  REQUIRES result uart_wrapper spi_wrapper driver
   INCLUDE_DIRS "include"
 )

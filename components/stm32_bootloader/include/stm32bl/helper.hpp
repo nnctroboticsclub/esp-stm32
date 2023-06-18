@@ -11,6 +11,11 @@ enum SpecialFlashPage : uint16_t {
   kBank2 = 0xfffd,
 };
 
+enum ACK : uint8_t {
+  ACK = 0x79,
+  NACK = 0x1f,
+};
+
 class Pages {
  public:
   bool bank1 = false;
@@ -23,4 +28,5 @@ std::string SpecialFlashPageToString(SpecialFlashPage page);
 Pages MemoryRangeToPages(uint32_t address, uint32_t length);
 
 uint8_t CalculateChecksum(uint8_t* buf, size_t size);
+
 }  // namespace stm32bl
