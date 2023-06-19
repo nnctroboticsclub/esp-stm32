@@ -36,8 +36,6 @@ class Wifi {
   void InitHW();
   void InitAp();
   void InitSta();
-
-  void WaitConnection();  // For sta mode!
 };
 }  // namespace app
 

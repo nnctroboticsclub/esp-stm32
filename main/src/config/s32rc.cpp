@@ -1,7 +1,7 @@
 #include "s32rc.hpp"
 
 namespace profile {
-STM32RemoteControllerProfile::STM32RemoteControllerProfile(nvs::Namespace* ns)
+STM32RemoteControllerProfile::STM32RemoteControllerProfile(nvs::SharedNamespace ns)
     : ns(ns),
       uart_port(ns, "uart_port"),
       uart_tx(ns, "uart_tx"),

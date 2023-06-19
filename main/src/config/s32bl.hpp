@@ -7,15 +7,17 @@
 namespace profile {
 class STM32BootLoaderProfileInterface {
  public:
+  virtual ~STM32BootLoaderProfileInterface();
   virtual void Save();
   virtual stm32bl::STM32BootLoader* GetLoader();
 };
 
-STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(nvs::Namespace* ns);
+STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(
+    nvs::SharedNamespace ns);
 
 class UartSTM32BootLoaderProfile : public STM32BootLoaderProfileInterface {
  private:
-  std::shared_ptr<nvs::Namespace> ns;
+  nvs::SharedNamespace ns;
 
  public:
   nvs::Proxy<gpio_num_t> reset;
@@ -24,13 +26,15 @@ class UartSTM32BootLoaderProfile : public STM32BootLoaderProfileInterface {
   nvs::Proxy<gpio_num_t> uart_tx;
   nvs::Proxy<gpio_num_t> uart_rx;
 
-  UartSTM32BootLoaderProfile(nvs::Namespace* ns);
+  virtual ~UartSTM32BootLoaderProfile();
+
+  UartSTM32BootLoaderProfile(nvs::SharedNamespace ns);
   void Save() override;
   stm32bl::Stm32BootLoaderUart* GetLoader() override;
 };
 class SpiSTM32BootLoaderProfile : public STM32BootLoaderProfileInterface {
  private:
-  std::shared_ptr<nvs::Namespace> ns;
+  nvs::SharedNamespace ns;
 
  public:
   nvs::Proxy<gpio_num_t> reset;
@@ -38,7 +42,9 @@ class SpiSTM32BootLoaderProfile : public STM32BootLoaderProfileInterface {
   nvs::Proxy<gpio_num_t> cs;
   nvs::Proxy<uint8_t> spi_port;
 
-  SpiSTM32BootLoaderProfile(nvs::Namespace* ns);
+  virtual ~SpiSTM32BootLoaderProfile();
+
+  SpiSTM32BootLoaderProfile(nvs::SharedNamespace ns);
   void Save() override;
   stm32bl::Stm32BootLoaderSPI* GetLoader() override;
 };

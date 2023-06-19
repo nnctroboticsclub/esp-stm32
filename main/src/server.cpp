@@ -330,7 +330,6 @@ void ClientHandlerWrapper(ClientHandler* args) {
   if (ret.IsErr()) {
     ESP_LOGE(ClientHandler::TAG, "(%3d) Error: %s", args->client,
              ret.Error().what());
-    auto raw_error = ret.Error().GetRawError().get();
   }
   close(args->client);
   delete args;
@@ -375,7 +374,9 @@ void Server::MakeSocket() {
 }
 
 [[nodiscard]] bool Server::listen() {
+  ESP_LOGI(TAG, "Listening...");
   auto ret = ::listen(this->server_sock, 5);
+  ESP_LOGD(TAG, "Listened: %d", ret);
   return !(ret < 0);
 }
 

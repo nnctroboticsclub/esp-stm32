@@ -88,7 +88,9 @@ TaskResult Stm32BootLoaderSPI::ReadDataWithoutHeader(uint8_t* buf,
 
 Stm32BootLoaderSPI::Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0,
                                        SPIMaster& spi_master, int cs)
-    : device(spi_master.NewDevice(cs)), STM32BootLoader(reset, boot0) {}
+    : STM32BootLoader(reset, boot0), device(spi_master.NewDevice(cs)) {}
+
+Stm32BootLoaderSPI::~Stm32BootLoaderSPI() {}
 
 TaskResult Stm32BootLoaderSPI::Connect() {
   ESP_LOGI(TAG, "Connect...");

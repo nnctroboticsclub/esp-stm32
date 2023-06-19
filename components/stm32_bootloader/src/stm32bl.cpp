@@ -4,6 +4,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+namespace stm32bl {
 STM32BootLoader::STM32BootLoader(gpio_num_t reset, gpio_num_t boot0)
     : reset(reset), boot0(boot0) {
   gpio_set_direction(this->reset, GPIO_MODE_OUTPUT);
@@ -11,6 +12,8 @@ STM32BootLoader::STM32BootLoader(gpio_num_t reset, gpio_num_t boot0)
   gpio_set_level(this->reset, 1);
   gpio_set_level(this->boot0, 0);
 }
+
+STM32BootLoader::~STM32BootLoader() {}
 
 void STM32BootLoader::BootBootLoader() {
   ESP_LOGI(TAG, "Booting Bootloader");
@@ -22,4 +25,5 @@ void STM32BootLoader::BootBootLoader() {
   vTaskDelay(20 / portTICK_PERIOD_MS);
   gpio_set_level(this->boot0, 0);
   vTaskDelay(50 / portTICK_PERIOD_MS);
+}
 }

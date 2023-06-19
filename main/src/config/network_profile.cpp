@@ -1,6 +1,6 @@
 #include "network_profile.hpp"
 namespace profile {
-NetworkProfile::NetworkProfile(nvs::Namespace* ns)
+NetworkProfile::NetworkProfile(nvs::SharedNamespace ns)
     : ns_(ns),
       mode(ns, "mode"),
       ip_mode(ns, "ip_mode"),

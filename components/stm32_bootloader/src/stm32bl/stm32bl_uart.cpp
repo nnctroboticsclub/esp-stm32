@@ -112,13 +112,15 @@ TaskResult Stm32BootLoaderUart::DoErase(std::vector<uint16_t> pages) {
 
 Stm32BootLoaderUart::Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0,
                                          uart_port_t num, int tx, int rx)
-    : uart(num, tx, rx, 112500, UART_PARITY_EVEN),
-      STM32BootLoader(reset, boot0) {
+    : STM32BootLoader(reset, boot0),
+      uart(num, tx, rx, 112500, UART_PARITY_EVEN) {
   gpio_set_direction(reset, GPIO_MODE_OUTPUT);
   gpio_set_direction(boot0, GPIO_MODE_OUTPUT);
 
   gpio_set_level(reset, 1);
 }
+
+Stm32BootLoaderUart::~Stm32BootLoaderUart() {}
 
 Stm32BootLoaderUart::Version* Stm32BootLoaderUart::GetVersion() {
   if (!this->version.is_valid) {

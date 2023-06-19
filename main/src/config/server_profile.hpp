@@ -5,10 +5,14 @@
 
 namespace profile {
 class ServerProfile {
+  private:
+  nvs::SharedNamespace ns;
  public:
   nvs::Proxy<types::Ipv4> ip;
   nvs::Proxy<uint16_t> port;
 
-  ServerProfile(nvs::Namespace* ns);
+  ServerProfile(nvs::SharedNamespace ns);
+
+  void Save();
 };
 }  // namespace profile

@@ -2,8 +2,10 @@
 
 namespace profile {
 
+STM32BootLoaderProfileInterface::~STM32BootLoaderProfileInterface() {}
+
 STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(
-    nvs::Namespace* ns) {
+    nvs::SharedNamespace ns) {
   nvs::Proxy<uint8_t> type(ns, "type");
   switch (type) {
     case 0:
@@ -11,13 +13,15 @@ STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(
     case 1:
       return new SpiSTM32BootLoaderProfile(ns);
     default:
-      ESP_LOGE("s32bl", "Invalid type %d", type);
+      ESP_LOGE("s32bl", "Invalid type %d", (uint8_t)type);
       abort();
       return nullptr;
   }
 }
 
-UartSTM32BootLoaderProfile::UartSTM32BootLoaderProfile(nvs::Namespace* ns)
+UartSTM32BootLoaderProfile::~UartSTM32BootLoaderProfile() {}
+
+UartSTM32BootLoaderProfile::UartSTM32BootLoaderProfile(nvs::SharedNamespace ns)
     : ns(ns),
       reset(ns, "reset"),
       boot0(ns, "boot0"),
@@ -27,17 +31,21 @@ UartSTM32BootLoaderProfile::UartSTM32BootLoaderProfile(nvs::Namespace* ns)
 
 void UartSTM32BootLoaderProfile::Save() { this->ns->Commit(); }
 
-STMBootLoader* UartSTM32BootLoaderProfile::GetLoader() {
-  static STMBootLoader* loader = nullptr;
+using stm32bl::Stm32BootLoaderUart;
+
+Stm32BootLoaderUart* UartSTM32BootLoaderProfile::GetLoader() {
+  static Stm32BootLoaderUart* loader = nullptr;
   if (loader == nullptr) {
-    loader = new STMBootLoader((gpio_num_t)reset, (gpio_num_t)boot0,
-                               (uart_port_t)uart_port, (gpio_num_t)uart_tx,
-                               (gpio_num_t)uart_rx);
+    loader = new Stm32BootLoaderUart((gpio_num_t)reset, (gpio_num_t)boot0,
+                                     (uart_port_t)uart_port,
+                                     (gpio_num_t)uart_tx, (gpio_num_t)uart_rx);
   }
   return loader;
 }
 
-SpiSTM32BootLoaderProfile::SpiSTM32BootLoaderProfile(nvs::Namespace* ns)
+SpiSTM32BootLoaderProfile::~SpiSTM32BootLoaderProfile() {}
+
+SpiSTM32BootLoaderProfile::SpiSTM32BootLoaderProfile(nvs::SharedNamespace ns)
     : ns(ns),
       reset(ns, "reset"),
       boot0(ns, "boot0"),

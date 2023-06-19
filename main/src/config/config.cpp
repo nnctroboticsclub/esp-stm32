@@ -8,20 +8,21 @@ namespace config {
 
 Config::Config()
     : network_profiles{
-          NetworkProfile(new nvs::Namespace("a_nw0")),
-          NetworkProfile(new nvs::Namespace("a_nw1")),
-          NetworkProfile(new nvs::Namespace("a_nw2")),
-          NetworkProfile(new nvs::Namespace("a_nw3")),
-          NetworkProfile(new nvs::Namespace("a_nw4")),
+          NetworkProfile(nvs::SharedNamespace("a_nw0")),
+          NetworkProfile(nvs::SharedNamespace("a_nw1")),
+          NetworkProfile(nvs::SharedNamespace("a_nw2")),
+          NetworkProfile(nvs::SharedNamespace("a_nw3")),
+          NetworkProfile(nvs::SharedNamespace("a_nw4")),
       },
-      active_network_profile(new nvs::Namespace("a_conf"), "active_nw"),
-      server_profile(new nvs::Namespace("a_srv")),
-      stm32_remote_controller_profile(new nvs::Namespace("a_s32rc")) {
+      active_network_profile(nvs::SharedNamespace("a_conf"), "active_nw"),
+      server_profile(nvs::SharedNamespace("a_srv")),
+      stm32_remote_controller_profile(nvs::SharedNamespace("a_s32rc")) {
   this->stm32_bootloader_profile =
-      LoadSTM32BootLoaderProfile(new nvs::Namespace("a_s32bl"));
+      LoadSTM32BootLoaderProfile(nvs::SharedNamespace("a_s32bl"));
 }
 
 Config::~Config() { delete this->stm32_bootloader_profile; }
 
 Server server;
+app::Wifi network;
 }  // namespace config

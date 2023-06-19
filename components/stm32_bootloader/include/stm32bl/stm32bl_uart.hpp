@@ -70,6 +70,7 @@ class Stm32BootLoaderUart : public STM32BootLoader {
  public:
   Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0, uart_port_t num,
                       int tx, int rx);
+  virtual ~Stm32BootLoaderUart();
 
   Version* GetVersion();
 

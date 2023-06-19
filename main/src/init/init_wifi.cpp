@@ -15,6 +15,8 @@ void init::init_wifi() {
 
   char* name = profile.name;
   ESP_LOGI(TAG, "Initializing WiFi [%s]", name);
+  ESP_LOGD(TAG, "SSID: %s, password: %s", (char*)profile.ssid,
+           (char*)profile.password);
   config::network.InitHW();
   config::network.SetCredentials(profile.ssid, profile.password);
   if (profile.ip_mode == types::IPMode::STATIC) {

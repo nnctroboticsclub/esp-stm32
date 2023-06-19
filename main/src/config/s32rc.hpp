@@ -5,14 +5,14 @@
 namespace profile {
 class STM32RemoteControllerProfile {
  private:
-  std::shared_ptr<nvs::Namespace> ns;
+  nvs::SharedNamespace ns;
 
  public:
   nvs::Proxy<uint8_t> uart_port;
   nvs::Proxy<uint8_t> uart_tx;
   nvs::Proxy<uint8_t> uart_rx;
 
-  STM32RemoteControllerProfile(nvs::Namespace* ns);
+  STM32RemoteControllerProfile(nvs::SharedNamespace ns);
   void Save();
   DebuggerMaster* GetDebuggerMaster();
 };

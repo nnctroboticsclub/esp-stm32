@@ -1,3 +1,5 @@
+#pragma once
+
 #include <spi.hpp>
 #include <driver/gpio.h>
 #include "../stm32bl.hpp"
@@ -41,6 +43,7 @@ class Stm32BootLoaderSPI : public STM32BootLoader {
  public:
   Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0, SPIMaster& spi_master,
                      int cs);
+  virtual ~Stm32BootLoaderSPI();
 
   TaskResult Connect();
 

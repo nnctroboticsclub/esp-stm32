@@ -10,7 +10,7 @@
 namespace profile {
 class NetworkProfile {  // a_nw%d
  private:
-  std::shared_ptr<nvs::Namespace> ns_;
+  nvs::SharedNamespace ns_;
 
  public:
   nvs::Proxy<types::NetworkMode> mode;
@@ -28,7 +28,7 @@ class NetworkProfile {  // a_nw%d
   nvs::Proxy<types::Ipv4> gateway;
 
  public:
-  NetworkProfile(nvs::Namespace* ns);
+  NetworkProfile(nvs::SharedNamespace ns);
   void Save();
 };
 }  // namespace profile
