@@ -17,9 +17,14 @@ class STM32BootLoader {
 
   void BootBootLoader();
 
+  virtual TaskResult Connect() = 0;
+
   virtual TaskResult WriteMemory(uint32_t address, uint8_t* buffer,
                                  size_t size) = 0;
   virtual TaskResult Erase(uint32_t address, uint32_t length) = 0;
   virtual TaskResult Go(uint32_t address) = 0;
+
+  // Helper functions
+  TaskResult Erase(uint32_t address, uint32_t length, uint32_t size);
 };
 }  // namespace stm32bl

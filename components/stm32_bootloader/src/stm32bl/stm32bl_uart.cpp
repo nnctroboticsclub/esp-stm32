@@ -122,6 +122,17 @@ Stm32BootLoaderUart::Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0,
 
 Stm32BootLoaderUart::~Stm32BootLoaderUart() {}
 
+TaskResult Stm32BootLoaderUart::Connect() {
+  RUN_TASK_V(this->Sync());
+  RUN_TASK_V(this->Get());
+  this->GetVersion();
+
+  ESP_LOGI(TAG, "Boot Loader version = %d.%d", this->GetVersion()->major,
+           this->GetVersion()->minor);
+
+  return TaskResult::Ok();
+}
+
 Stm32BootLoaderUart::Version* Stm32BootLoaderUart::GetVersion() {
   if (!this->version.is_valid) {
     this->version.is_valid = true;

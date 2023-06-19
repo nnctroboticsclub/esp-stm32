@@ -45,6 +45,15 @@ class Config {
     delete instance;
   }
 
+  static stm32bl::STM32BootLoader* GetSTM32BootLoader() {
+    return Config::GetInstance()->stm32_bootloader_profile->GetLoader();
+  }
+
+  static DebuggerMaster* GetDebuggerMaster() {
+    return Config::GetInstance()
+        ->stm32_remote_controller_profile.GetDebuggerMaster();
+  }
+
  private:
   static inline Config** GetInstancePtr() {
     static Config* instance = nullptr;

@@ -49,10 +49,10 @@ void BootStrap() {
 
         auto stm32bl = profile::SpiSTM32BootLoaderProfile(stm32bl_ns);
 
-        stm32bl.reset = GPIO_NUM_27;
-        stm32bl.boot0 = GPIO_NUM_26;
+        stm32bl.reset = GPIO_NUM_21;
+        stm32bl.boot0 = GPIO_NUM_22;
         stm32bl.cs = GPIO_NUM_5;
-        stm32bl.spi_port = 1;
+        stm32bl.spi_port = 2;
 
         stm32bl.Save();
       }
@@ -65,8 +65,8 @@ void BootStrap() {
         config->server_profile.Save();
         config->network_profiles[0].mode = types::NetworkMode::STA;
         config->network_profiles[0].name = "Network@Ryo";
-        config->network_profiles[0].ssid = "";
-        config->network_profiles[0].password = "";
+        config->network_profiles[0].ssid = "***REMOVED***";
+        config->network_profiles[0].password = "***REMOVED***";
         config->network_profiles[0].hostname = "esp32-0610";
         config->network_profiles[0].ip_mode = types::IPMode::DHCP;
         config->network_profiles[0].ip = 0;
@@ -75,8 +75,8 @@ void BootStrap() {
         config->network_profiles[0].Save();
         config->network_profiles[1].mode = types::NetworkMode::STA;
         config->network_profiles[1].name = "Tethering";
-        config->network_profiles[1].ssid = "";
-        config->network_profiles[1].password = "";
+        config->network_profiles[1].ssid = "***REMOVED***";
+        config->network_profiles[1].password = "***REMOVED***";
         config->network_profiles[1].hostname = "esp32-0610";
         config->network_profiles[1].ip_mode = types::IPMode::DHCP;
         config->network_profiles[1].ip = 0;
@@ -86,8 +86,8 @@ void BootStrap() {
 
         config->network_profiles[2].mode = types::NetworkMode::AP;
         config->network_profiles[2].name = "AP (ESP32-syoch)";
-        config->network_profiles[2].ssid = "";
-        config->network_profiles[2].password = "";
+        config->network_profiles[2].ssid = "ESP32-syoch";
+        config->network_profiles[2].password = "esp32-0610";
         config->network_profiles[2].hostname = "esp32-0610";
         config->network_profiles[2].ip_mode = types::IPMode::STATIC;
         config->network_profiles[2].ip =
@@ -270,7 +270,7 @@ TaskResult Main() {
 }
 
 extern "C" int app_main() {
-  // nvs_flash_erase();
+  nvs_flash_erase();
   BootStrap();
   Main();
   printf("Entering the idle loop\n");

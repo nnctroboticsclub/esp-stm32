@@ -96,10 +96,13 @@ TaskResult Stm32BootLoaderSPI::Connect() {
   ESP_LOGI(TAG, "Connect...");
 
   TaskResult ret = ESP_ERR_INVALID_STATE;
+  ret = this->Synchronization();
   while (ret.IsErr()) {
     this->BootBootLoader();
     ret = this->Synchronization();
   }
+
+  this->Get();
 
   return TaskResult::Ok();
 }
@@ -148,6 +151,8 @@ TaskResult Stm32BootLoaderSPI::Erase(SpecialFlashPage page) {
 
 TaskResult Stm32BootLoaderSPI::Erase(std::vector<FlashPage> pages) {
   ESP_LOGI(TAG, "Erasing %d pages", pages.size());
+  ESP_LOGI(TAG, "  %08x --> %08x", 0x0800'0000 + pages[0] * 0x800,
+           0x0800'0000 + pages[pages.size() - 1] * 0x800);
   RUN_TASK_V(this->CommandHeader(this->commands.erase));
 
   // Send a pages
@@ -161,13 +166,19 @@ TaskResult Stm32BootLoaderSPI::Erase(std::vector<FlashPage> pages) {
   }
 
   // Send pages and checksum
-  uint8_t checksum = 0;
-  for (auto page : pages) {
-    checksum ^= (page >> 8) ^ (page & 0xff);
+  {
+    auto buf = new uint8_t[pages.size() * 2];
+    memset((void*)buf, 0, pages.size() * 2);
+    for (size_t i = 0; i < pages.size(); i++) {
+      buf[2 * i] = pages[i] >> 8;
+      buf[2 * i + 1] = pages[i] & 0xff;
+    }
+    uint8_t checksum = CalculateChecksum(buf, pages.size() * 2);
+
+    RUN_TASK_V(this->device.Transfer(buf, pages.size() * 2));
+    RUN_TASK_V(this->device.Transfer(&checksum, 1));
+    RUN_TASK_V(this->WaitACKFrame());
   }
-  RUN_TASK_V(this->device.Transfer((uint8_t*)pages.data(), pages.size() * 2));
-  RUN_TASK_V(this->device.Transfer(&checksum, 1));
-  RUN_TASK_V(this->WaitACKFrame());
 
   return TaskResult::Ok();
 }

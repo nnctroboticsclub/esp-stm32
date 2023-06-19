@@ -57,6 +57,10 @@ class SPIDevice {
     auto ret = spi_device_transmit(this->device, &a);
     if (ret != ESP_OK) return ret;
 
+    // for (int i = 0; i < size; i++) {
+    //   ESP_LOGI(TAG, "%02x <=> %02x", buf[i], buffer[i]);
+    // }
+
     memcpy(buf, buffer, size);
     delete buffer;
 

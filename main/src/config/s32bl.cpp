@@ -29,7 +29,11 @@ UartSTM32BootLoaderProfile::UartSTM32BootLoaderProfile(nvs::SharedNamespace ns)
       uart_tx(ns, "uart_tx"),
       uart_rx(ns, "uart_rx") {}
 
-void UartSTM32BootLoaderProfile::Save() { this->ns->Commit(); }
+void UartSTM32BootLoaderProfile::Save() {
+  this->ns->Commit();
+  nvs::Proxy<uint8_t> type(ns, "type");
+  type = 0;
+}
 
 using stm32bl::Stm32BootLoaderUart;
 
@@ -52,7 +56,11 @@ SpiSTM32BootLoaderProfile::SpiSTM32BootLoaderProfile(nvs::SharedNamespace ns)
       cs(ns, "cs"),
       spi_port(ns, "spi_port") {}
 
-void SpiSTM32BootLoaderProfile::Save() { this->ns->Commit(); }
+void SpiSTM32BootLoaderProfile::Save() {
+  this->ns->Commit();
+  nvs::Proxy<uint8_t> type(ns, "type");
+  type = 1;
+}
 
 stm32bl::Stm32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
   static stm32bl::Stm32BootLoaderSPI* loader = nullptr;

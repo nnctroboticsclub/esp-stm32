@@ -3,8 +3,9 @@ import sys
 
 def wait_ok(sock, name):
     ret = sock.recv(1024)
+    ret = ret.strip(b"\x00")
     if ret != b"OK":
-        print(f"[-] Error: {name} - " + ret.decode("utf-8"))
+        print(f"[-] Error: {name} - " + repr(ret))
         exit(1)
 
 argv = sys.argv
@@ -16,7 +17,7 @@ if len(argv) != 2:
 filename = argv[1]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(("172.16.34.39", 4007))
+sock.connect(("192.168.209.132", 4007))
 sock.settimeout(60)
 
 with open(filename, "rb") as f:

@@ -77,6 +77,8 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   TaskResult Sync();
   TaskResult Get();
 
+  TaskResult Connect() override;
+
   TaskResult WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
   TaskResult WriteMemory(uint32_t address, unsigned char* buffer,
                          size_t size) override;

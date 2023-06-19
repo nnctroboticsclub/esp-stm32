@@ -16,14 +16,32 @@ STM32BootLoader::STM32BootLoader(gpio_num_t reset, gpio_num_t boot0)
 STM32BootLoader::~STM32BootLoader() {}
 
 void STM32BootLoader::BootBootLoader() {
-  ESP_LOGI(TAG, "Booting Bootloader");
+  ESP_LOGI(TAG, "Booting Bootloader (boot0: %d, reset: %d)", this->boot0,
+           this->reset);
   gpio_set_level(this->boot0, 1);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
   gpio_set_level(this->reset, 0);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
   gpio_set_level(this->reset, 1);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
   gpio_set_level(this->boot0, 0);
   vTaskDelay(50 / portTICK_PERIOD_MS);
 }
+
+TaskResult STM32BootLoader::Erase(uint32_t address, uint32_t length,
+                                  uint32_t size) {
+  uint32_t pointer = address;
+  uint32_t end = address + length;
+  while (pointer + size < end) {
+    RUN_TASK_V(this->Erase(pointer, size));
+    pointer += size;
+  }
+
+  if (pointer < end) {
+    RUN_TASK_V(this->Erase(pointer, end - pointer));
+  }
+
+  return TaskResult::Ok();
 }
+
+}  // namespace stm32bl
