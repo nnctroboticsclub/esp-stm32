@@ -1,19 +1,9 @@
 #include <stm32bl/stm32bl_spi.hpp>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 namespace stm32bl {
-
-void Stm32BootLoaderSPI::DoSTM32Reset() {
-  ESP_LOGI(TAG, "Booting Bootloader");
-  gpio_set_level(this->boot0, 1);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
-  gpio_set_level(this->reset, 0);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
-  gpio_set_level(this->reset, 1);
-  vTaskDelay(20 / portTICK_PERIOD_MS);
-  gpio_set_level(this->boot0, 0);
-  vTaskDelay(50 / portTICK_PERIOD_MS);
-}
-
 TaskResult Stm32BootLoaderSPI::WaitACKFrame() {
   int fail_count = 0;
   uint8_t buf1 = 0x00;
@@ -98,19 +88,14 @@ TaskResult Stm32BootLoaderSPI::ReadDataWithoutHeader(uint8_t* buf,
 
 Stm32BootLoaderSPI::Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0,
                                        SPIMaster& spi_master, int cs)
-    : device(spi_master.NewDevice(cs)), reset(reset), boot0(boot0) {
-  gpio_set_direction(this->reset, GPIO_MODE_OUTPUT);
-  gpio_set_direction(this->boot0, GPIO_MODE_OUTPUT);
-  gpio_set_level(this->reset, 1);
-  gpio_set_level(this->boot0, 0);
-}
+    : device(spi_master.NewDevice(cs)), STM32BootLoader(reset, boot0) {}
 
 TaskResult Stm32BootLoaderSPI::Connect() {
   ESP_LOGI(TAG, "Connect...");
 
   TaskResult ret = ESP_ERR_INVALID_STATE;
   while (ret.IsErr()) {
-    this->DoSTM32Reset();
+    this->BootBootLoader();
     ret = this->Synchronization();
   }
 
@@ -248,6 +233,23 @@ TaskResult Stm32BootLoaderSPI::WriteMemory(uint32_t addr, uint8_t* buffer,
     offset += 256;
   }
   return size;
+}
+
+TaskResult Stm32BootLoaderSPI::Go(uint32_t addr) {
+  ESP_LOGI(TAG, "Go to %08lx", addr);
+  RUN_TASK_V(this->CommandHeader(this->commands.go));
+
+  uint8_t buf[5]{};
+  buf[0] = addr >> 24;
+  buf[1] = addr >> 16;
+  buf[2] = addr >> 8;
+  buf[3] = addr & 0xff;
+  buf[4] = CalculateChecksum(buf, 4);
+  RUN_TASK_V(this->device.Transfer(buf, 5));
+
+  RUN_TASK_V(this->WaitACKFrame());
+
+  return TaskResult::Ok();
 }
 
 }  // namespace stm32bl

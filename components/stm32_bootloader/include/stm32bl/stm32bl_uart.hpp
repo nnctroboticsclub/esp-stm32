@@ -8,8 +8,12 @@
 
 #include <vector>
 
-class STMBootLoader {
-  static constexpr const char* TAG = "STMBootLoader";
+#include "../stm32bl.hpp"
+
+namespace stm32bl {
+
+class Stm32BootLoaderUart : public STM32BootLoader {
+  static constexpr const char* TAG = "STM32 BootLoader[UART]";
 
  public:
   struct Version {
@@ -44,7 +48,6 @@ class STMBootLoader {
   Version version;
 
   UART uart;
-  gpio_num_t reset, boot0;
 
   TaskResult RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
 
@@ -65,23 +68,23 @@ class STMBootLoader {
   TaskResult DoErase(std::vector<uint16_t> pages);
 
  public:
-  STMBootLoader(gpio_num_t reset, gpio_num_t boot0, uart_port_t num, int tx,
-                int rx);
+  Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0, uart_port_t num,
+                      int tx, int rx);
 
   Version* GetVersion();
-
-  void BootBootLoader();
 
   TaskResult Sync();
   TaskResult Get();
 
   TaskResult WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
+  TaskResult WriteMemory(uint32_t address, unsigned char* buffer,
+                         size_t size) override;
 
-  int WriteMemory(uint32_t address, unsigned char* buffer, size_t size);
-
-  TaskResult Go(uint32_t address);
   TaskResult Erase(FlashPage page);
   TaskResult Erase(std::vector<uint16_t> pages);
   TaskResult BulkErase(std::vector<uint16_t> pages);
-  TaskResult Erase(uint32_t address, uint32_t length);
+  TaskResult Erase(uint32_t address, uint32_t length) override;
+
+  TaskResult Go(uint32_t address) override;
 };
+}  // namespace stm32bl

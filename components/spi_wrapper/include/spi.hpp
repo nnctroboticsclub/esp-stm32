@@ -87,5 +87,7 @@ class SPIMaster {
     }
   }
 
+  SPIMaster(spi_host_device_t spi_host) : spi_host(spi_host) {}
+
   SPIDevice NewDevice(int ss) { return SPIDevice(this->spi_host, ss); }
 };

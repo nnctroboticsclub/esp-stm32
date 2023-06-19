@@ -5,7 +5,6 @@
 #include <string>
 #include "../libs/nvs_proxy.hpp"
 
-#include <stmbootloader.hpp>
 #include <wifi.hpp>
 #include "../server.hpp"
 #include <debugger_master.hpp>
@@ -24,11 +23,12 @@ class Config {
 
   profile::ServerProfile server_profile;
 
-  profile::STM32BootLoaderProfile stm32_bootloader_profile;
+  profile::STM32BootLoaderProfileInterface* stm32_bootloader_profile;
   profile::STM32RemoteControllerProfile stm32_remote_controller_profile;
 
  private:
   Config();
+  ~Config();
 
  public:
   static Config* CreateDefaultConfig();
@@ -52,7 +52,6 @@ class Config {
   }
 };
 
-extern app::Wifi network;
 extern Server server;
 }  // namespace config
 

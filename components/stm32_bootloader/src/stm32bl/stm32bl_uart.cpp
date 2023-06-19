@@ -1,9 +1,9 @@
-#include "stmbootloader.hpp"
+#include "stm32bl/stm32bl_uart.hpp"
 
 #include <esp_log.h>
 #include <memory.h>
-
-TaskResult STMBootLoader::RecvACK(TickType_t timeout) {
+namespace stm32bl {
+TaskResult Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
   RUN_TASK(this->uart.RecvChar(timeout), ack);
 
   if (ack == 0x79) return TaskResult::Ok();
@@ -16,7 +16,7 @@ TaskResult STMBootLoader::RecvACK(TickType_t timeout) {
   return ESP_ERR_INVALID_RESPONSE;
 }
 
-void STMBootLoader::SendWithChecksum(uint8_t* buf, size_t size) {
+void Stm32BootLoaderUart::SendWithChecksum(uint8_t* buf, size_t size) {
   uint8_t checksum = 0;
   for (int i = 0; i < size; i++) {
     checksum ^= buf[i];
@@ -25,7 +25,8 @@ void STMBootLoader::SendWithChecksum(uint8_t* buf, size_t size) {
   this->uart.SendChar(checksum);
 }
 
-void STMBootLoader::SendU16(uint8_t high, uint8_t low, bool with_checksum) {
+void Stm32BootLoaderUart::SendU16(uint8_t high, uint8_t low,
+                                  bool with_checksum) {
   uint8_t buf[3];
   buf[0] = high;
   buf[1] = low;
@@ -33,18 +34,18 @@ void STMBootLoader::SendU16(uint8_t high, uint8_t low, bool with_checksum) {
   this->uart.Send(buf, with_checksum ? 3 : 2);
 }
 
-void STMBootLoader::SendU16(uint16_t value, bool with_checksum) {
+void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
   this->SendU16((value >> 8) & 0xff, value & 0xff, with_checksum);
 }
 
-void STMBootLoader::SendCommand(uint8_t command) {
+void Stm32BootLoaderUart::SendCommand(uint8_t command) {
   uint8_t buf[2];
   buf[0] = command;
   buf[1] = buf[0] ^ 0xff;
   this->uart.Send(buf, 2);
 }
 
-void STMBootLoader::SendAddress(uint32_t address) {
+void Stm32BootLoaderUart::SendAddress(uint32_t address) {
   uint8_t buf[5];
   buf[0] = (address >> 0x1c) & 0xff;
   buf[1] = (address >> 0x10) & 0xff;
@@ -54,7 +55,7 @@ void STMBootLoader::SendAddress(uint32_t address) {
   this->uart.Send(buf, 5);
 }
 
-TaskResult STMBootLoader::DoGetVersion() {
+TaskResult Stm32BootLoaderUart::DoGetVersion() {
   this->SendCommand(this->get_version);
   RUN_TASK_V(this->RecvACK());
 
@@ -69,7 +70,7 @@ TaskResult STMBootLoader::DoGetVersion() {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::DoExtendedErase(FlashPage page) {
+TaskResult Stm32BootLoaderUart::DoExtendedErase(FlashPage page) {
   this->SendCommand(this->erase);
   RUN_TASK_V(this->RecvACK());
 
@@ -79,7 +80,7 @@ TaskResult STMBootLoader::DoExtendedErase(FlashPage page) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::DoExtendedErase(std::vector<uint16_t> pages) {
+TaskResult Stm32BootLoaderUart::DoExtendedErase(std::vector<uint16_t> pages) {
   this->SendCommand(this->erase);
   RUN_TASK_V(this->RecvACK());
 
@@ -100,25 +101,26 @@ TaskResult STMBootLoader::DoExtendedErase(std::vector<uint16_t> pages) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::DoErase(FlashPage page) {
+TaskResult Stm32BootLoaderUart::DoErase(FlashPage page) {
   // TODO(syoch): Impl
   return ESP_ERR_NOT_SUPPORTED;
 }
-TaskResult STMBootLoader::DoErase(std::vector<uint16_t> pages) {
+TaskResult Stm32BootLoaderUart::DoErase(std::vector<uint16_t> pages) {
   // TODO(syoch): Impl
   return ESP_ERR_NOT_SUPPORTED;
 }
 
-STMBootLoader::STMBootLoader(gpio_num_t reset, gpio_num_t boot0,
-                             uart_port_t num, int tx, int rx)
-    : uart(num, tx, rx, 112500, UART_PARITY_EVEN), reset(reset), boot0(boot0) {
+Stm32BootLoaderUart::Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0,
+                                         uart_port_t num, int tx, int rx)
+    : uart(num, tx, rx, 112500, UART_PARITY_EVEN),
+      STM32BootLoader(reset, boot0) {
   gpio_set_direction(reset, GPIO_MODE_OUTPUT);
   gpio_set_direction(boot0, GPIO_MODE_OUTPUT);
 
   gpio_set_level(reset, 1);
 }
 
-STMBootLoader::Version* STMBootLoader::GetVersion() {
+Stm32BootLoaderUart::Version* Stm32BootLoaderUart::GetVersion() {
   if (!this->version.is_valid) {
     this->version.is_valid = true;
     this->GetVersion();
@@ -127,27 +129,7 @@ STMBootLoader::Version* STMBootLoader::GetVersion() {
   return &this->version;
 }
 
-void STMBootLoader::BootBootLoader() {
-  ESP_LOGI(TAG, "Booting BootLoader");
-  ESP_LOGI(TAG, "- reset = 0");
-  gpio_set_level(this->reset, 0);
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-
-  ESP_LOGI(TAG, "- boot0 = 1");
-  gpio_set_level(this->boot0, 1);
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-
-  ESP_LOGI(TAG, "- reset = 1");
-  gpio_set_level(this->reset, 1);
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-
-  ESP_LOGI(TAG, "- boot0 = 0");
-  gpio_set_level(this->boot0, 0);
-
-  this->uart.Flush();
-}
-
-TaskResult STMBootLoader::Sync() {
+TaskResult Stm32BootLoaderUart::Sync() {
   this->uart.Send((uint8_t*)"\x7f", 1);
 
   RUN_TASK(this->uart.RecvChar(), ret);
@@ -161,7 +143,7 @@ TaskResult STMBootLoader::Sync() {
   }
 }
 
-TaskResult STMBootLoader::Get() {
+TaskResult Stm32BootLoaderUart::Get() {
   this->SendCommand(this->get);
   RUN_TASK_V(this->RecvACK());
 
@@ -199,8 +181,8 @@ TaskResult STMBootLoader::Get() {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
-                                           size_t size) {
+TaskResult Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
+                                                 uint8_t* buffer, size_t size) {
   ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, size);
   this->uart.Send((uint8_t*)"\x31\xce", 2);
   RUN_TASK_V(this->RecvACK());
@@ -222,8 +204,9 @@ TaskResult STMBootLoader::WriteMemoryBlock(uint32_t address, uint8_t* buffer,
   return TaskResult::Ok();
 }
 
-int STMBootLoader::WriteMemory(uint32_t address, unsigned char* buffer,
-                               size_t size) {
+TaskResult Stm32BootLoaderUart::WriteMemory(uint32_t address,
+                                            unsigned char* buffer,
+                                            size_t size) {
   int remains = size;
   uint8_t* ptr = buffer;
   uint8_t buf[256];
@@ -239,7 +222,7 @@ int STMBootLoader::WriteMemory(uint32_t address, unsigned char* buffer,
   return size;
 }
 
-TaskResult STMBootLoader::Go(uint32_t address) {
+TaskResult Stm32BootLoaderUart::Go(uint32_t address) {
   ESP_LOGI(TAG, "Go command");
   this->uart.Send((uint8_t*)"\x21\xde", 2);
   RUN_TASK_V(this->RecvACK());
@@ -250,7 +233,7 @@ TaskResult STMBootLoader::Go(uint32_t address) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::Erase(FlashPage page) {
+TaskResult Stm32BootLoaderUart::Erase(FlashPage page) {
   if (this->use_extended_erase) {
     RUN_TASK_V(this->DoExtendedErase(page));
   } else {
@@ -260,7 +243,7 @@ TaskResult STMBootLoader::Erase(FlashPage page) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::Erase(std::vector<uint16_t> pages) {
+TaskResult Stm32BootLoaderUart::Erase(std::vector<uint16_t> pages) {
   if (this->use_extended_erase) {
     RUN_TASK_V(this->DoExtendedErase(pages));
   } else {
@@ -270,7 +253,7 @@ TaskResult STMBootLoader::Erase(std::vector<uint16_t> pages) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
+TaskResult Stm32BootLoaderUart::BulkErase(std::vector<uint16_t> pages) {
   int all_pages = pages.size();
 
   std::vector<uint16_t> sub_pages;
@@ -297,10 +280,10 @@ TaskResult STMBootLoader::BulkErase(std::vector<uint16_t> pages) {
   return TaskResult::Ok();
 }
 
-TaskResult STMBootLoader::Erase(uint32_t address, uint32_t length) {
+TaskResult Stm32BootLoaderUart::Erase(uint32_t address, uint32_t length) {
   if (address + length > 0x0804'0000) {
     // bulk erase bank1
-    this->Erase(STMBootLoader::bank1);
+    this->Erase(Stm32BootLoaderUart::bank1);
 
     // erase address + length - 0x0804'0000
     int bank2_erase_start = (address - 0x0804'0000) >> 11;
@@ -324,3 +307,4 @@ TaskResult STMBootLoader::Erase(uint32_t address, uint32_t length) {
 
   return TaskResult::Ok();
 }
+}  // namespace stm32bl

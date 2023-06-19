@@ -35,51 +35,61 @@ class UserButton {
 };
 
 void BootStrap() {
-  // auto config = config::Config::GetInstance();
-  // config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 0, 1}};
-  // config->server_profile.port = 8080;
-  // config->network_profiles[0].mode = types::NetworkMode::STA;
-  // config->network_profiles[0].ip_mode = types::IPMode::DHCP;
-  // config->network_profiles[0].name = "Network@home";
-  // config->network_profiles[0].ssid = "";
-  // config->network_profiles[0].password = "";
-  // config->network_profiles[0].hostname = "esp32-0610";
-  // config->network_profiles[0].ip = 0;
-  // config->network_profiles[0].subnet = 0;
-  // config->network_profiles[0].gateway = 0;
-  // config->active_network_profile = 0;
-  // config->stm32_bootloader_profile.reset = GPIO_NUM_19;
-  // config->stm32_bootloader_profile.boot0 = GPIO_NUM_21;
-  // config->stm32_bootloader_profile.uart_port = 1;
-  // config->stm32_bootloader_profile.uart_tx = GPIO_NUM_17;  // TX2
-  // config->stm32_bootloader_profile.uart_rx = GPIO_NUM_16;  // RX2
+  SPIMaster master(VSPI_HOST, 23, 19, 18);
+  {
+    auto stm32bl_ns = new nvs::Namespace("a_s32bl");
+    auto stm32bl = profile::SpiSTM32BootLoaderProfile(stm32bl_ns);
 
-  // init::init_data_server();
+    stm32bl.reset = GPIO_NUM_27;
+    stm32bl.boot0 = GPIO_NUM_26;
+    stm32bl.cs = GPIO_NUM_5;
+    stm32bl.spi_port = 1;
 
-  // xTaskCreate((TaskFunction_t)([](void* args) {
-  //             while (1) {
-  //               vTaskDelay(50 / portTICK_PERIOD_MS);
-  //               ((DebuggerMaster*)args)->Idle();
-  //             }
-  //             return;
-  //           }),
-  //           "Debugger Idling Thread", 0x1000, &config::debugger, 1,
-  //           nullptr);
+    stm32bl.Save();
+  }
+
+  {
+    auto config = config::Config::GetInstance();
+    config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 11, 7}};
+    config->server_profile.port = 8080;
+    config->network_profiles[0].mode = types::NetworkMode::STA;
+    config->network_profiles[0].name = "Network@Ryo";
+    config->network_profiles[0].ssid = "***REMOVED***";
+    config->network_profiles[0].password = "***REMOVED***";
+    config->network_profiles[0].hostname = "esp32-0610";
+    config->network_profiles[0].ip_mode = types::IPMode::DHCP;
+    config->network_profiles[0].ip = 0;
+    config->network_profiles[0].subnet = 0;
+    config->network_profiles[0].gateway = 0;
+    config->active_network_profile = 0;
+  }
+
+  init::init_data_server();
+
+  xTaskCreate((TaskFunction_t)([](void* args) {
+                while (1) {
+                  vTaskDelay(50 / portTICK_PERIOD_MS);
+                  ((DebuggerMaster*)args)->Idle();
+                }
+                return;
+              }),
+              "Debugger Idling Thread", 0x1000,
+              config::Config::GetInstance()
+                  ->stm32_remote_controller_profile.GetDebuggerMaster(),
+              1, nullptr);
 }
 
 TaskResult Main() {
-  // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
-  // config::server.StartClientLoopAtForeground();
+  ESP_LOGI(TAG, "Entering the Server's ClientLoop");
+  config::server.StartClientLoopAtForeground();
 
-  SPIMaster master(VSPI_HOST, 23, 19, 18);
-
-  stm32bl::Stm32BootLoaderSPI bl(GPIO_NUM_27, GPIO_NUM_26, master, 5);
-
-  RUN_TASK_V(bl.Connect());
-  RUN_TASK_V(bl.Get());
-
-  bl.Erase(0x08000000, new_flash_len);
-  RUN_TASK_V(bl.WriteMemory(0x08000000, new_flash, new_flash_len));
+  // stm32bl::Stm32BootLoaderSPI bl(GPIO_NUM_27, GPIO_NUM_26, master, 5);
+  //
+  // RUN_TASK_V(bl.Connect());
+  // RUN_TASK_V(bl.Get());
+  //
+  // bl.Erase(0x08000000, new_flash_len);
+  // RUN_TASK_V(bl.WriteMemory(0x08000000, new_flash, new_flash_len));
 
   /*
   nvs_iterator_t it;

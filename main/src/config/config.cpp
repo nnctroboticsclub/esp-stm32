@@ -16,12 +16,12 @@ Config::Config()
       },
       active_network_profile(new nvs::Namespace("a_conf"), "active_nw"),
       server_profile(new nvs::Namespace("a_srv")),
-      stm32_bootloader_profile(new nvs::Namespace("a_s32bl")),
-      stm32_remote_controller_profile(new nvs::Namespace("a_s32rc")) {}
+      stm32_remote_controller_profile(new nvs::Namespace("a_s32rc")) {
+  this->stm32_bootloader_profile =
+      LoadSTM32BootLoaderProfile(new nvs::Namespace("a_s32bl"));
+}
 
-// DebuggerMaster debugger(UART_NUM_2, 11, 12);
-
-app::Wifi network;
+Config::~Config() { delete this->stm32_bootloader_profile; }
 
 Server server;
 }  // namespace config

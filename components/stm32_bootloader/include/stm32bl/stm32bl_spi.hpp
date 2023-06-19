@@ -1,13 +1,10 @@
 #include <spi.hpp>
 #include <driver/gpio.h>
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
+#include "../stm32bl.hpp"
 #include "helper.hpp"
 namespace stm32bl {
 
-class Stm32BootLoaderSPI {
+class Stm32BootLoaderSPI : public STM32BootLoader {
   static constexpr const char* TAG = "STM32 BootLoader[SPI]";
 
  public:  // Debug public.
@@ -31,9 +28,6 @@ class Stm32BootLoaderSPI {
     uint8_t get_checksum;
   } commands;
 
-  gpio_num_t reset, boot0;
-  void DoSTM32Reset();
-
   TaskResult WaitACKFrame();
 
   TaskResult Synchronization();
@@ -46,7 +40,7 @@ class Stm32BootLoaderSPI {
 
  public:
   Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0, SPIMaster& spi_master,
-              int cs);
+                     int cs);
 
   TaskResult Connect();
 
@@ -54,9 +48,11 @@ class Stm32BootLoaderSPI {
 
   TaskResult Erase(SpecialFlashPage page);
   TaskResult Erase(std::vector<FlashPage> pages);
-  TaskResult Erase(uint32_t addr, uint32_t size);
+  TaskResult Erase(uint32_t addr, uint32_t size) override;
 
   TaskResult WriteMemoryBlock(uint32_t addr, uint8_t* buffer, size_t size);
-  TaskResult WriteMemory(uint32_t addr, uint8_t* buffer, size_t size);
+  TaskResult WriteMemory(uint32_t addr, uint8_t* buffer, size_t size) override;
+
+  TaskResult Go(uint32_t addr) override;
 };
 }  // namespace stm32bl
