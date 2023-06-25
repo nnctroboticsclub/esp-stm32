@@ -43,6 +43,8 @@ void Wifi::event_handler(void* arg, esp_event_base_t event_base,
 
 Wifi::Wifi() : s_wifi_event_group(nullptr), netif(nullptr) {
   this->s_wifi_event_group = xEventGroupCreate();
+  wifi::init::init_netif();
+  wifi::init::init_eventloop();
 }
 
 Wifi::~Wifi() {
@@ -75,7 +77,6 @@ void Wifi::InitAp(const char* ssid, const char* password) {
   initialized = true;
 
   ESP_LOGI(TAG, "[Netif] New AP");
-  wifi::init::init_netif();
   this->netif = esp_netif_create_default_wifi_ap();
 
   wifi::init::init_wifi_lib(&Wifi::event_handler, (void*)this);
@@ -102,7 +103,6 @@ void Wifi::InitSta() {
   initialized = true;
 
   ESP_LOGI(TAG, "[Netif] New Sta");
-  wifi::init::init_netif();
   this->netif = esp_netif_create_default_wifi_sta();
 
   wifi::init::init_wifi_lib(&Wifi::event_handler, (void*)this);
