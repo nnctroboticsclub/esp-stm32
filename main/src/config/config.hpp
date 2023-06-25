@@ -62,7 +62,7 @@ class Config {
 };
 
 extern Server server;
-extern app::Wifi network;
+extern wifi::Wifi network;
 }  // namespace config
 
 #endif

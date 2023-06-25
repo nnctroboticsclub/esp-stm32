@@ -7,9 +7,9 @@
 namespace profile {
 class STM32BootLoaderProfileInterface {
  public:
-  virtual ~STM32BootLoaderProfileInterface();
-  virtual void Save();
-  virtual stm32bl::STM32BootLoader* GetLoader();
+  virtual ~STM32BootLoaderProfileInterface() = 0;
+  virtual void Save() = 0;
+  virtual stm32bl::STM32BootLoader* GetLoader() = 0;
 };
 
 STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(

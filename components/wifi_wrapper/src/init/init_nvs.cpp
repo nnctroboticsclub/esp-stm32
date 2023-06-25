@@ -3,7 +3,7 @@
 #include <esp_log.h>
 #include <nvs_flash.h>
 
-void wifi_init::init_nvs() {
+void wifi::init::init_nvs() {
   static bool initialized = false;
   if (initialized) return;
   initialized = true;

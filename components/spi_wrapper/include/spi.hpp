@@ -12,7 +12,7 @@ class SPIDevice {
   spi_device_handle_t device;
 
  public:
-  SPIDevice(spi_host_device_t host, int ss) {
+  SPIDevice(spi_host_device_t host, int ss, int freq = 1024 * 1024 * 2) {
     spi_device_interface_config_t config = {
         .command_bits = 0,
         .address_bits = 0,
@@ -21,7 +21,7 @@ class SPIDevice {
         .duty_cycle_pos = 128,
         .cs_ena_pretrans = 0,
         .cs_ena_posttrans = 0,
-        .clock_speed_hz = 1024 * 1024 * 2,
+        .clock_speed_hz = freq,
         .input_delay_ns = 5,
         .spics_io_num = ss,
         .flags = 0,
@@ -103,5 +103,7 @@ class SPIMaster {
 
   SPIMaster(spi_host_device_t spi_host) : spi_host(spi_host) {}
 
-  SPIDevice NewDevice(int ss) { return SPIDevice(this->spi_host, ss); }
+  SPIDevice NewDevice(int ss, int freq = 1024 * 1024 * 2) {
+    return SPIDevice(this->spi_host, ss, freq);
+  }
 };

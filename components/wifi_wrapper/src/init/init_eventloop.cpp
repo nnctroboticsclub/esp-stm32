@@ -3,7 +3,7 @@
 #include <esp_log.h>
 #include <esp_event.h>
 
-void wifi_init::init_eventloop() {
+void wifi::init::init_eventloop() {
   static bool initialized = false;
   if (initialized) return;
   initialized = true;

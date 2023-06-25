@@ -60,10 +60,12 @@
     "esp_log.h": "c"
   },
   "cSpell.words": [
+    "authmode",
     "bootloader",
     "cmdq",
     "LOGI",
     "LOGW",
+    "netif",
     "ssid",
     "unprotect"
   ],

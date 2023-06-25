@@ -119,37 +119,6 @@ struct ClientHandler {
       Opcode opcode = static_cast<Opcode>(opcode_raw);
 
       switch (opcode) {
-        case Opcode::ReadMemoryU32: {
-          ESP_LOGE(TAG, "Read Memory is not supported");
-          return ESP_ERR_NOT_SUPPORTED;
-          /*
-          RUN_TASK(this->TryRecvInt(), addr);
-
-          // buf[0] = 0x12;
-          // buf[1] = (*addr >> 24) & 0xff;
-          // buf[2] = (*addr >> 16) & 0xff;
-          // buf[3] = (*addr >> 8) & 0xff;
-          // buf[4] = (*addr) & 0xff;
-          // TODO: Fix This
-          // config::tx.Send(buf, 5);
-
-          uint8_t* rx_buf = nullptr;
-          int received = 0;
-          // TODO: Fix This
-          // config::rx.Receive(&rx_buf, &received);
-          if (received != 4) {
-            ESP_LOGE(TAG, "(%3d) Failed to receive the value", client);
-            break;
-          }
-
-          RUN_TASK_V(this->TrySend(rx_buf, 4));
-          free(rx_buf);
-
-          */
-
-          break;
-        }
-
         /*
          * The opcodes related STM32 BootLoader
          */

@@ -24,5 +24,5 @@ Config::Config()
 Config::~Config() { delete this->stm32_bootloader_profile; }
 
 Server server;
-app::Wifi network;
+wifi::Wifi network;
 }  // namespace config

@@ -17,17 +17,29 @@ void init::init_wifi() {
   ESP_LOGI(TAG, "Initializing WiFi [%s]", name);
   ESP_LOGD(TAG, "SSID: %s, password: %s", (char*)profile.ssid,
            (char*)profile.password);
-  config::network.InitHW();
-  config::network.SetCredentials(profile.ssid, profile.password);
   if (profile.ip_mode == types::IPMode::STATIC) {
-    config::network.SetIP(profile.ip.ToEspIp4Addr(),
-                          profile.subnet.ToEspIp4Addr(),
-                          profile.gateway.ToEspIp4Addr());
+    esp_netif_ip_info_t ip_info{
+        .ip = profile.ip.ToEspIp4Addr(),
+        .netmask = profile.subnet.ToEspIp4Addr(),
+        .gw = profile.gateway.ToEspIp4Addr(),
+    };
+    config::network.SetIP(ip_info);
   }
 
   if (profile.mode == types::NetworkMode::AP) {
-    config::network.InitAp();
+    config::network.InitAp(profile.ssid, profile.password);
   } else {
+    wifi::WifiConnectionProfile profile{
+        .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
+        .ssid = (char*)profile.ssid,
+        .password = (char*)profile.password,
+        .user = nullptr,
+        .id = nullptr,
+    };
     config::network.InitSta();
+
+    config::network.ConnectToAP(&profile);
   }
+
+  config::network.WaitUntilConnected();
 }

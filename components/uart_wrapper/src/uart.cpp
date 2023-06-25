@@ -27,6 +27,8 @@ UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
       uart_driver_install(this->port, this->buf_size, 0, 10, nullptr, 0));
 }
 
+UART::UART(uart_port_t port) : port(port) {}
+
 size_t UART::GetRXBufferDataLength() {
   size_t size;
   uart_get_buffered_data_len(this->port, &size);

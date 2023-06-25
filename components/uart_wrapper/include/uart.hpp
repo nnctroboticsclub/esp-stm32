@@ -1,6 +1,7 @@
 #pragma once
 
 #include <driver/uart.h>
+#include <string>
 
 #include "result.hpp"
 
@@ -15,6 +16,7 @@ class UART {
 
  public:
   UART(uart_port_t port, int tx, int rx, int baud_rate, uart_parity_t parity);
+  UART(uart_port_t port);
 
   size_t GetRXBufferDataLength();
 
@@ -28,4 +30,28 @@ class UART {
 
   TaskResult RecvExactly(uint8_t* buf, size_t size,
                          TickType_t timeout = portMAX_DELAY);
+
+  template <size_t N>
+  size_t Send(const char (&buf)[N]) {
+    return Send((uint8_t*)buf, N - 1);
+  }
+
+  template <size_t N>
+  TaskResult RecvExactly(uint8_t (&buf)[N],
+                         TickType_t timeout = portMAX_DELAY) {
+    return RecvExactly(buf, N, timeout);
+  }
+
+  Result<std::string> RecvUntil(char delim,
+                                TickType_t timeout = portMAX_DELAY) {
+    std::string ret;
+    while (true) {
+      RUN_TASK(this->RecvChar(timeout), c);
+      if (c == delim) {
+        return ret;
+      }
+      ret += c;
+    }
+    return ret;
+  }
 };
