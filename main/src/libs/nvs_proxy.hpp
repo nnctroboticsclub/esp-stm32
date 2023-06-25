@@ -31,7 +31,6 @@ class Namespace {
                ns);
       esp_system_abort("NVS Open Failed nvs_proxy.hpp:L20");
     }
-    ESP_LOGI(TAG, "NVS namespace %s opened [%lu]", ns, this->handle_);
   }
   ~Namespace() { nvs_close(handle_); }
 
