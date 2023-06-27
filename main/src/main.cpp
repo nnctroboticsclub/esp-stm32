@@ -53,8 +53,8 @@ void BootStrap() {
       config->server_profile.Save();
       config->network_profiles[0].mode = types::NetworkMode::STA;
       config->network_profiles[0].name = "Network@Ryo";
-      config->network_profiles[0].ssid = "***REMOVED***";
-      config->network_profiles[0].password = "***REMOVED***";
+      config->network_profiles[0].ssid = "";
+      config->network_profiles[0].password = "";
       config->network_profiles[0].hostname = "esp32-0610";
       config->network_profiles[0].ip_mode = types::IPMode::DHCP;
       config->network_profiles[0].ip = 0;
@@ -63,7 +63,7 @@ void BootStrap() {
       config->network_profiles[0].Save();
       config->network_profiles[1].mode = types::NetworkMode::STA;
       config->network_profiles[1].name = "Tethering";
-      config->network_profiles[1].ssid = "***REMOVED***";
+      config->network_profiles[1].ssid = "";
       config->network_profiles[1].password = "aaaabbbb";
       config->network_profiles[1].hostname = "esp32-0610";
       config->network_profiles[1].ip_mode = types::IPMode::DHCP;
