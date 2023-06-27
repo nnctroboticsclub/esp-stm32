@@ -79,9 +79,9 @@ class Stm32BootLoaderUart : public STM32BootLoader {
 
   TaskResult Connect() override;
 
-  TaskResult WriteMemoryBlock(uint32_t address, uint8_t* buffer, size_t size);
-  TaskResult WriteMemory(uint32_t address, unsigned char* buffer,
-                         size_t size) override;
+  TaskResult WriteMemoryBlock(uint32_t address, std::vector<uint8_t> buffer);
+  TaskResult WriteMemory(uint32_t address,
+                         std::vector<uint8_t> buffer) override;
 
   TaskResult Erase(FlashPage page);
   TaskResult Erase(std::vector<uint16_t> pages);

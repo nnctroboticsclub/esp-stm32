@@ -1189,6 +1189,12 @@ CONFIG_WPA_MBEDTLS_TLS_CLIENT=y
 # end of Supplicant
 
 #
+# UART
+#
+# CONFIG_UART_WRAPPER_ENABLE_DEBUG is not set
+# end of UART
+
+#
 # mDNS
 #
 CONFIG_MDNS_MAX_INTERFACES=3
@@ -1214,17 +1220,6 @@ CONFIG_MDNS_PREDEF_NETIF_STA=y
 CONFIG_MDNS_PREDEF_NETIF_AP=y
 # end of MDNS Predefined interfaces
 # end of mDNS
-
-#
-# UART
-#
-# CONFIG_UART_WRAPPER_ENABLE_DEBUG is not set
-# end of UART
-
-#
-# UART
-#
-# end of UART
 # end of Component config
 
 # Deprecated options for backward compatibility

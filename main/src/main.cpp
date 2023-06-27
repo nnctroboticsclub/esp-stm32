@@ -10,8 +10,7 @@
 #include <esp_system.h>
 
 #include <esp_console.h>
-
-#include "spi.hpp"
+#include <spi_host_cxx.hpp>
 #include "libs/gpio.hpp"
 const char* TAG = "Main";
 
@@ -45,7 +44,8 @@ void BootStrap() {
     nvs_flash_erase();
   }
 
-  SPIMaster master(VSPI_HOST, 23, 19, 18);
+  idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
+                        idf::SCLK(18));
 
   nvs::SharedNamespace flags("a_flags");
   nvs::Proxy<bool> initialised{flags, "initialized"};
@@ -71,20 +71,40 @@ void BootStrap() {
       config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 11, 7}};
       config->server_profile.port = 8080;
       config->server_profile.Save();
+      config->network_profiles[0].mode = types::NetworkMode::STA;
+      config->network_profiles[0].name = "Network@Ryo";
+      config->network_profiles[0].ssid = "***REMOVED***";
+      config->network_profiles[0].password = "***REMOVED***";
+      config->network_profiles[0].hostname = "esp32-0610";
+      config->network_profiles[0].ip_mode = types::IPMode::DHCP;
+      config->network_profiles[0].ip = 0;
+      config->network_profiles[0].subnet = 0;
+      config->network_profiles[0].gateway = 0;
+      config->network_profiles[0].Save();
+      config->network_profiles[1].mode = types::NetworkMode::STA;
+      config->network_profiles[1].name = "Tethering";
+      config->network_profiles[1].ssid = "***REMOVED***";
+      config->network_profiles[1].password = "***REMOVED***";
+      config->network_profiles[1].hostname = "esp32-0610";
+      config->network_profiles[1].ip_mode = types::IPMode::DHCP;
+      config->network_profiles[1].ip = 0;
+      config->network_profiles[1].subnet = 0;
+      config->network_profiles[1].gateway = 0;
+      config->network_profiles[1].Save();
 
-        config->network_profiles[2].mode = types::NetworkMode::AP;
-        config->network_profiles[2].name = "AP (ESP32-syoch)";
-        config->network_profiles[2].ssid = "ESP32-syoch";
-        config->network_profiles[2].password = "esp32-0610";
-        config->network_profiles[2].hostname = "esp32-0610";
-        config->network_profiles[2].ip_mode = types::IPMode::STATIC;
-        config->network_profiles[2].ip =
-            types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
-        config->network_profiles[2].subnet =
-            types::Ipv4{.ip_bytes = {255, 255, 255, 0}};
-        config->network_profiles[2].gateway =
-            types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
-        config->network_profiles[2].Save();
+      config->network_profiles[2].mode = types::NetworkMode::AP;
+      config->network_profiles[2].name = "AP (ESP32-syoch)";
+      config->network_profiles[2].ssid = "ESP32-syoch";
+      config->network_profiles[2].password = "esp32-0610";
+      config->network_profiles[2].hostname = "esp32-0610";
+      config->network_profiles[2].ip_mode = types::IPMode::STATIC;
+      config->network_profiles[2].ip =
+          types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
+      config->network_profiles[2].subnet =
+          types::Ipv4{.ip_bytes = {255, 255, 255, 0}};
+      config->network_profiles[2].gateway =
+          types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
+      config->network_profiles[2].Save();
       config->stm32_remote_controller_profile.uart_port = 1;
       config->stm32_remote_controller_profile.uart_tx = 17;
       config->stm32_remote_controller_profile.uart_rx = 16;
@@ -473,29 +493,10 @@ void StartConsole() {
 }  // namespace cmd
 
 extern "C" int app_main() {
-  // BootStrap();
-
-  // StartConsole();
-
-  nvs_flash_erase();
   BootStrap();
-  config::network.InitSta();
-  config::network.ConnectToAP(&prof);
-  ESP_ERROR_CHECK(esp_wifi_start());
-  config::network.WaitUntilConnected();
 
-  esp_netif_dhcpc_start(config::network.netif);
-  config::network.WaitForIP();
+  cmd::StartConsole();
 
-  // esp_netif_ip_info_t ip_info;
-  // ip_info.ip.addr = 0x0a280028;
-  // ip_info.gw.addr = 0x0a280001;
-  // ip_info.netmask.addr = 0xffffff00;
-  // config::network.SetIP(ip_info);
-  // printf("Wifi OK.");
-
-  init::init_data_server();
-  config::server.StartClientLoopAtForeground();
   return 0;
   Init();
   Main();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <result.hpp>
 #include <driver/gpio.h>
 
@@ -19,8 +21,8 @@ class STM32BootLoader {
 
   virtual TaskResult Connect() = 0;
 
-  virtual TaskResult WriteMemory(uint32_t address, uint8_t* buffer,
-                                 size_t size) = 0;
+  virtual TaskResult WriteMemory(uint32_t address,
+                                 std::vector<uint8_t> buf) = 0;
   virtual TaskResult Erase(uint32_t address, uint32_t length) = 0;
   virtual TaskResult Go(uint32_t address) = 0;
 

@@ -45,4 +45,8 @@ uint8_t CalculateChecksum(uint8_t* buf, size_t size) {
   }
   return checksum;
 }
+
+uint8_t CalculateChecksum(std::vector<uint8_t> buf) {
+  return CalculateChecksum(buf.data(), buf.size());
+}
 }  // namespace stm32bl

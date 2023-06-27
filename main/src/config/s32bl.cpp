@@ -65,10 +65,9 @@ void SpiSTM32BootLoaderProfile::Save() {
 stm32bl::Stm32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
   static stm32bl::Stm32BootLoaderSPI* loader = nullptr;
   if (loader == nullptr) {
-    SPIMaster bus{(spi_host_device_t)(uint8_t)this->spi_port};
-    loader = new stm32bl::Stm32BootLoaderSPI((gpio_num_t)this->reset,
-                                             (gpio_num_t)this->boot0, bus,
-                                             (gpio_num_t)this->cs);
+    loader = new stm32bl::Stm32BootLoaderSPI(
+        (gpio_num_t)this->reset, (gpio_num_t)this->boot0, (idf::SPINum)spi_port,
+        (idf::CS)(uint8_t)this->cs);
   }
   return loader;
 }

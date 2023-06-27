@@ -14,5 +14,5 @@ list(APPEND app_features_required_components stm32_remote_controller)
 idf_component_register(SRCS ${app_sources}
   INCLUDE_DIRS "include"
 
-  REQUIRES ${app_features_required_components} driver nvs_flash result esp_event console
+  REQUIRES ${app_features_required_components} driver nvs_flash result esp_event console esp-idf-cxx
 )

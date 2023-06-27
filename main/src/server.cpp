@@ -137,19 +137,15 @@ struct ClientHandler {
           RUN_TASK_V(config::Config::GetSTM32BootLoader()->Erase(
               CONFIG_STM32_PROGRAM_START, length, 0x4000));
 
-          uint8_t* tcp_buffer = new unsigned char[0x1000];
-          if (tcp_buffer == nullptr) {
-            ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
-            break;
-          }
+          std::vector<uint8_t> buffer(0x1000, 0);
 
           int end = CONFIG_STM32_PROGRAM_START + length;
           int ptr = CONFIG_STM32_PROGRAM_START;
           while (ptr < end) {
-            RUN_TASK(this->TryRecv(tcp_buffer, 0x1000), received);
+            RUN_TASK(this->TryRecv(buffer.data(), 0x1000), received);
+            buffer.resize(received);
 
-            config::Config::GetSTM32BootLoader()->WriteMemory(ptr, tcp_buffer,
-                                                              received);
+            config::Config::GetSTM32BootLoader()->WriteMemory(ptr, buffer);
             ptr += received;
           }
           RUN_TASK_V(this->TrySend("OK"));

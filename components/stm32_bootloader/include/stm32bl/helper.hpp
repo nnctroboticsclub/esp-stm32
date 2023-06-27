@@ -29,4 +29,6 @@ Pages MemoryRangeToPages(uint32_t address, uint32_t length);
 
 uint8_t CalculateChecksum(uint8_t* buf, size_t size);
 
+uint8_t CalculateChecksum(std::vector<uint8_t> buf);
+
 }  // namespace stm32bl

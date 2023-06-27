@@ -195,21 +195,21 @@ TaskResult Stm32BootLoaderUart::Get() {
 }
 
 TaskResult Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
-                                                 uint8_t* buffer, size_t size) {
-  ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, size);
+                                                 std::vector<uint8_t> buffer) {
+  ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, buffer.size());
   this->uart.Send((uint8_t*)"\x31\xce", 2);
   RUN_TASK_V(this->RecvACK());
 
   this->SendAddress(address);
   RUN_TASK_V(this->RecvACK());
 
-  this->uart.SendChar(size - 1);
+  this->uart.SendChar(buffer.size() - 1);
 
-  uint8_t checksum = size - 1;
-  for (int i = 0; i < size; i++) {
+  uint8_t checksum = buffer.size() - 1;
+  for (int i = 0; i < buffer.size(); i++) {
     checksum ^= buffer[i];
   }
-  this->uart.Send((uint8_t*)buffer, size);
+  this->uart.Send(buffer.data(), buffer.size());
   this->uart.SendChar(checksum);
 
   RUN_TASK_V(this->RecvACK());
@@ -218,21 +218,19 @@ TaskResult Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
 }
 
 TaskResult Stm32BootLoaderUart::WriteMemory(uint32_t address,
-                                            unsigned char* buffer,
-                                            size_t size) {
-  int remains = size;
-  uint8_t* ptr = buffer;
-  uint8_t buf[256];
+                                            std::vector<uint8_t> buffer) {
+  int remains = buffer.size();
+  uint8_t* ptr = buffer.data();
+  std::vector<uint8_t> buf(256, 0x00);
   int offset = 0;
   while (remains > 0) {
-    memset(buf, 0, 256);
-    memcpy(buf, ptr, remains > 256 ? 256 : remains);
-    this->WriteMemoryBlock(address + offset, buf, 256);
+    memcpy(buf.data(), ptr, remains > 256 ? 256 : remains);
+    this->WriteMemoryBlock(address + offset, buf);
     remains = remains - 256 > 0 ? remains - 256 : 0;
     ptr += 256;
     offset += 256;
   }
-  return size;
+  return TaskResult::Ok();
 }
 
 TaskResult Stm32BootLoaderUart::Go(uint32_t address) {
