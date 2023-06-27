@@ -10,14 +10,15 @@ def wait_ok(sock, name):
 
 argv = sys.argv
 
-if len(argv) != 2:
-    print("Usage: python3 upload.py <file>")
+if len(argv) != 3:
+    print("Usage: python3 upload.py <ip> <file>")
     exit(1)
 
-filename = argv[1]
+ip = argv[1]
+filename = argv[2]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(("192.168.209.132", 4007))
+sock.connect((ip, 4007))
 sock.settimeout(60)
 
 with open(filename, "rb") as f:

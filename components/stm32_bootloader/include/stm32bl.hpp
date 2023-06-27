@@ -3,18 +3,18 @@
 #include <vector>
 
 #include <result.hpp>
-#include <driver/gpio.h>
+#include <gpio_cxx.hpp>
 
 namespace stm32bl {
 class STM32BootLoader {
   static constexpr const char* TAG = "STM32 BootLoader";
 
  private:
-  gpio_num_t reset;
-  gpio_num_t boot0;
+  idf::GPIO_Output reset;
+  idf::GPIO_Output boot0;
 
  public:
-  STM32BootLoader(gpio_num_t reset, gpio_num_t boot0);
+  STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0);
   virtual ~STM32BootLoader();
 
   void BootBootLoader();

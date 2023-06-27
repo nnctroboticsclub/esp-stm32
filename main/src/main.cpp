@@ -18,13 +18,14 @@ const char* TAG = "Main";
 
 void BootStrap() {
   idf::GPIOInput flag(idf::GPIONum(22));
+  flag.set_pull_mode(idf::GPIOPullMode::PULLDOWN());
   if (flag.get_level() == idf::GPIOLevel::HIGH) {
     ESP_LOGI(TAG, "Erasing the NVS (reason: gpio 22 is high)");
     nvs_flash_erase();
   }
 
-  idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
-                        idf::SCLK(18));
+  volatile idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
+                                 idf::SCLK(18));
 
   nvs::SharedNamespace flags("a_flags");
   nvs::Proxy<bool> initialised{flags, "initialized"};
@@ -63,7 +64,7 @@ void BootStrap() {
       config->network_profiles[1].mode = types::NetworkMode::STA;
       config->network_profiles[1].name = "Tethering";
       config->network_profiles[1].ssid = "***REMOVED***";
-      config->network_profiles[1].password = "***REMOVED***";
+      config->network_profiles[1].password = "aaaabbbb";
       config->network_profiles[1].hostname = "esp32-0610";
       config->network_profiles[1].ip_mode = types::IPMode::DHCP;
       config->network_profiles[1].ip = 0;

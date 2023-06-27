@@ -74,26 +74,23 @@ TaskResult Stm32BootLoaderSPI::CommandHeader(uint8_t cmd) {
 }
 
 TaskResult Stm32BootLoaderSPI::ReadData(uint8_t* buf, size_t size) {
-  std::vector<uint8_t> buf1(size, 0xee);
   std::vector<uint8_t> dummy = {0x00};
-
   this->device.transfer(dummy).wait();
 
-  this->device.transfer(buf1).wait();
+  RUN_TASK_V(this->ReadDataWithoutHeader(buf, size));
 
   return TaskResult::Ok();
 }
 
 TaskResult Stm32BootLoaderSPI::ReadDataWithoutHeader(uint8_t* buf,
                                                      size_t size) {
-  std::vector<uint8_t> dummy = {0x00};
-
-  this->device.transfer(dummy).wait();
+  std::vector<uint8_t> buf1(buf, buf + size);
+  this->device.transfer(buf1).wait();
 
   return TaskResult::Ok();
 }
 
-Stm32BootLoaderSPI::Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0,
+Stm32BootLoaderSPI::Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                                        idf::SPINum spi_host, idf::CS cs)
     : STM32BootLoader(reset, boot0), device(spi_host, cs) {}
 

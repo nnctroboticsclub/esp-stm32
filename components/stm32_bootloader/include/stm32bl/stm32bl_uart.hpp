@@ -68,7 +68,7 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   TaskResult DoErase(std::vector<uint16_t> pages);
 
  public:
-  Stm32BootLoaderUart(gpio_num_t reset, gpio_num_t boot0, uart_port_t num,
+  Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0, uart_port_t num,
                       int tx, int rx);
   virtual ~Stm32BootLoaderUart();
 

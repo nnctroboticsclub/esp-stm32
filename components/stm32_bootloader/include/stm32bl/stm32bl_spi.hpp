@@ -42,8 +42,8 @@ class Stm32BootLoaderSPI : public STM32BootLoader {
   TaskResult ReadDataWithoutHeader(uint8_t* buf, size_t size);
 
  public:
-  Stm32BootLoaderSPI(gpio_num_t reset, gpio_num_t boot0, idf::SPINum spi_host,
-                     idf::CS cs);
+  Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
+                     idf::SPINum spi_host, idf::CS cs);
   virtual ~Stm32BootLoaderSPI();
 
   TaskResult Connect();

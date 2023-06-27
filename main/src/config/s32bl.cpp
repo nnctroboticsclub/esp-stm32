@@ -40,9 +40,9 @@ using stm32bl::Stm32BootLoaderUart;
 Stm32BootLoaderUart* UartSTM32BootLoaderProfile::GetLoader() {
   static Stm32BootLoaderUart* loader = nullptr;
   if (loader == nullptr) {
-    loader = new Stm32BootLoaderUart((gpio_num_t)reset, (gpio_num_t)boot0,
-                                     (uart_port_t)uart_port,
-                                     (gpio_num_t)uart_tx, (gpio_num_t)uart_rx);
+    loader = new Stm32BootLoaderUart(
+        (idf::GPIONum)(uint8_t)reset, (idf::GPIONum)(uint8_t)boot0,
+        (uart_port_t)uart_port, (gpio_num_t)uart_tx, (gpio_num_t)uart_rx);
   }
   return loader;
 }
@@ -66,8 +66,8 @@ stm32bl::Stm32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
   static stm32bl::Stm32BootLoaderSPI* loader = nullptr;
   if (loader == nullptr) {
     loader = new stm32bl::Stm32BootLoaderSPI(
-        (gpio_num_t)this->reset, (gpio_num_t)this->boot0, (idf::SPINum)spi_port,
-        (idf::CS)(uint8_t)this->cs);
+        (idf::GPIONum)(uint8_t)this->reset, (idf::GPIONum)(uint8_t)this->boot0,
+        (idf::SPINum)spi_port, (idf::CS)(uint8_t)this->cs);
   }
   return loader;
 }

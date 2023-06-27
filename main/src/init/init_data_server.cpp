@@ -10,7 +10,7 @@ void init::init_data_server() {
   if (initialized) return;
   initialized = true;
 
-  // init_wifi();
+  init_wifi();
 
   ESP_LOGI(TAG, "Initializing DataServer(TCP[4007])");
   config::server.MakeSocket();

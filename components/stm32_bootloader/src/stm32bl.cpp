@@ -5,26 +5,23 @@
 #include <freertos/task.h>
 
 namespace stm32bl {
-STM32BootLoader::STM32BootLoader(gpio_num_t reset, gpio_num_t boot0)
+STM32BootLoader::STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0)
     : reset(reset), boot0(boot0) {
-  gpio_set_direction(this->reset, GPIO_MODE_OUTPUT);
-  gpio_set_direction(this->boot0, GPIO_MODE_OUTPUT);
-  gpio_set_level(this->reset, 1);
-  gpio_set_level(this->boot0, 0);
+  this->reset.set_high();
+  this->boot0.set_low();
 }
 
 STM32BootLoader::~STM32BootLoader() {}
 
 void STM32BootLoader::BootBootLoader() {
-  ESP_LOGI(TAG, "Booting Bootloader (boot0: %d, reset: %d)", this->boot0,
-           this->reset);
-  gpio_set_level(this->boot0, 1);
+  ESP_LOGI(TAG, "Booting Bootloader");
+  this->boot0.set_high();
   vTaskDelay(100 / portTICK_PERIOD_MS);
-  gpio_set_level(this->reset, 0);
+  this->reset.set_low();
   vTaskDelay(100 / portTICK_PERIOD_MS);
-  gpio_set_level(this->reset, 1);
+  this->reset.set_high();
   vTaskDelay(100 / portTICK_PERIOD_MS);
-  gpio_set_level(this->boot0, 0);
+  this->boot0.set_low();
   vTaskDelay(50 / portTICK_PERIOD_MS);
 }
 
