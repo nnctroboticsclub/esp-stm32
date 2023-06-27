@@ -219,4 +219,6 @@ class Proxy<bool> : public Proxy<uint8_t> {
   }
 };
 
+void DumpNVS();
+
 }  // namespace nvs
