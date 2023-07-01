@@ -15,7 +15,7 @@ void init::init_wifi() {
 
   char* name = profile.name;
   ESP_LOGI(TAG, "Initializing WiFi [%s]", name);
-  ESP_LOGD(TAG, "SSID: %s, password: %s", (char*)profile.ssid,
+  ESP_LOGI(TAG, "SSID: %s, password: %s", (char*)profile.ssid,
            (char*)profile.password);
   if (profile.ip_mode == types::IPMode::STATIC) {
     esp_netif_ip_info_t ip_info{
@@ -28,18 +28,20 @@ void init::init_wifi() {
 
   if (profile.mode == types::NetworkMode::AP) {
     config::network.InitAp(profile.ssid, profile.password);
+
+    config::network.WaitUntilConnected();
   } else {
-    wifi::WifiConnectionProfile profile{
-        .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
+    wifi::WifiConnectionProfile prof{
+        .auth_mode = WIFI_AUTH_WPA2_PSK,
         .ssid = (char*)profile.ssid,
         .password = (char*)profile.password,
-        .user = nullptr,
-        .id = nullptr,
+        .user = "",
+        .id = "",
     };
     config::network.InitSta();
+    config::network.ConnectToAP(&prof);
 
-    config::network.ConnectToAP(&profile);
+    config::network.WaitUntilConnected();
+    config::network.WaitForIP();
   }
-
-  config::network.WaitUntilConnected();
 }

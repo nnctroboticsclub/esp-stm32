@@ -14,6 +14,8 @@
 #include "libs/button.hpp"
 #include "console/wifi.hpp"
 
+#include <thread>
+
 const char* TAG = "Main";
 
 void BootStrap() {
@@ -46,74 +48,67 @@ void BootStrap() {
       stm32bl.Save();
     }
 
-    {
-      auto config = config::Config::GetInstance();
-      config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 11, 7}};
-      config->server_profile.port = 8080;
-      config->server_profile.Save();
-      config->network_profiles[0].mode = types::NetworkMode::STA;
-      config->network_profiles[0].name = "Network@Ryo";
-      config->network_profiles[0].ssid = "";
-      config->network_profiles[0].password = "";
-      config->network_profiles[0].hostname = "esp32-0610";
-      config->network_profiles[0].ip_mode = types::IPMode::DHCP;
-      config->network_profiles[0].ip = 0;
-      config->network_profiles[0].subnet = 0;
-      config->network_profiles[0].gateway = 0;
-      config->network_profiles[0].Save();
-      config->network_profiles[1].mode = types::NetworkMode::STA;
-      config->network_profiles[1].name = "Tethering";
-      config->network_profiles[1].ssid = "";
-      config->network_profiles[1].password = "aaaabbbb";
-      config->network_profiles[1].hostname = "esp32-0610";
-      config->network_profiles[1].ip_mode = types::IPMode::DHCP;
-      config->network_profiles[1].ip = 0;
-      config->network_profiles[1].subnet = 0;
-      config->network_profiles[1].gateway = 0;
-      config->network_profiles[1].Save();
+    auto config = config::Config::GetInstance();
+    config->server_profile.ip = (types::Ipv4){.ip_bytes = {192, 168, 11, 7}};
+    config->server_profile.port = 8080;
+    config->server_profile.Save();
+    config->network_profiles[0].mode = types::NetworkMode::STA;
+    config->network_profiles[0].name = "Network@Ryo";
+    config->network_profiles[0].ssid = "3-303-Abe 2.4Ghz";
+    config->network_profiles[0].password = "syochnetwork";
+    config->network_profiles[0].hostname = "esp32-0610";
+    config->network_profiles[0].ip_mode = types::IPMode::DHCP;
+    config->network_profiles[0].ip = 0;
+    config->network_profiles[0].subnet = 0;
+    config->network_profiles[0].gateway = 0;
+    config->network_profiles[0].Save();
+    config->network_profiles[1].mode = types::NetworkMode::STA;
+    config->network_profiles[1].name = "Tethering";
+    config->network_profiles[1].ssid = "0430878A19E7";
+    config->network_profiles[1].password = "aaaabbbb";
+    config->network_profiles[1].hostname = "esp32-0610";
+    config->network_profiles[1].ip_mode = types::IPMode::DHCP;
+    config->network_profiles[1].ip = 0;
+    config->network_profiles[1].subnet = 0;
+    config->network_profiles[1].gateway = 0;
+    config->network_profiles[1].Save();
 
-      config->network_profiles[2].mode = types::NetworkMode::AP;
-      config->network_profiles[2].name = "AP (ESP32-syoch)";
-      config->network_profiles[2].ssid = "ESP32-syoch";
-      config->network_profiles[2].password = "esp32-0610";
-      config->network_profiles[2].hostname = "esp32-0610";
-      config->network_profiles[2].ip_mode = types::IPMode::STATIC;
-      config->network_profiles[2].ip =
-          types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
-      config->network_profiles[2].subnet =
-          types::Ipv4{.ip_bytes = {255, 255, 255, 0}};
-      config->network_profiles[2].gateway =
-          types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
-      config->network_profiles[2].Save();
-      config->stm32_remote_controller_profile.uart_port = 1;
-      config->stm32_remote_controller_profile.uart_tx = 17;
-      config->stm32_remote_controller_profile.uart_rx = 16;
-      config->stm32_remote_controller_profile.Save();
-      config->active_network_profile = 0;
-      config->active_network_profile.Commit();
-    }
+    config->network_profiles[2].mode = types::NetworkMode::AP;
+    config->network_profiles[2].name = "AP (ESP32-syoch)";
+    config->network_profiles[2].ssid = "ESP32-syoch";
+    config->network_profiles[2].password = "esp32-0610";
+    config->network_profiles[2].hostname = "esp32-0610";
+    config->network_profiles[2].ip_mode = types::IPMode::STATIC;
+    config->network_profiles[2].ip = types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
+    config->network_profiles[2].subnet =
+        types::Ipv4{.ip_bytes = {255, 255, 255, 0}};
+    config->network_profiles[2].gateway =
+        types::Ipv4{.ip_bytes = {192, 168, 1, 1}};
+    config->network_profiles[2].Save();
+    config->stm32_remote_controller_profile.uart_port = 1;
+    config->stm32_remote_controller_profile.uart_tx = 17;
+    config->stm32_remote_controller_profile.uart_rx = 16;
+    config->stm32_remote_controller_profile.Save();
+    config->active_network_profile = 1;
+    config->active_network_profile.Commit();
 
     flags->Commit();
   }
-
-  auto config = config::Config::GetInstance();
-
-  config->active_network_profile = 1;
 }
 void Init() {
-  auto config = config::Config::GetInstance();
   init::init_data_server();
-  //
-  //   xTaskCreate((TaskFunction_t)([](void* args) {
-  //                 while (1) {
-  //                   vTaskDelay(50 / portTICK_PERIOD_MS);
-  //                   ((DebuggerMaster*)args)->Idle();
-  //                 }
-  //                 return;
-  //               }),
-  //               "Debugger Idling Thread", 0x1000,
-  //               config->stm32_remote_controller_profile.GetDebuggerMaster(),
-  //               1, nullptr);
+  return;
+  auto config = config::Config::GetInstance();
+  xTaskCreate((TaskFunction_t)([](void* args) {
+                while (true) {
+                  vTaskDelay(50 / portTICK_PERIOD_MS);
+                  ((DebuggerMaster*)args)->Idle();
+                }
+                return;
+              }),
+              "Debugger Idling Thread", 0x1000,
+              config->stm32_remote_controller_profile.GetDebuggerMaster(), 1,
+              nullptr);
 }
 
 TaskResult Main() {
@@ -125,12 +120,22 @@ TaskResult Main() {
 
 extern "C" int app_main() {
   BootStrap();
-  Init();
 
-  std::thread t([]() {
+  idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
+                        idf::SCLK(18));
+
+  stm32bl::Stm32BootLoaderSPI bl((idf::GPIONum)21, (idf::GPIONum)22,
+                                 (idf::SPINum)2, (idf::CS)5);
+  bl.BootBootLoader();
+  bl.Connect();
+  bl.Erase(0x07000000, 0x1000);
+
+  return 0;
+
+  std::jthread t([]() {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    esp_console_repl_t* repl = NULL;
+    esp_console_repl_t* repl = nullptr;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
     repl_config.prompt = "esp32-ru> ";
 
@@ -145,6 +150,7 @@ extern "C" int app_main() {
     ESP_ERROR_CHECK(esp_console_start_repl(repl));
   });
 
+  Init();
   Main();
   printf("Entering the idle loop\n");
   while (1) {

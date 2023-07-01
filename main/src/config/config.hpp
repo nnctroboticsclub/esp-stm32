@@ -43,6 +43,7 @@ class Config {
                                          // namespaces will be committed)
     auto& instance = *GetInstancePtr();
     delete instance;
+    instance = nullptr;
   }
 
   static stm32bl::STM32BootLoader* GetSTM32BootLoader() {

@@ -11,7 +11,7 @@ STM32BootLoader::STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0)
   this->boot0.set_low();
 }
 
-STM32BootLoader::~STM32BootLoader() {}
+STM32BootLoader::~STM32BootLoader() = default;
 
 void STM32BootLoader::BootBootLoader() {
   ESP_LOGI(TAG, "Booting Bootloader");

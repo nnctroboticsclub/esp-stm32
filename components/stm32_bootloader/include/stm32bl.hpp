@@ -9,7 +9,6 @@ namespace stm32bl {
 class STM32BootLoader {
   static constexpr const char* TAG = "STM32 BootLoader";
 
- private:
   idf::GPIO_Output reset;
   idf::GPIO_Output boot0;
 

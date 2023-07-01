@@ -10,10 +10,8 @@ namespace stm32bl {
 class Stm32BootLoaderSPI : public STM32BootLoader {
   static constexpr const char* TAG = "STM32 BootLoader[SPI]";
 
- public:  // Debug public.
-  idf::SPIDevice device;
+  std::shared_ptr<idf::SPIDevice> device;
 
- private:
   struct {
     uint8_t get;
     uint8_t get_version;
@@ -44,19 +42,19 @@ class Stm32BootLoaderSPI : public STM32BootLoader {
  public:
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                      idf::SPINum spi_host, idf::CS cs);
-  virtual ~Stm32BootLoaderSPI();
+  ~Stm32BootLoaderSPI();
 
-  TaskResult Connect();
+  TaskResult Connect() final;
 
   TaskResult Get();
 
   TaskResult Erase(SpecialFlashPage page);
   TaskResult Erase(std::vector<FlashPage> pages);
-  TaskResult Erase(uint32_t addr, uint32_t size) override;
+  TaskResult Erase(uint32_t addr, uint32_t size) final;
 
   TaskResult WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> buffer);
-  TaskResult WriteMemory(uint32_t addr, std::vector<uint8_t> buffer) override;
+  TaskResult WriteMemory(uint32_t addr, std::vector<uint8_t> buffer) final;
 
-  TaskResult Go(uint32_t addr) override;
+  TaskResult Go(uint32_t addr) final;
 };
 }  // namespace stm32bl

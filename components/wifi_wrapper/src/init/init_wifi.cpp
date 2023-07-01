@@ -25,5 +25,5 @@ void wifi::init::init_wifi_lib(esp_event_handler_t event_handler, void* arg) {
   ESP_LOGI(TAG, "Registering IP_EVENT");
   esp_event_handler_instance_t ip_handler;
   ESP_ERROR_CHECK(esp_event_handler_instance_register(
-      IP_EVENT, IP_EVENT_STA_GOT_IP, event_handler, arg, &ip_handler));
+      IP_EVENT, ESP_EVENT_ANY_ID, event_handler, arg, &ip_handler));
 }
