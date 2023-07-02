@@ -6,5 +6,5 @@ FILE(GLOB_RECURSE stm32_rc_sources ${CMAKE_SOURCE_DIR}/components/stm32_remote_c
 idf_component_register(
   SRCS ${stm32_rc_sources}
   INCLUDE_DIRS "include"
-  REQUIRES result uart_wrapper mutex
+  REQUIRES data_link mutex
 )

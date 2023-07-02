@@ -1,289 +1,187 @@
 #include "server.hpp"
 
+#include <connection/data_link/base.hpp>
 #include <esp_log.h>
 #include <lwip/sockets.h>
 #include <optional>
 
-#include <result.hpp>
 #include "config/config.hpp"
+
+class SocketWrapper : public connection::data_link::RecvAndSend {
+ public:
+  int socket;
+  explicit SocketWrapper(int socket) : socket(socket) {}
+
+  size_t Send(std::vector<uint8_t>& buf) override {
+    auto ret = send(this->socket, buf.data(), buf.size(), 0);
+
+    return ret;
+  }
+  using connection::data_link::RecvAndSend::Send;
+
+  size_t Recv(std::vector<uint8_t>& buf,
+              TickType_t timeout = 1000 / portTICK_PERIOD_MS) override {
+    auto ret = recv(this->socket, buf.data(), buf.size(), 0);
+    if (ret == 0) {
+      throw connection::data_link::ConnectionClosedError();
+    }
+
+    return ret;
+  }
+};
 
 namespace {
 struct ClientHandler {
-  static constexpr const char* TAG = "NW-W C-handler";
   enum class Opcode {
-    ReadMemoryU32,
-
     BootBootLoader = 0x10,
-    UploadProgram,
-    GoProgram,
+    UploadProgram = 0x11,
+    GoProgram = 0x12,
 
     GetUI = 0x20,
     ListenDataUpdate = 0x21,
     DataUpdate = 0x22,
-    UserMessage = 0x23,
   };
 
   Server& server;
-  int client;
+  SocketWrapper client;
 
-  Result<int> TryRecv(uint8_t* buf, int size) {
-    auto len = recv(this->client, buf, size, 0);
-    if (len < 0) {
-      ESP_LOGE(TAG, "(%3d) Failed to receive data.", this->client);
-      return new ErrnoError(errno);
-    }
-    // if (len == 0) {
-    //   ESP_LOGI(TAG, "(%3d) Client disconnected.", this->client);
-    //   return ESP_ERR_INVALID_STATE;
-    // }
-    return Result<int>::Ok(len);
-  }
+  void HandleClient() {
+    std::string tag =
+        "NW-W Handler[" + std::to_string(this->client.socket) + "]";
+    const char* TAG = tag.c_str();
 
-  Result<int> TryRecv(char* buf, int size) {
-    return this->TryRecv((uint8_t*)buf, size);
-  }
-
-  Result<int> TrySend(uint8_t* buf, int size) {
-    auto sent = send(this->client, buf, size, 0);
-    if (sent < 0) {
-      ESP_LOGE(TAG, "(%3d) Failed to send data.", client);
-      return new ErrnoError(errno);
-    }
-    return std::optional(sent);
-  }
-
-  template <int N>
-  Result<int> TrySend(const uint8_t (&buf)[N]) {
-    return this->TrySend((uint8_t*)buf, N);
-  }
-  template <int N>
-  Result<int> TrySend(const char (&buf)[N]) {
-    return this->TrySend((uint8_t*)buf, N);
-  }
-
-  template <int N>
-  Result<int> TryRecv(uint8_t (&buf)[N]) {
-    return this->TryRecv(buf, N);
-  }
-
-  Result<int> TryRecvChar() {
-    char ch = 0;
-    RUN_TASK(this->TryRecv((uint8_t*)&ch, 1), receipt);
-    int ret = ch;
-    if (ret < 0) {
-      ret = 0x100 + ch;
-    }
-
-    if (receipt == 0) {
-      ret = -1;
-    }
-
-    return Result<int>::Ok(ret);
-  }
-
-  TaskResult TrySendChar(char ch) {
-    RUN_TASK_V(this->TrySend((uint8_t*)&ch, 1));
-    return TaskResult::Ok();
-  }
-
-  TaskResult TrySendInt(int ch) {
-    RUN_TASK_V(this->TrySendChar((ch >> 24) & 0xff));
-    RUN_TASK_V(this->TrySendChar((ch >> 16) & 0xff));
-    RUN_TASK_V(this->TrySendChar((ch >> 8) & 0xff));
-    RUN_TASK_V(this->TrySendChar((ch >> 0) & 0xff));
-
-    return TaskResult::Ok();
-  }
-
-  TaskResult TrySendFloat(float ch) { return this->TrySendInt(*(int*)&ch); }
-
-  Result<int32_t> TryRecvInt() {
-    RUN_TASK(this->TryRecvChar(), a);
-    RUN_TASK(this->TryRecvChar(), b);
-    RUN_TASK(this->TryRecvChar(), c);
-    RUN_TASK(this->TryRecvChar(), d);
-
-    return Result<int32_t>::Ok((a << 24) | (b << 16) | (c << 8) | d);
-  }
-
-  TaskResult HandleClient() {
-    int client = this->client;
-    while (1) {
-      RUN_TASK(this->TryRecvChar(), opcode_raw);
-
-      if (opcode_raw == -1) {
-        ESP_LOGI(TAG, "(%3d) Client disconnected", client);
+    using enum Opcode;
+    while (true) {
+      Opcode opcode;
+      try {
+        auto opcode_raw = this->client.RecvChar();
+        opcode = static_cast<Opcode>(opcode_raw);
+      } catch (connection::data_link::ConnectionClosedError&) {
+        ESP_LOGI(TAG, "Connection closed.");
         break;
       }
-
-      Opcode opcode = static_cast<Opcode>(opcode_raw);
 
       switch (opcode) {
         /*
          * The opcodes related STM32 BootLoader
          */
-        case Opcode::BootBootLoader: {
+        case BootBootLoader: {
           config::Config::GetSTM32BootLoader()->BootBootLoader();
           config::Config::GetSTM32BootLoader()->Connect();
           vTaskDelay(200 / portTICK_PERIOD_MS);
 
-          RUN_TASK_V(this->TrySend("OK"));
+          this->client.Send("OK");
           break;
         }
 
-        case Opcode::UploadProgram: {
-          RUN_TASK(this->TryRecvInt(), length);
+        case UploadProgram: {
+          auto length = this->client.RecvU32();
 
-          RUN_TASK_V(config::Config::GetSTM32BootLoader()->Erase(
-              CONFIG_STM32_PROGRAM_START, length, 0x4000));
+          config::Config::GetSTM32BootLoader()->Erase(
+              CONFIG_STM32_PROGRAM_START, length);
 
           std::vector<uint8_t> buffer(0x1000, 0);
 
           int end = CONFIG_STM32_PROGRAM_START + length;
           int ptr = CONFIG_STM32_PROGRAM_START;
           while (ptr < end) {
-            RUN_TASK(this->TryRecv(buffer.data(), 0x1000), received);
+            auto received = this->client.Recv(buffer);
             buffer.resize(received);
 
             config::Config::GetSTM32BootLoader()->WriteMemory(ptr, buffer);
             ptr += received;
           }
-          RUN_TASK_V(this->TrySend("OK"));
+          this->client.Send("OK");
           break;
         }
 
-        case Opcode::GoProgram: {
-          RUN_TASK_V(config::Config::GetSTM32BootLoader()->Go(
-              CONFIG_STM32_PROGRAM_START));
-          RUN_TASK_V(this->TrySend("OK"));
+        case GoProgram: {
+          config::Config::GetSTM32BootLoader()->Go(CONFIG_STM32_PROGRAM_START);
+          this->client.Send("OK");
           break;
         }
 
-        /*
-         * The opcodes related to the debugger
-         */
-        case Opcode::UserMessage: {
-          RUN_TASK(this->TryRecvInt(), length);
+          /*
+           * The opcodes related to the debugger
+           */
 
-          uint8_t* tcp_buffer = new uint8_t[length + 1];
-          if (tcp_buffer == nullptr) {
-            ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
-            break;
-          }
-
-          int tcp_received = 0;
-          while (tcp_received < length) {
-            RUN_TASK(this->TryRecv(tcp_buffer + 1 + tcp_received,
-                                   length - tcp_received),
-                     ret);
-            tcp_received += ret;
-          }
-
-          if (tcp_received != length) break;
-
-          tcp_buffer[0] = 0x80;
-          // TODO: Fix This
-          // config::tx.Send(tcp_buffer, length + 1);
-
-          delete[] tcp_buffer;
-
-          uint8_t* rx_buffer = nullptr;
-          int rx_received = 0;
-          // TODO: Fix This
-          // config::rx.Receive(&rx_buffer, &rx_received);
-          RUN_TASK_V(this->TrySend(rx_buffer, rx_received));
-          free(rx_buffer);
-
-          RUN_TASK_V(this->TrySend("OK"));
-          break;
-        }
-
-        case Opcode::GetUI: {
+        case GetUI: {
           ESP_LOGI(TAG, "GetUI called");
-          RUN_TASK(config::Config::GetDebuggerMaster()->GetUI(), ui);
+          auto ui = config::Config::GetDebuggerMaster()->GetUI();
 
-          RUN_TASK_V(this->TrySendInt(ui.size()));
-          RUN_TASK_V(this->TrySend(ui.data(), ui.size()));
+          this->client.SendU32(ui.size());
+          this->client.Send(ui);
           break;
         }
 
-        case Opcode::ListenDataUpdate: {
-          config::Config::GetDebuggerMaster()->AddListener(this->client);
-          RUN_TASK_V(this->TryRecvChar());
-          config::Config::GetDebuggerMaster()->RemoveListener(this->client);
+        case ListenDataUpdate: {
+          config::Config::GetDebuggerMaster()->AddListener(this->client.socket);
+          this->client.RecvChar();
+          config::Config::GetDebuggerMaster()->RemoveListener(
+              this->client.socket);
 
           break;
         }
 
-        case Opcode::DataUpdate: {
-          RUN_TASK(this->TryRecvInt(), cid);
-          RUN_TASK(this->TryRecvInt(), length);
+        case DataUpdate: {
+          auto cid = this->client.RecvU32();
+          auto len = (size_t)this->client.RecvU32();
 
-          uint8_t* tcp_buffer = new uint8_t[length];
-          if (tcp_buffer == nullptr) {
-            ESP_LOGE(TAG, "(%3d) Failed to allocate memory", client);
-            break;
-          }
+          std::vector<uint8_t> tcp_buffer(len);
+          this->client.RecvExactly(tcp_buffer);
 
-          int tcp_received = 0;
-          while (tcp_received < length) {
-            RUN_TASK(
-                this->TryRecv(tcp_buffer + tcp_received, length - tcp_received),
-                ret);
-            tcp_received += ret;
-          }
-
-          if (tcp_received != length) break;
-
-          RUN_TASK_V(config::Config::GetDebuggerMaster()->DataUpdate(
-              cid, tcp_buffer, length));
+          config::Config::GetDebuggerMaster()->DataUpdate(cid, tcp_buffer);
           break;
         }
 
         default: {
-          ESP_LOGE(TAG, "(%3d) Unknown opcode (opcode = %d)", client,
-                   opcode_raw);
+          ESP_LOGE(TAG, "Unknown opcode (opcode = 0x%02x)", (uint8_t)opcode);
           break;
         }
       }
 
       continue;
     }
-
-    return TaskResult::Ok();
   }
 };
 
 void ClientHandlerWrapper(ClientHandler* args) {
-  auto ret = args->HandleClient();
-  if (ret.IsErr()) {
-    ESP_LOGE(ClientHandler::TAG, "(%3d) Error: %s", args->client,
-             ret.Error().what());
+  static const char* TAG = "NW-W Handler Wrapper";
+  try {
+    args->HandleClient();
+  } catch (connection::data_link::ConnectionClosedError&) {
+    ESP_LOGI(TAG, "Connection closed.");
+  } catch (std::exception& e) {
+    ESP_LOGE(TAG, "Exception: %s", e.what());
+  } catch (...) {
+    ESP_LOGE(TAG, "Unknown exception.");
   }
-  close(args->client);
+
+  close(args->client.socket);
   delete args;
 
-  vTaskDelete(NULL);
+  vTaskDelete(nullptr);
 }
 }  // namespace
 
 void Server::ClientLoop(void* obj) {
-  auto server = reinterpret_cast<Server*>(obj);
-  while (1) {
-    auto client = accept(server->server_sock, NULL, NULL);
+  auto server = static_cast<Server*>(obj);
+  while (true) {
+    auto client = accept(server->server_sock, nullptr, nullptr);
     if (client < 0) {
       ESP_LOGE(TAG, "Failed to accept client.");
       break;
     }
 
     ESP_LOGI(TAG, "Connection established.");
-    auto args = new ClientHandler{.server = *server, .client = client};
+    auto args =
+        new ClientHandler{.server = *server, .client = SocketWrapper(client)};
     xTaskCreate((TaskFunction_t)ClientHandlerWrapper, "Client", 4096, args, 1,
-                NULL);
+                nullptr);
   }
 }
 
-Server::Server() {}
+Server::Server() = default;
 
 void Server::MakeSocket() {
   this->server_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -310,7 +208,7 @@ void Server::MakeSocket() {
 }
 
 void Server::StartClientLoop() {
-  xTaskCreate(&Server::ClientLoop, "Server Loop", 4096, this, 1, NULL);
+  xTaskCreate(&Server::ClientLoop, "Server Loop", 4096, this, 1, nullptr);
 }
 
 void Server::StartClientLoopAtForeground() { Server::ClientLoop(this); }

@@ -2,10 +2,9 @@
 
 namespace profile {
 
-STM32BootLoaderProfileInterface::~STM32BootLoaderProfileInterface() {}
+STM32BLProfileInterface::~STM32BLProfileInterface() = default;
 
-STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(
-    nvs::SharedNamespace ns) {
+STM32BLProfileInterface* LoadSTM32BootLoaderProfile(nvs::SharedNamespace ns) {
   nvs::Proxy<uint8_t> type(ns, "type");
   switch (type) {
     case 0:
@@ -19,7 +18,7 @@ STM32BootLoaderProfileInterface* LoadSTM32BootLoaderProfile(
   }
 }
 
-UartSTM32BootLoaderProfile::~UartSTM32BootLoaderProfile() {}
+UartSTM32BootLoaderProfile::~UartSTM32BootLoaderProfile() = default;
 
 UartSTM32BootLoaderProfile::UartSTM32BootLoaderProfile(nvs::SharedNamespace ns)
     : ns(ns),
@@ -35,19 +34,17 @@ void UartSTM32BootLoaderProfile::Save() {
   type = 0;
 }
 
-using stm32bl::Stm32BootLoaderUart;
-
-Stm32BootLoaderUart* UartSTM32BootLoaderProfile::GetLoader() {
-  static Stm32BootLoaderUart* loader = nullptr;
+STM32BootLoaderUart* UartSTM32BootLoaderProfile::GetLoader() {
+  static STM32BootLoaderUart* loader = nullptr;
   if (loader == nullptr) {
-    loader = new Stm32BootLoaderUart(
+    loader = new STM32BootLoaderUart(
         (idf::GPIONum)(uint8_t)reset, (idf::GPIONum)(uint8_t)boot0,
         (uart_port_t)uart_port, (gpio_num_t)uart_tx, (gpio_num_t)uart_rx);
   }
   return loader;
 }
 
-SpiSTM32BootLoaderProfile::~SpiSTM32BootLoaderProfile() {}
+SpiSTM32BootLoaderProfile::~SpiSTM32BootLoaderProfile() = default;
 
 SpiSTM32BootLoaderProfile::SpiSTM32BootLoaderProfile(nvs::SharedNamespace ns)
     : ns(ns),
@@ -62,10 +59,10 @@ void SpiSTM32BootLoaderProfile::Save() {
   type = 1;
 }
 
-stm32bl::Stm32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
-  static stm32bl::Stm32BootLoaderSPI* loader = nullptr;
+STM32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
+  static STM32BootLoaderSPI* loader = nullptr;
   if (loader == nullptr) {
-    loader = new stm32bl::Stm32BootLoaderSPI(
+    loader = new STM32BootLoaderSPI(
         (idf::GPIONum)(uint8_t)this->reset, (idf::GPIONum)(uint8_t)this->boot0,
         (idf::SPINum)spi_port, (idf::CS)(uint8_t)this->cs);
   }

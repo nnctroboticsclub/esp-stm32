@@ -5,56 +5,43 @@
 #include "helper.hpp"
 #include <spi_host_cxx.hpp>
 
+namespace connection::application {
 namespace stm32bl {
 
-class Stm32BootLoaderSPI : public STM32BootLoader {
-  static constexpr const char* TAG = "STM32 BootLoader[SPI]";
+class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
+  static constexpr const char *TAG = "STM32 BootLoader[SPI]";
 
   std::shared_ptr<idf::SPIDevice> device;
+  Commands commands;
 
-  struct {
-    uint8_t get;
-    uint8_t get_version;
-    uint8_t get_id;
-    uint8_t read_memory;
-    uint8_t go;
-    uint8_t write_memory;
-    uint8_t erase;
-    uint8_t special;
-    uint8_t extended_special;
-    uint8_t write_protect;
-    uint8_t write_unprotect;
-    uint8_t readout_protect;
-    uint8_t readout_unprotect;
-    uint8_t get_checksum;
-  } commands;
+  void WaitACKFrame();
 
-  TaskResult WaitACKFrame();
+  void Synchronization();
 
-  TaskResult Synchronization();
+  void CommandHeader(uint8_t cmd);
 
-  TaskResult CommandHeader(uint8_t cmd);
+  void ReadData(std::vector<uint8_t> &buf);
 
-  TaskResult ReadData(uint8_t* buf, size_t size);
-
-  TaskResult ReadDataWithoutHeader(uint8_t* buf, size_t size);
+  void ReadDataWithoutHeader(std::vector<uint8_t> &buf);
 
  public:
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                      idf::SPINum spi_host, idf::CS cs);
-  ~Stm32BootLoaderSPI();
+  ~Stm32BootLoaderSPI() override;
 
-  TaskResult Connect() final;
+  void Connect() override;
 
-  TaskResult Get();
+  void Get();
 
-  TaskResult Erase(SpecialFlashPage page);
-  TaskResult Erase(std::vector<FlashPage> pages);
-  TaskResult Erase(uint32_t addr, uint32_t size) final;
+  void Erase(SpecialFlashPage page) override;
+  void Erase(std::vector<FlashPage> &pages) override;
+  using STM32BootLoader::Erase;
 
-  TaskResult WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> buffer);
-  TaskResult WriteMemory(uint32_t addr, std::vector<uint8_t> buffer) final;
+  void WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> &buffer) override;
 
-  TaskResult Go(uint32_t addr) final;
+  void Go(uint32_t addr) override;
 };
 }  // namespace stm32bl
+using STM32BootLoaderSPI = stm32bl::Stm32BootLoaderSPI;
+
+}  // namespace connection::application

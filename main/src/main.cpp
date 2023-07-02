@@ -111,11 +111,9 @@ void Init() {
               nullptr);
 }
 
-TaskResult Main() {
+void Main() {
   ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   config::server.StartClientLoopAtForeground();
-
-  return TaskResult::Ok();
 }
 
 extern "C" int app_main() {
@@ -124,8 +122,8 @@ extern "C" int app_main() {
   idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
                         idf::SCLK(18));
 
-  stm32bl::Stm32BootLoaderSPI bl((idf::GPIONum)21, (idf::GPIONum)22,
-                                 (idf::SPINum)2, (idf::CS)5);
+  connection::application::STM32BootLoaderSPI bl(
+      (idf::GPIONum)21, (idf::GPIONum)22, (idf::SPINum)2, (idf::CS)5);
   bl.BootBootLoader();
   bl.Connect();
   bl.Erase(0x07000000, 0x1000);

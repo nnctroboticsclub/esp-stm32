@@ -23,7 +23,7 @@ class Config {
 
   profile::ServerProfile server_profile;
 
-  profile::STM32BootLoaderProfileInterface* stm32_bootloader_profile;
+  profile::STM32BLProfileInterface* stm32_bootloader_profile;
   profile::STM32RemoteControllerProfile stm32_remote_controller_profile;
 
  private:
@@ -46,7 +46,7 @@ class Config {
     instance = nullptr;
   }
 
-  static stm32bl::STM32BootLoader* GetSTM32BootLoader() {
+  static connection::application::STM32BootLoader* GetSTM32BootLoader() {
     return Config::GetInstance()->stm32_bootloader_profile->GetLoader();
   }
 

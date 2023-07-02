@@ -1,24 +1,36 @@
 #include <stm32bl/helper.hpp>
 
-namespace stm32bl {
+#include <ranges>
+#include <algorithm>
+
+namespace connection::application::stm32bl {
+
+static std::pair<uint16_t, uint16_t> ToFlashPageRange(uint32_t begin,
+                                                      uint32_t end,
+                                                      uint32_t flash_base) {
+  auto begin_page = static_cast<uint16_t>((begin - flash_base) >> 11);
+  auto end_page = static_cast<uint16_t>((end - flash_base) >> 11);
+
+  return std::make_pair(begin_page, end_page);
+}
 
 Pages MemoryRangeToPages(uint32_t address, uint32_t length) {
   Pages pages;
+
   if (address < 0x08000000 && 0x0804'0000 < address + length) {
-    // bulk erase bank1
     pages.bank1 = true;
 
-    int bank2_erase_start = (address - 0x0804'0000) >> 11;
-    int bank2_erase_end = (address + length - 0x0804'0000) >> 11;
+    auto [begin, end] =
+        ToFlashPageRange(0x0804'0000, address + length, 0x0804'0000);
 
-    for (int i = bank2_erase_start; i < bank2_erase_end; i++) {
+    for (uint16_t i = begin; i < end; i++) {
       pages.pages.push_back(i);
     }
   } else {
-    int bank1_erase_start = (address - 0x0800'0000) >> 11;
-    int bank1_erase_end = (address + length - 0x08'000000) >> 11;
+    auto [begin, end] =
+        ToFlashPageRange(address, address + length, 0x0804'0000);
 
-    for (int i = bank1_erase_start; i < bank1_erase_end; i++) {
+    for (uint16_t i = begin; i < end; i++) {
       pages.pages.push_back(i);
     }
   }
@@ -26,27 +38,23 @@ Pages MemoryRangeToPages(uint32_t address, uint32_t length) {
 }
 
 std::string SpecialFlashPageToString(SpecialFlashPage page) {
+  using enum SpecialFlashPage;
   switch (page) {
-    case SpecialFlashPage::kGlobal:
+    case kGlobal:
       return "Global";
-    case SpecialFlashPage::kBank1:
+    case kBank1:
       return "Bank1";
-    case SpecialFlashPage::kBank2:
+    case kBank2:
       return "Bank2";
     default:
       return "Unknown";
   }
 }
 
-uint8_t CalculateChecksum(uint8_t* buf, size_t size) {
-  uint8_t checksum = 0;
-  for (size_t i = 0; i < size; i++) {
-    checksum ^= buf[i];
-  }
+uint8_t CalculateChecksum(std::vector<uint8_t> buf) {
+  uint8_t checksum{0b0000'0000};
+  std::ranges::for_each(buf, [&checksum](uint8_t byte) { checksum ^= byte; });
+
   return checksum;
 }
-
-uint8_t CalculateChecksum(std::vector<uint8_t> buf) {
-  return CalculateChecksum(buf.data(), buf.size());
-}
-}  // namespace stm32bl
+}  // namespace connection::application::stm32bl
