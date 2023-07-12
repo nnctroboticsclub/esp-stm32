@@ -13,7 +13,12 @@ class ConnectionClosedError : public std::runtime_error {
 };
 
 class RecvAndSend {
+  bool trace_enabled;
+
  public:
+  inline bool IsTraceEnabled() const { return this->trace_enabled; }
+  inline void SetTraceEnabled(bool enabled) { this->trace_enabled = enabled; }
+
   virtual size_t Send(std::vector<uint8_t> &buf) = 0;
   virtual size_t Recv(std::vector<uint8_t> &buf,
                       TickType_t timeout = 1000 / portTICK_PERIOD_MS) = 0;
@@ -33,7 +38,7 @@ class RecvAndSend {
   }
 
   void SendChar(char ch) {
-    std::vector<uint8_t> c;
+    std::vector<uint8_t> c(1);
     c[0] = ch;
     this->Send(c);
   }

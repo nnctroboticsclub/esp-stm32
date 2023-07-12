@@ -185,7 +185,7 @@ void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
       buf[2 * i] = pages[i] >> 8;
       buf[2 * i + 1] = pages[i] & 0xff;
     }
-    checksum = 0x5a ^ CalculateChecksum(buf);  // WHAT 0x5A
+    checksum = 0x5a ^ CalculateChecksum(buf);  // WHAT IS 0x5A (NANNMO-WAKARAN)
     buf.push_back(checksum);
 
     this->device.Send(buf);

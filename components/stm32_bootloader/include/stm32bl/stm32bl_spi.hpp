@@ -3,7 +3,7 @@
 #include <driver/gpio.h>
 #include "../stm32bl.hpp"
 #include "helper.hpp"
-#include <spi_host_cxx.hpp>
+#include <connection/data_link/spi.hpp>
 
 namespace connection::application {
 namespace stm32bl {
@@ -11,8 +11,9 @@ namespace stm32bl {
 class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   static constexpr const char *TAG = "STM32 BootLoader[SPI]";
 
-  std::shared_ptr<idf::SPIDevice> device;
   Commands commands;
+  connection::data_link::SPIDevice device;
+  uint8_t v;
 
   void WaitACKFrame();
 
@@ -26,12 +27,14 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
 
  public:
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
-                     idf::SPINum spi_host, idf::CS cs);
+                     idf::SPIMaster &spi_host, idf::CS cs);
   ~Stm32BootLoaderSPI() override;
 
   void Connect() override;
 
   void Get();
+
+  inline void SetDebugVarU8(uint8_t v) { this->v = v; }
 
   void Erase(SpecialFlashPage page) override;
   void Erase(std::vector<FlashPage> &pages) override;

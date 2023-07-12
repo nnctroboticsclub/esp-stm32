@@ -62,9 +62,11 @@ void SpiSTM32BootLoaderProfile::Save() {
 STM32BootLoaderSPI* SpiSTM32BootLoaderProfile::GetLoader() {
   static STM32BootLoaderSPI* loader = nullptr;
   if (loader == nullptr) {
-    loader = new STM32BootLoaderSPI(
-        (idf::GPIONum)(uint8_t)this->reset, (idf::GPIONum)(uint8_t)this->boot0,
-        (idf::SPINum)spi_port, (idf::CS)(uint8_t)this->cs);
+    // TODO: FIX THIS
+    // loader = new STM32BootLoaderSPI(
+    //     (idf::GPIONum)(uint8_t)this->reset,
+    //     (idf::GPIONum)(uint8_t)this->boot0, (idf::SPINum)spi_port,
+    //     (idf::CS)(uint8_t)this->cs);
   }
   return loader;
 }

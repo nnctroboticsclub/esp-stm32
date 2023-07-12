@@ -10,7 +10,6 @@ static std::pair<uint16_t, uint16_t> ToFlashPageRange(uint32_t begin,
                                                       uint32_t flash_base) {
   auto begin_page = static_cast<uint16_t>((begin - flash_base) >> 11);
   auto end_page = static_cast<uint16_t>((end - flash_base) >> 11);
-
   return std::make_pair(begin_page, end_page);
 }
 
@@ -28,7 +27,7 @@ Pages MemoryRangeToPages(uint32_t address, uint32_t length) {
     }
   } else {
     auto [begin, end] =
-        ToFlashPageRange(address, address + length, 0x0804'0000);
+        ToFlashPageRange(address, address + length, 0x0800'0000);
 
     for (uint16_t i = begin; i < end; i++) {
       pages.pages.push_back(i);
@@ -58,3 +57,9 @@ uint8_t CalculateChecksum(std::vector<uint8_t> buf) {
   return checksum;
 }
 }  // namespace connection::application::stm32bl
+
+namespace std {
+std::string to_string(connection::application::stm32bl::SpecialFlashPage page) {
+  return connection::application::stm32bl::SpecialFlashPageToString(page);
+}
+}  // namespace std

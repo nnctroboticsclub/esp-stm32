@@ -46,3 +46,8 @@ Pages MemoryRangeToPages(uint32_t address, uint32_t length);
 uint8_t CalculateChecksum(std::vector<uint8_t> buf);
 
 }  // namespace connection::application::stm32bl
+
+namespace std {
+std::string to_string(connection::application::stm32bl::SpecialFlashPage page);
+
+}  // namespace std
