@@ -49,7 +49,11 @@ class RecvAndSend {
     auto size = buf.size();
     while (read < size) {
       std::vector<uint8_t> sub_vector{buf.begin() + read, buf.end()};
-      read += this->Recv(sub_vector, timeout);
+      auto chunk_size = this->Recv(sub_vector, timeout);
+
+      std::copy(sub_vector.begin(), sub_vector.end(), buf.begin() + read);
+
+      read += chunk_size;
     }
   }
 
