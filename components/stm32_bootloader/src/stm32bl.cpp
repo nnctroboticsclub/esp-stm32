@@ -98,7 +98,8 @@ void STM32BootLoader::Erase(Pages pages) {
     for (i = 0; i + 4 < pages.pages.size(); i += 4, it += 4) {
       std::vector<uint16_t> sub_pages(it, it + 4);
 
-      ESP_LOGI(TAG, "Erasing 4 sub-pages...");
+      ESP_LOGI(TAG, "Erasing 4 sub-pages... [%d %d %d %d]", *it, *(it + 1),
+               *(it + 2), *(it + 3));
       this->Erase(sub_pages);
     }
 
