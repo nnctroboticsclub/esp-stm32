@@ -36,20 +36,9 @@ size_t UART::GetRXBufferDataLength() const {
 void UART::Flush() const { uart_flush_input(this->port); }
 
 size_t UART::Send(std::vector<uint8_t> &buf) noexcept {
-#ifdef CONFIG_UART_WRAPPER_ENABLE_DEBUG
-  printf("*%d*, %d )--> \n  ", tx, rx);
-  if (size > 30) {
-    printf("(*snip*)");
-  } else {
-    for (size_t i = 0; i < size; i++) {
-      printf("%02x ", buf[i]);
-      if (i % 16 == 15) {
-        printf("\n  ");
-      }
-    }
-  }
-  printf("\n");
-#endif
+  if (this->IsTraceEnabled())
+    ESP_LOG_BUFFER_HEX("UART-->", buf.data(), buf.size());
+
   return uart_write_bytes(this->port, buf.data(), buf.size());
 }
 
@@ -63,20 +52,9 @@ size_t UART::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
     return ESP_ERR_TIMEOUT;
   }
 
-#ifdef CONFIG_UART_WRAPPER_ENABLE_DEBUG
-  printf("%d, *%d* )<-- \n  ", tx, rx);
-  if (size > 30) {
-    printf("(*snip*)");
-  } else {
-    for (size_t i = 0; i < size; i++) {
-      printf("%02x ", buf[i]);
-      if (i % 16 == 15) {
-        printf("\n  ");
-      }
-    }
-  }
-  printf("\n");
-#endif
+  if (this->IsTraceEnabled())
+    ESP_LOG_BUFFER_HEX("UART<--", buf.data(), buf.size());
+
   return bytes;
 }
 }  // namespace connection::data_link

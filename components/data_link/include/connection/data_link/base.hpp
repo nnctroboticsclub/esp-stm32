@@ -47,7 +47,7 @@ class RecvAndSend {
                    TickType_t timeout = 1000 / portTICK_PERIOD_MS) {
     size_t read = 0;
     auto size = buf.size();
-    while (read < size) {
+    while (buf.size() < size) {
       std::vector<uint8_t> sub_vector{buf.begin() + read, buf.end()};
       read += this->Recv(sub_vector, timeout);
     }
