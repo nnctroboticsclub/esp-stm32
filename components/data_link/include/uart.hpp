@@ -25,7 +25,7 @@ class UART : public RecvAndSend {
  public:
   UART(uart_port_t port);
 
-  void InstallDriver(int tx, int rx, int baud_rate, uart_parity_t parity);
+  void InstallDriver(int tx, int rx, int baud_rate, uart_parity_t parity) const;
 
   size_t GetRXBufferDataLength() const;
 

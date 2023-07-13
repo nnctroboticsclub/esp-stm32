@@ -10,7 +10,8 @@
 namespace connection::data_link {
 UART::UART(uart_port_t port) : port(port) {}
 
-void UART::InstallDriver(int tx, int rx, int baud_rate, uart_parity_t parity) {
+void UART::InstallDriver(int tx, int rx, int baud_rate,
+                         uart_parity_t parity) const {
   uart_config_t uart_config = {
       .baud_rate = baud_rate,
       .data_bits = UART_DATA_8_BITS,
