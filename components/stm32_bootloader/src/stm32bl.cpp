@@ -5,6 +5,53 @@
 #include <freertos/task.h>
 
 namespace connection::application::stm32bl {
+
+Commands::Commands(std::vector<uint8_t> &data) {
+  if (data.size() < 0x0b) {
+    ESP_LOGE("Stm32BL", "data size is too small: %d bytes", data.size());
+
+    throw InvalidSize();
+  }
+  this->get = data[0];
+  this->get_version = data[1];
+  this->get_id = data[2];
+  this->read_memory = data[3];
+  this->go = data[4];
+  this->write_memory = data[5];
+  this->erase = data[6];
+  this->write_protect = data[7];
+  this->write_unprotect = data[8];
+  this->readout_protect = data[9];
+  this->readout_unprotect = data[10];
+  if (data.size() > 0x0c) {
+    this->get_checksum = data[11];
+  }
+}
+
+Version::Version(std::vector<uint8_t> &data) {
+  if (data.empty()) {
+    this->major = 0;
+    this->minor = 0;
+    this->option1 = 0;
+    this->option2 = 0;
+    return;
+  }
+  this->UpdateVersion(data[0]);
+
+  if (data.size() > 1) {
+    this->option1 = data[1];
+  }
+
+  if (data.size() > 2) {
+    this->option1 = data[2];
+  }
+}
+
+void Version::UpdateVersion(uint8_t byte) {
+  this->major = byte >> 4;
+  this->minor = byte & 0x0f;
+}
+
 STM32BootLoader::STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0)
     : reset(reset), boot0(boot0) {
   this->reset.set_high();
@@ -15,14 +62,18 @@ STM32BootLoader::~STM32BootLoader() = default;
 
 void STM32BootLoader::BootBootLoader() {
   ESP_LOGI(TAG, "Booting Bootloader");
+
   this->boot0.set_high();
   vTaskDelay(100 / portTICK_PERIOD_MS);
+
   this->reset.set_low();
   vTaskDelay(100 / portTICK_PERIOD_MS);
+
   this->reset.set_high();
   vTaskDelay(100 / portTICK_PERIOD_MS);
+
   this->boot0.set_low();
-  vTaskDelay(50 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void STM32BootLoader::Erase(uint32_t address, uint32_t length) {

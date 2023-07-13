@@ -10,7 +10,7 @@
 #include <esp_debug_helpers.h>
 
 namespace connection::application::stm32bl {
-void Stm32BootLoaderSPI::WaitACKFrame() {
+void Stm32BootLoaderSPI::RecvACK() {
   this->device.SetTraceEnabled(false);
   int fail_count = 0;
 
@@ -53,7 +53,7 @@ void Stm32BootLoaderSPI::Synchronization() {
     ESP_LOGE(TAG, "Failed Sync (ACK Return value = %#02x != %#02x)", ret, 0xA5);
     throw ACKFailed();
   }
-  this->WaitACKFrame();
+  this->RecvACK();
 
   ESP_LOGI(TAG, "Connection established");
 
@@ -66,7 +66,7 @@ void Stm32BootLoaderSPI::CommandHeader(uint8_t cmd) {
 
   this->device.Recv(buf);
 
-  this->WaitACKFrame();
+  this->RecvACK();
 
   return;
 }
@@ -115,29 +115,14 @@ void Stm32BootLoaderSPI::Get() {
   std::vector<uint8_t> buf(2);
   this->ReadData(buf);
   auto n = buf[0];
-  auto version = buf[1];
-
-  ESP_LOGI(TAG, "Bootloader version: %d.%d", version >> 4, version & 0x0f);
+  this->version.UpdateVersion(buf[1]);
 
   std::vector<uint8_t> raw_command(n);
   this->ReadDataWithoutHeader(raw_command);
 
-  this->commands.get = raw_command[0];
-  this->commands.get_version = raw_command[1];
-  this->commands.get_id = raw_command[2];
-  this->commands.read_memory = raw_command[3];
-  this->commands.go = raw_command[4];
-  this->commands.write_memory = raw_command[5];
-  this->commands.erase = raw_command[6];
-  this->commands.write_protect = raw_command[7];
-  this->commands.write_unprotect = raw_command[8];
-  this->commands.readout_protect = raw_command[9];
-  this->commands.readout_unprotect = raw_command[10];
-  if (n > 0x0c) {
-    this->commands.get_checksum = raw_command[11];
-  }
+  this->commands = Commands(raw_command);
 
-  this->WaitACKFrame();
+  this->RecvACK();
   return;
 }
 
@@ -152,7 +137,7 @@ void Stm32BootLoaderSPI::Erase(SpecialFlashPage page) {
 
   this->device.Send(buf);
   this->device.Recv(buf);
-  this->WaitACKFrame();
+  this->RecvACK();
 
   return;
 }
@@ -175,7 +160,7 @@ void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
 
     this->device.Send(buf);
     this->device.Recv(buf);
-    this->WaitACKFrame();
+    this->RecvACK();
   }
 
   // Send pages and checksum
@@ -190,7 +175,7 @@ void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
 
     this->device.Send(buf);
     this->device.Recv(buf);
-    this->WaitACKFrame();
+    this->RecvACK();
   }
 
   return;
@@ -214,7 +199,7 @@ void Stm32BootLoaderSPI::WriteMemoryBlock(uint32_t addr,
     // this->device.Send(buf);
     // this->device.Recv(buf);
 
-    this->WaitACKFrame();
+    this->RecvACK();
   }
 
   {
@@ -229,7 +214,7 @@ void Stm32BootLoaderSPI::WriteMemoryBlock(uint32_t addr,
     this->device.Send(buf);
     this->device.Recv(buf);
 
-    this->WaitACKFrame();
+    this->RecvACK();
   }
 
   return;
@@ -245,7 +230,7 @@ void Stm32BootLoaderSPI::Go(uint32_t addr) {
   this->device.Send(buf);
   this->device.Recv(buf);
 
-  this->WaitACKFrame();
+  this->RecvACK();
 
   return;
 }

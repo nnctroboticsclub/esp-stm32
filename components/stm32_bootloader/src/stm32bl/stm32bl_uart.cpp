@@ -31,9 +31,11 @@ void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
   }
 }
 
-void Stm32BootLoaderUart::SendCommandHeader(uint8_t cmd) {
+void Stm32BootLoaderUart::CommandHeader(uint8_t cmd) {
   std::vector<uint8_t> buf{cmd, uint8_t(cmd ^ 0xff)};
   this->uart.Send(buf);
+
+  this->RecvACK();
 }
 
 void Stm32BootLoaderUart::SendAddress(uint32_t address) {
@@ -46,33 +48,27 @@ void Stm32BootLoaderUart::SendAddress(uint32_t address) {
 }
 
 void Stm32BootLoaderUart::DoGetVersion() {
-  this->SendCommandHeader(this->commands.get_version);
-  this->RecvACK();
+  this->CommandHeader(this->commands.get_version);
 
   std::vector<uint8_t> buf(3);
   this->uart.Recv(buf, 500 / portTICK_PERIOD_MS);
-  this->version.major = buf[0] >> 4;
-  this->version.major = buf[0] >> 4;
-  this->version.option1 = buf[1];
-  this->version.option1 = buf[2];
+  this->version = Version(buf);
   this->RecvACK();
 
   return;
 }
 
 void Stm32BootLoaderUart::DoExtendedErase(SpecialFlashPage page) {
-  this->SendCommandHeader(this->commands.erase);
-  this->RecvACK();
+  this->CommandHeader(this->commands.erase);
 
   this->SendU16((uint16_t)page, true);
-  this->RecvACK();
+  this->RecvACK(portMAX_DELAY);
 
   return;
 }
 
 void Stm32BootLoaderUart::DoExtendedErase(std::vector<uint16_t>& pages) {
-  this->SendCommandHeader(this->commands.erase);
-  this->RecvACK();
+  this->CommandHeader(this->commands.erase);
 
   std::vector<uint8_t> buf(pages.size() * 2 + 2);
 
@@ -85,7 +81,7 @@ void Stm32BootLoaderUart::DoExtendedErase(std::vector<uint16_t>& pages) {
 
   this->SendWithChecksum(buf);
 
-  this->RecvACK();
+  this->RecvACK(portMAX_DELAY);
 
   return;
 }
@@ -118,9 +114,9 @@ void Stm32BootLoaderUart::Connect() {
   return;
 }
 
-Stm32BootLoaderUart::Version* Stm32BootLoaderUart::GetVersion() {
-  if (!this->version.is_valid) {
-    this->version.is_valid = true;
+Version* Stm32BootLoaderUart::GetVersion() {
+  if (!this->version.updated) {
+    this->version.updated = true;
     this->GetVersion();
   }
 
@@ -143,33 +139,16 @@ void Stm32BootLoaderUart::Sync() {
 }
 
 void Stm32BootLoaderUart::Get() {
-  this->SendCommandHeader(this->commands.get);
-  this->RecvACK();
+  this->CommandHeader(this->commands.get);
 
-  this->ack = this->uart.RecvChar();
+  std::vector<uint8_t> buf(2);
+  this->ReadData(buf);
+  this->version.UpdateVersion(buf[1]);
 
-  auto n = this->uart.RecvChar();
+  std::vector<uint8_t> raw_commands(buf[0]);
+  this->ReadDataWithoutHeader(raw_commands);
 
-  auto byte = this->uart.RecvChar();
-  this->version.major = byte >> 4;
-  this->version.minor = byte & 0xf;
-
-  std::vector<uint8_t> buf(n);
-  this->uart.Recv(buf, 100 / portTICK_PERIOD_MS);
-
-  this->commands.get = buf[0];
-  this->commands.get_version = buf[1];
-  this->commands.get_id = buf[2];
-  this->commands.read_memory = buf[3];
-  this->commands.go = buf[4];
-  this->commands.write_memory = buf[5];
-  this->commands.erase = buf[6];
-  this->commands.write_protect = buf[7];
-  this->commands.write_unprotect = buf[8];
-  this->commands.readout_protect = buf[9];
-  this->commands.readout_unprotect = buf[10];
-  // TODO: Add GetChecksum command
-  // this->get_checksum = buf[11];
+  this->commands = Commands(raw_commands);
 
   this->RecvACK();
 
@@ -183,8 +162,7 @@ void Stm32BootLoaderUart::Get() {
 void Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
                                            std::vector<uint8_t>& buffer) {
   ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, buffer.size());
-  this->SendCommandHeader(0x31);
-  this->RecvACK();
+  this->CommandHeader(0x31);
 
   this->SendAddress(address);
   this->RecvACK();
@@ -205,8 +183,7 @@ void Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
 
 void Stm32BootLoaderUart::Go(uint32_t address) {
   ESP_LOGI(TAG, "Go command");
-  this->SendCommandHeader(this->commands.go);
-  this->RecvACK();
+  this->CommandHeader(this->commands.go);
 
   this->SendAddress(address);
   this->RecvACK();

@@ -12,10 +12,11 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   static constexpr const char *TAG = "STM32 BootLoader[SPI]";
 
   Commands commands;
+  Version version;
   connection::data_link::SPIDevice device;
   uint8_t v;
 
-  void WaitACKFrame();
+  void RecvACK();
 
   void Synchronization();
 
@@ -24,6 +25,11 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   void ReadData(std::vector<uint8_t> &buf);
 
   void ReadDataWithoutHeader(std::vector<uint8_t> &buf);
+
+  void Erase(SpecialFlashPage page) override;
+  void Erase(std::vector<FlashPage> &pages) override;
+
+  void WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> &buffer) override;
 
  public:
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
@@ -35,12 +41,6 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   void Get();
 
   inline void SetDebugVarU8(uint8_t v) { this->v = v; }
-
-  void Erase(SpecialFlashPage page) override;
-  void Erase(std::vector<FlashPage> &pages) override;
-  using STM32BootLoader::Erase;
-
-  void WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> &buffer) override;
 
   void Go(uint32_t addr) override;
 };

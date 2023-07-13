@@ -22,6 +22,22 @@ struct Commands {
   uint8_t readout_protect = 0x82;
   uint8_t readout_unprotect = 0x92;
   uint8_t get_checksum = 0xA1;
+
+  Commands() = default;
+  explicit Commands(std::vector<uint8_t> &data);
+};
+
+struct Version {
+  bool updated = false;
+  uint8_t major = 0xee;
+  uint8_t minor = 0xee;
+  uint8_t option1 = 0xee;
+  uint8_t option2 = 0xee;
+
+  Version() = default;
+  explicit Version(std::vector<uint8_t> &data);
+
+  void UpdateVersion(uint8_t byte);
 };
 
 class STM32BootLoader {
@@ -29,6 +45,11 @@ class STM32BootLoader {
 
   idf::GPIO_Output reset;
   idf::GPIO_Output boot0;
+
+  virtual void WriteMemoryBlock(uint32_t address,
+                                std::vector<uint8_t> &buf) = 0;
+  virtual void Erase(SpecialFlashPage page) = 0;
+  virtual void Erase(std::vector<FlashPage> &pages) = 0;
 
  public:
   STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0);
@@ -38,10 +59,6 @@ class STM32BootLoader {
 
   virtual void Connect() = 0;
 
-  virtual void WriteMemoryBlock(uint32_t address,
-                                std::vector<uint8_t> &buf) = 0;
-  virtual void Erase(SpecialFlashPage page) = 0;
-  virtual void Erase(std::vector<FlashPage> &pages) = 0;
   virtual void Go(uint32_t address) = 0;
 
   // Helper functions
