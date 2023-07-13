@@ -13,7 +13,7 @@ class ConnectionClosedError : public std::runtime_error {
 };
 
 class RecvAndSend {
-  bool trace_enabled;
+  bool trace_enabled = false;
 
  public:
   inline bool IsTraceEnabled() const { return this->trace_enabled; }
