@@ -41,11 +41,7 @@ void Wifi::event_handler(void* arg, esp_event_base_t event_base,
   }
 }
 
-Wifi::Wifi() : s_wifi_event_group(nullptr), netif(nullptr) {
-  this->s_wifi_event_group = xEventGroupCreate();
-  wifi::init::init_netif();
-  wifi::init::init_eventloop();
-}
+Wifi::Wifi() : s_wifi_event_group(nullptr), netif(nullptr) {}
 
 Wifi::~Wifi() {
   vEventGroupDelete(this->s_wifi_event_group);
@@ -68,6 +64,18 @@ void Wifi::SetIP(const esp_netif_ip_info_t& ip_info) {
   ESP_ERROR_CHECK(esp_netif_set_ip_info(this->netif, &ip_info));
 }
 
+void Wifi::InitCommon() {
+  static bool initialized = false;
+  if (initialized) {
+    ESP_LOGW(TAG, "Wi-Fi Common already initialized");
+    return;
+  }
+  initialized = true;
+  this->s_wifi_event_group = xEventGroupCreate();
+  wifi::init::init_netif();
+  wifi::init::init_eventloop();
+}
+
 void Wifi::InitAp(const char* ssid, const char* password) {
   static bool initialized = false;
   if (initialized) {
@@ -75,6 +83,8 @@ void Wifi::InitAp(const char* ssid, const char* password) {
     return;
   }
   initialized = true;
+
+  this->InitCommon();
 
   ESP_LOGI(TAG, "[Netif] New AP");
   this->netif = esp_netif_create_default_wifi_ap();
@@ -101,6 +111,8 @@ void Wifi::InitSta() {
     return;
   }
   initialized = true;
+
+  this->InitCommon();
 
   ESP_LOGI(TAG, "[Netif] New Sta");
   this->netif = esp_netif_create_default_wifi_sta();
