@@ -71,7 +71,7 @@ class RecvAndSend {
   }
 
   void SendU16(uint16_t value) {
-    std::vector<uint8_t> buf;
+    std::vector<uint8_t> buf(2);
     buf[0] = (value >> 8) & 0xff;
     buf[1] = value & 0xff;
 
@@ -79,7 +79,7 @@ class RecvAndSend {
   }
 
   void SendU32(uint32_t value) {
-    std::vector<uint8_t> buf;
+    std::vector<uint8_t> buf(4);
     buf[0] = (value >> 24) & 0xff;
     buf[1] = (value >> 16) & 0xff;
     buf[2] = (value >> 8) & 0xff;
