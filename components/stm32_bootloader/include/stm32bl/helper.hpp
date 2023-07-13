@@ -17,6 +17,11 @@ class NotImplemented : public std::runtime_error {
   NotImplemented() : std::runtime_error("Not Implemented") {}
 };
 
+class InvalidSize : public std::runtime_error {
+ public:
+  InvalidSize() : std::runtime_error("Invalid size") {}
+};
+
 class ACKFailed : public std::runtime_error {
  public:
   ACKFailed() : std::runtime_error("ACK Failed") {}
