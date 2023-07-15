@@ -27,6 +27,8 @@ struct Commands {
 
   Commands() = default;
   explicit Commands(std::vector<uint8_t> &data);
+
+  inline bool UseLegacyErase() const { return this->erase == 0x44; }
 };
 
 struct Version {
@@ -42,6 +44,17 @@ struct Version {
   void UpdateVersion(uint8_t byte);
 };
 
+class OutboundData {
+ public:
+  enum class SizeMode { kNone = 0, kU16, kU8 };
+
+  //* Datas
+  std::vector<uint8_t> data;
+
+  SizeMode size;
+  bool with_checksum = false;
+};
+
 class STM32BootLoader {
   static constexpr const char *TAG = "STM32 BootLoader";
 
@@ -51,11 +64,15 @@ class STM32BootLoader {
   //* Some commands for transfering data
 
   virtual void CommandHeader(uint8_t cmd) = 0;
-
   virtual void SendAddress(uint32_t address) = 0;
+  virtual void SendFlashPage(SpecialFlashPage address) = 0;
+  virtual void SendFlashPage(std::vector<FlashPage> &address) = 0;
   virtual void SendDataWithChecksum(std::vector<uint8_t> &data) = 0;
   virtual void ReadData(std::vector<uint8_t> &buffer) = 0;
   virtual void ReadDataWithoutHeader(std::vector<uint8_t> &buffer) = 0;
+
+  // * New!
+  virtual void SendData(OutboundData &data) = 0;
 
   virtual void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) = 0;
 
@@ -65,8 +82,8 @@ class STM32BootLoader {
 
   void WriteMemoryBlock(uint32_t address, std::vector<uint8_t> &buf);
 
-  virtual void Erase(SpecialFlashPage page) = 0;
-  virtual void Erase(std::vector<FlashPage> &pages) = 0;
+  virtual void Erase(SpecialFlashPage page);
+  virtual void Erase(std::vector<FlashPage> &pages);
 
  public:
   STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0);
@@ -78,6 +95,7 @@ class STM32BootLoader {
 
   //* Commands
   void Get();
+  void GetVersion();
   void Go(uint32_t address);
 
   //* Utility functions

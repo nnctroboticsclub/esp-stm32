@@ -5,11 +5,6 @@
 
 namespace connection::application::stm32bl {
 
-void Stm32BootLoaderUart::SendWithChecksum(std::vector<uint8_t>& buf) {
-  this->device.Send(buf);
-  this->device.SendChar(CalculateChecksum(buf));
-}
-
 void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
   this->device.SendU16(value);
   if (with_checksum) {
@@ -51,20 +46,46 @@ void Stm32BootLoaderUart::SendAddress(uint32_t address) {
   this->RecvACK();
 }
 
-// * For Executing commands
-void Stm32BootLoaderUart::Erase(SpecialFlashPage page) {
-  if (this->commands.erase == 0x44) {
-    this->DoExtendedErase(page);
-  } else {
-    this->DoErase(page);
+void Stm32BootLoaderUart::SendFlashPage(SpecialFlashPage page) {
+  this->SendU16(static_cast<uint16_t>(page), true);
+  this->RecvACK(portMAX_DELAY);
+}
+void Stm32BootLoaderUart::SendFlashPage(std::vector<FlashPage>& pages) {
+  std::vector<uint8_t> buf(pages.size() * 2 + 2);
+
+  buf[0] = (pages.size() - 1) >> 8;
+  buf[1] = (pages.size() - 1) & 0xff;
+  for (int i = 0; i < pages.size(); i++) {
+    buf[2 + i * 2] = (pages[i] >> 8) & 0xff;
+    buf[2 + i * 2 + 1] = pages[i] & 0xff;
   }
+
+  this->device.Send(buf);
+  this->device.SendChar(CalculateChecksum(buf));
+
+  this->RecvACK(portMAX_DELAY);
 }
 
-void Stm32BootLoaderUart::Erase(std::vector<FlashPage>& pages) {
-  if (this->commands.erase == 0x44) {
-    this->DoExtendedErase(pages);
-  } else {
-    this->DoErase(pages);
+void Stm32BootLoaderUart::SendData(OutboundData& data) {
+  using enum OutboundData::SizeMode;
+
+  switch (data.size) {
+    case kNone:
+      break;
+    case kU8:
+      assert(data.data.size() <= 0x100);
+      this->device.SendChar((uint8_t)data.data.size() - 1);
+      break;
+    case kU16:
+      assert(data.data.size() <= 0xffff);
+      this->SendU16((uint16_t)data.data.size(), false);
+      break;
+  }
+
+  this->device.Send(data.data);
+
+  if (data.with_checksum) {
+    this->device.SendChar(CalculateChecksum(data.data));
   }
 }
 
@@ -76,59 +97,7 @@ void Stm32BootLoaderUart::Connect() {
   this->Get();
   this->GetVersion();
 
-  ESP_LOGI(TAG, "Boot Loader version = %d.%d", this->GetVersion()->major,
-           this->GetVersion()->minor);
-
   return;
-}
-
-//*
-void Stm32BootLoaderUart::DoGetVersion() {
-  this->CommandHeader(this->commands.get_version);
-
-  std::vector<uint8_t> buf(3);
-  this->device.Recv(buf, 500 / portTICK_PERIOD_MS);
-  this->version = Version(buf);
-  this->RecvACK();
-
-  return;
-}
-
-void Stm32BootLoaderUart::DoExtendedErase(SpecialFlashPage page) {
-  this->CommandHeader(this->commands.erase);
-
-  this->SendU16((uint16_t)page, true);
-  this->RecvACK(portMAX_DELAY);
-
-  return;
-}
-
-void Stm32BootLoaderUart::DoExtendedErase(std::vector<uint16_t>& pages) {
-  this->CommandHeader(this->commands.erase);
-
-  std::vector<uint8_t> buf(pages.size() * 2 + 2);
-
-  buf[0] = (pages.size() - 1) >> 8;
-  buf[1] = (pages.size() - 1) & 0xff;
-  for (int i = 0; i < pages.size(); i++) {
-    buf[2 + i * 2] = (pages[i] >> 8) & 0xff;
-    buf[2 + i * 2 + 1] = pages[i] & 0xff;
-  }
-
-  this->SendWithChecksum(buf);
-
-  this->RecvACK(portMAX_DELAY);
-
-  return;
-}
-
-void Stm32BootLoaderUart::DoErase(SpecialFlashPage) {
-  // TODO(syoch): Impl
-  throw NotImplemented();
-}
-void Stm32BootLoaderUart::DoErase(std::vector<uint16_t>&) {
-  // TODO(syoch): Impl
-  throw NotImplemented();
 }
 
 Stm32BootLoaderUart::Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0,
@@ -139,15 +108,6 @@ Stm32BootLoaderUart::Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0,
 }
 
 Stm32BootLoaderUart::~Stm32BootLoaderUart() = default;
-
-Version* Stm32BootLoaderUart::GetVersion() {
-  if (!this->version.updated) {
-    this->version.updated = true;
-    this->GetVersion();
-  }
-
-  return &this->version;
-}
 
 void Stm32BootLoaderUart::Sync() {
   this->device.SendChar(0x7F);

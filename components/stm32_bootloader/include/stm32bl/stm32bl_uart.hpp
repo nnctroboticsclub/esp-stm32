@@ -18,9 +18,6 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   uint8_t ack = (uint8_t)ACK::ACK;
   bool use_extended_erase = false;
 
-  Commands commands;
-  Version version;
-
   connection::data_link::UART device;
 
   inline void ReadData(std::vector<uint8_t> &data) override {
@@ -36,16 +33,12 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   void SendDataWithChecksum(std::vector<uint8_t> &data) override;
   void CommandHeader(uint8_t cmd) override;
   void SendAddress(uint32_t address) override;
+  void SendFlashPage(SpecialFlashPage address) override;
+  void SendFlashPage(std::vector<FlashPage> &address) override;
 
-  void SendWithChecksum(std::vector<uint8_t> &buf);
+  void SendData(OutboundData &data) override;
 
   void SendU16(uint16_t value, bool with_checksum = false);
-
-  void DoGetVersion();
-  void DoExtendedErase(SpecialFlashPage page);
-  void DoExtendedErase(std::vector<uint16_t> &pages);
-  void DoErase(SpecialFlashPage page);
-  void DoErase(std::vector<uint16_t> &pages);
 
   void Erase(SpecialFlashPage page) override;
   void Erase(std::vector<FlashPage> &pages) override;
@@ -54,8 +47,6 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0, uart_port_t num,
                       int tx, int rx);
   ~Stm32BootLoaderUart() override;
-
-  Version *GetVersion();
 
   void Sync();
 

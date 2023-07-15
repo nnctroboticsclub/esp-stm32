@@ -1,5 +1,7 @@
 #include <stm32bl/stm32bl_spi.hpp>
 
+#include <helper.hpp>
+
 #include <memory>
 #include <ranges>
 
@@ -63,8 +65,8 @@ void Stm32BootLoaderSPI::Synchronization() {
 
 void Stm32BootLoaderSPI::CommandHeader(uint8_t cmd) {
   std::vector<uint8_t> buf{0x5A, cmd, (uint8_t)(cmd ^ 0xff)};
-  this->device.Send(buf);
 
+  this->device.Send(buf);
   this->device.Recv(buf);
 
   this->RecvACK();
@@ -112,10 +114,31 @@ void Stm32BootLoaderSPI::Connect() {
   this->Get();
 }
 
-void Stm32BootLoaderSPI::Erase(SpecialFlashPage page) {
-  ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
-  this->CommandHeader(this->commands.erase);
+void Stm32BootLoaderSPI::SendData(OutboundData &data) {
+  using enum OutboundData::SizeMode;
 
+  switch (data.size) {
+    case kU8:
+      assert(data.data.size() <= 0xff);
+      this->device.SendChar((uint8_t)data.data.size());
+      break;
+    case kU16:
+      assert(data.data.size() <= 0xffff);
+      this->device.SendU16((uint16_t)data.data.size());
+      break;
+
+    default:  // includes kNone
+      break;
+  }
+
+  this->device.Send(data.data);
+
+  if (data.with_checksum) {
+    this->device.SendChar(CalculateChecksum(data.data));
+  }
+}
+
+void Stm32BootLoaderSPI::SendFlashPage(SpecialFlashPage page) {
   std::vector<uint8_t> buf(3);
   buf[0] = ((uint16_t)page >> 8);
   buf[1] = ((uint16_t)page & 0xff);
@@ -124,25 +147,16 @@ void Stm32BootLoaderSPI::Erase(SpecialFlashPage page) {
   this->device.Send(buf);
   this->device.Recv(buf);
   this->RecvACK();
-
-  return;
 }
 
-void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
-  ESP_LOGI(TAG, "Erasing %d pages", pages.size());
-  ESP_LOGI(TAG, "  %08x --> %08x", 0x0800'0000 + pages[0] * 0x800,
-           0x0800'0000 + pages[pages.size() - 1] * 0x800);
-  this->CommandHeader(this->commands.erase);
-
-  uint8_t checksum = 0;
-
-  // Send a pages
+void Stm32BootLoaderSPI::SendFlashPage(std::vector<FlashPage> &pages) {
+  Checksum checksum;
   {
     std::vector<uint8_t> buf(3);
-    buf[0] = pages.size() >> 8;
+    buf[0] = (uint8_t)(pages.size() >> 8);
     buf[1] = pages.size() & 0xff;
-    checksum ^= CalculateChecksum(buf);
-    buf[2] = checksum;
+    checksum << (uint16_t)pages.size();
+    buf[2] = (uint8_t)checksum;
 
     this->device.Send(buf);
     this->device.Recv(buf);
@@ -156,15 +170,15 @@ void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
       buf[2 * i] = pages[i] >> 8;
       buf[2 * i + 1] = pages[i] & 0xff;
     }
-    checksum = 0x5a ^ CalculateChecksum(buf);  // WHAT IS 0x5A (NANNMO-WAKARAN)
-    buf.push_back(checksum);
+    checksum.Reset();
+    checksum << (uint8_t)0x5a;  // WHAT IS 0x5A (NANNMO-WAKARAN)
+    checksum << buf;
+    buf.push_back((uint8_t)checksum);
 
     this->device.Send(buf);
     this->device.Recv(buf);
     this->RecvACK();
   }
-
-  return;
 }
 
 void Stm32BootLoaderSPI::SendAddress(uint32_t address) {

@@ -114,6 +114,42 @@ void STM32BootLoader::Get() {
   return;
 }
 
+void STM32BootLoader::GetVersion() {
+  this->CommandHeader(this->commands.get_version);
+
+  std::vector<uint8_t> buf(3);
+  this->ReadDataWithoutHeader(buf);
+  this->version = Version(buf);
+
+  this->RecvACK();
+
+  return;
+}
+
+void STM32BootLoader::Erase(SpecialFlashPage page) {
+  ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
+  if (this->commands.UseLegacyErase()) {
+    this->CommandHeader(this->commands.erase);
+    this->SendFlashPage(page);
+  } else {  //! Legacy Erase
+    // TODO(syoch): Impl
+    throw NotImplemented();
+  }
+}
+
+void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
+  ESP_LOGI(TAG, "Erasing %d pages", pages.size());
+  ESP_LOGI(TAG, "  %08x --> %08x", 0x0800'0000 + pages[0] * 0x800,
+           0x0800'0000 + pages[pages.size() - 1] * 0x800);
+  if (this->commands.UseLegacyErase()) {
+    this->CommandHeader(this->commands.erase);
+    this->SendFlashPage(pages);
+  } else {  //! Legacy Erase
+    // TODO(syoch): Impl
+    throw NotImplemented();
+  }
+}
+
 // Utility functions
 
 void STM32BootLoader::Erase(uint32_t address, uint32_t length) {
