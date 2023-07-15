@@ -6,7 +6,7 @@
 namespace connection::application::stm32bl {
 
 void Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
-  auto coming_ack = this->uart.RecvChar(timeout);
+  auto coming_ack = this->device.RecvChar(timeout);
 
   if (coming_ack == 0x79) {
     return;
@@ -20,38 +20,40 @@ void Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
 }
 
 void Stm32BootLoaderUart::SendWithChecksum(std::vector<uint8_t>& buf) {
-  this->uart.Send(buf);
-  this->uart.SendChar(CalculateChecksum(buf));
+  this->device.Send(buf);
+  this->device.SendChar(CalculateChecksum(buf));
 }
 
 void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
-  this->uart.SendU16(value);
+  this->device.SendU16(value);
   if (with_checksum) {
-    this->uart.SendChar((value >> 8) ^ (value & 0xff));
+    this->device.SendChar((value >> 8) ^ (value & 0xff));
   }
 }
 
 void Stm32BootLoaderUart::CommandHeader(uint8_t cmd) {
   std::vector<uint8_t> buf{cmd, uint8_t(cmd ^ 0xff)};
-  this->uart.Send(buf);
+  this->device.Send(buf);
 
   this->RecvACK();
 }
 
 void Stm32BootLoaderUart::SendAddress(uint32_t address) {
-  this->uart.SendU32(address);
+  this->device.SendU32(address);
 
   uint32_t checksum = address;
   checksum = (checksum >> 16) ^ (checksum & 0xFFFF);
   checksum = (checksum >> 8) ^ (checksum & 0xFF);
-  this->uart.SendChar(checksum);
+  this->device.SendChar(checksum);
+
+  this->RecvACK();
 }
 
 void Stm32BootLoaderUart::DoGetVersion() {
   this->CommandHeader(this->commands.get_version);
 
   std::vector<uint8_t> buf(3);
-  this->uart.Recv(buf, 500 / portTICK_PERIOD_MS);
+  this->device.Recv(buf, 500 / portTICK_PERIOD_MS);
   this->version = Version(buf);
   this->RecvACK();
 
@@ -97,8 +99,9 @@ void Stm32BootLoaderUart::DoErase(std::vector<uint16_t>&) {
 
 Stm32BootLoaderUart::Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0,
                                          uart_port_t num, int tx, int rx)
-    : STM32BootLoader(reset, boot0), uart(num) {
-  this->uart.InstallDriver(tx, rx, 112500, UART_PARITY_EVEN);
+    : STM32BootLoader(reset, boot0), device(num) {
+  this->device.InstallDriver(tx, rx, 112500, UART_PARITY_EVEN);
+  // this->device.SetTraceEnabled(true);
 }
 
 Stm32BootLoaderUart::~Stm32BootLoaderUart() = default;
@@ -124,9 +127,9 @@ Version* Stm32BootLoaderUart::GetVersion() {
 }
 
 void Stm32BootLoaderUart::Sync() {
-  this->uart.SendChar(0x7F);
+  this->device.SendChar(0x7F);
 
-  auto ret = this->uart.RecvChar();
+  auto ret = this->device.RecvChar(1000 / portTICK_PERIOD_MS);
   if (ret == 0x79) {
     return;
   } else if (ret == 0x1f) {
@@ -161,20 +164,18 @@ void Stm32BootLoaderUart::Get() {
 
 void Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
                                            std::vector<uint8_t>& buffer) {
-  ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", address, buffer.size());
   this->CommandHeader(0x31);
 
   this->SendAddress(address);
-  this->RecvACK();
 
-  this->uart.SendChar((uint8_t)(buffer.size() - 1));
+  this->device.SendChar((uint8_t)(buffer.size() - 1));
 
   uint8_t checksum = buffer.size() - 1;
   for (int i = 0; i < buffer.size(); i++) {
     checksum ^= buffer[i];
   }
-  this->uart.Send(buffer);
-  this->uart.SendChar(checksum);
+  this->device.Send(buffer);
+  this->device.SendChar(checksum);
 
   this->RecvACK();
 
@@ -186,7 +187,6 @@ void Stm32BootLoaderUart::Go(uint32_t address) {
   this->CommandHeader(this->commands.go);
 
   this->SendAddress(address);
-  this->RecvACK();
 
   return;
 }

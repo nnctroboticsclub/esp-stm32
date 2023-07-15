@@ -4,6 +4,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <cmath>
+
 namespace connection::application::stm32bl {
 
 Commands::Commands(std::vector<uint8_t> &data) {
@@ -112,17 +114,26 @@ void STM32BootLoader::Erase(Pages pages) {
   }
 }
 
-void STM32BootLoader::WriteMemory(uint32_t address, std::vector<uint8_t> &buf) {
-  int remains = buf.size();
-  auto it = buf.begin();
+void STM32BootLoader::WriteMemory(uint32_t address,
+                                  std::vector<uint8_t> &data) {
+  int remains = data.size();
+  auto it = data.begin();
   auto ptr = address;
 
   while (remains > 0) {
-    std::vector sub_buffer(it, it + (remains > 256 ? 256 : remains));
-    this->WriteMemoryBlock(ptr, sub_buffer);
-    remains = remains - 256 > 0 ? remains - 256 : 0;
-    it += 256;
-    ptr += 256;
+    ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", ptr,
+             std::min(remains, 256 * 8));
+
+    for (size_t i = 0; i < 8; i++) {
+      std::vector chunk(it, it + std::min(remains, 256));
+      this->WriteMemoryBlock(ptr, chunk);
+      remains = std::max(remains - chunk.size(), 0u);
+
+      it += 256;
+      ptr += 256;
+
+      if (remains <= 0) break;
+    }
   }
   return;
 }

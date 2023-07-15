@@ -22,6 +22,11 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
 
   void CommandHeader(uint8_t cmd);
 
+  void SendAddress(uint32_t address);
+
+  void SendDataWithChecksum(std::vector<uint8_t> &data,
+                            uint8_t checksum_default = 0x00);
+
   void ReadData(std::vector<uint8_t> &buf);
 
   void ReadDataWithoutHeader(std::vector<uint8_t> &buf);

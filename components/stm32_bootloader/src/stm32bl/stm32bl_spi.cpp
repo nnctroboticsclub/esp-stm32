@@ -11,6 +11,7 @@
 
 namespace connection::application::stm32bl {
 void Stm32BootLoaderSPI::RecvACK() {
+  auto trace_ = this->device.IsTraceEnabled();
   this->device.SetTraceEnabled(false);
   int fail_count = 0;
 
@@ -38,7 +39,7 @@ void Stm32BootLoaderSPI::RecvACK() {
   }
   this->device.SendChar(0x79);
   this->device.RecvChar();
-  this->device.SetTraceEnabled(true);
+  this->device.SetTraceEnabled(trace_);
   return;
 }
 
@@ -87,7 +88,9 @@ void Stm32BootLoaderSPI::ReadDataWithoutHeader(std::vector<uint8_t> &buf) {
 
 Stm32BootLoaderSPI::Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                                        idf::SPIMaster &spi_host, idf::CS cs)
-    : STM32BootLoader(reset, boot0), device(spi_host, cs) {}
+    : STM32BootLoader(reset, boot0), device(spi_host, cs) {
+  this->device.SetTraceEnabled(false);
+}
 
 Stm32BootLoaderSPI::~Stm32BootLoaderSPI() = default;
 
@@ -181,41 +184,44 @@ void Stm32BootLoaderSPI::Erase(std::vector<FlashPage> &pages) {
   return;
 }
 
+void Stm32BootLoaderSPI::SendAddress(uint32_t address) {
+  uint32_t ch = address;
+  ch = (ch >> 16) ^ (ch & 0xffff);
+  ch = (ch >> 8) ^ (ch & 0xff);
+
+  this->device.SendU32(address);
+  this->device.RecvU32();
+
+  this->device.SendChar((char)ch);
+  this->device.RecvChar();
+
+  this->RecvACK();
+}
+
+void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data,
+                                              uint8_t checksum_default) {
+  auto n = (uint8_t)(data.size() - 1);
+  auto checksum = CalculateChecksum(data) ^ checksum_default;
+
+  this->device.SendChar(n);
+  this->device.RecvChar();
+
+  this->device.Send(data);
+  this->device.Recv(data);
+
+  this->device.SendChar(checksum);
+  this->device.RecvChar();
+
+  this->RecvACK();
+}
+
 void Stm32BootLoaderSPI::WriteMemoryBlock(uint32_t addr,
                                           std::vector<uint8_t> &buffer) {
-  ESP_LOGI(TAG, "Writing Memory at %08lx (%d bytes)", addr, buffer.size());
   this->CommandHeader(this->commands.write_memory);
 
-  {
-    this->device.SendU32(addr);
-    this->device.RecvU32();
+  this->SendAddress(addr);
 
-    this->device.SendChar(0x00);
-    this->device.RecvChar();
-
-    // std::vector<uint8_t> buf{(uint8_t)(addr >> 24), (uint8_t)(addr >> 16),
-    //                          (uint8_t)(addr >> 8), (uint8_t)(addr & 0xff)};
-    // buf[4] = CalculateChecksum(buf);
-    // this->device.Send(buf);
-    // this->device.Recv(buf);
-
-    this->RecvACK();
-  }
-
-  {
-    std::vector<uint8_t> buf{(uint8_t)(buffer.size() - 1)};
-
-    this->device.Send(buf);
-    this->device.Recv(buf);
-    this->device.Send(buffer);
-    this->device.Recv(buffer);
-
-    buf[0] = CalculateChecksum(buffer) ^ buf[0];
-    this->device.Send(buf);
-    this->device.Recv(buf);
-
-    this->RecvACK();
-  }
+  this->SendDataWithChecksum(buffer, );
 
   return;
 }
@@ -226,7 +232,7 @@ void Stm32BootLoaderSPI::Go(uint32_t addr) {
 
   std::vector<uint8_t> buf{(uint8_t)(addr >> 24), (uint8_t)(addr >> 16),
                            (uint8_t)(addr >> 8), (uint8_t)(addr & 0xff)};
-  buf[4] = CalculateChecksum(buf);
+  buf.emplace_back(CalculateChecksum(buf));
   this->device.Send(buf);
   this->device.Recv(buf);
 

@@ -21,13 +21,13 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   Commands commands;
   Version version;
 
-  connection::data_link::UART uart;
+  connection::data_link::UART device;
 
   inline void ReadData(std::vector<uint8_t> &data) {
-    this->uart.RecvExactly(data);
+    this->device.RecvExactly(data);
   }
   inline void ReadDataWithoutHeader(std::vector<uint8_t> &data) {
-    this->uart.RecvExactly(data);
+    this->device.RecvExactly(data);
   }
 
   void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
