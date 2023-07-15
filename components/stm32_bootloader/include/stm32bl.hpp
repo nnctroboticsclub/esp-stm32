@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <freertos/FreeRTOS.h>
+
 #include "stm32bl/helper.hpp"
 #include <gpio_cxx.hpp>
 
@@ -46,8 +48,23 @@ class STM32BootLoader {
   idf::GPIO_Output reset;
   idf::GPIO_Output boot0;
 
-  virtual void WriteMemoryBlock(uint32_t address,
-                                std::vector<uint8_t> &buf) = 0;
+  //* Some commands for transfering data
+
+  virtual void CommandHeader(uint8_t cmd) = 0;
+
+  virtual void SendAddress(uint32_t address) = 0;
+  virtual void SendDataWithChecksum(std::vector<uint8_t> &data) = 0;
+  virtual void ReadData(std::vector<uint8_t> &buffer) = 0;
+  virtual void ReadDataWithoutHeader(std::vector<uint8_t> &buffer) = 0;
+
+  virtual void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) = 0;
+
+  //* some internal commands
+  Commands commands;
+  Version version;
+
+  void WriteMemoryBlock(uint32_t address, std::vector<uint8_t> &buf);
+
   virtual void Erase(SpecialFlashPage page) = 0;
   virtual void Erase(std::vector<FlashPage> &pages) = 0;
 
@@ -59,9 +76,11 @@ class STM32BootLoader {
 
   virtual void Connect() = 0;
 
-  virtual void Go(uint32_t address) = 0;
+  //* Commands
+  void Get();
+  void Go(uint32_t address);
 
-  // Helper functions
+  //* Utility functions
   void Erase(uint32_t address, uint32_t length);
   void Erase(Pages pages);
   void WriteMemory(uint32_t address, std::vector<uint8_t> &buf);

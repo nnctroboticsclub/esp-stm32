@@ -5,6 +5,20 @@
 
 namespace connection::application::stm32bl {
 
+void Stm32BootLoaderUart::SendWithChecksum(std::vector<uint8_t>& buf) {
+  this->device.Send(buf);
+  this->device.SendChar(CalculateChecksum(buf));
+}
+
+void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
+  this->device.SendU16(value);
+  if (with_checksum) {
+    this->device.SendChar((value >> 8) ^ (value & 0xff));
+  }
+}
+
+//* Overrided functions
+// * For Transferring Datas
 void Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
   auto coming_ack = this->device.RecvChar(timeout);
 
@@ -16,18 +30,6 @@ void Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
   } else {
     ESP_LOGE(TAG, "Unknown ACK %#02x", coming_ack);
     throw ACKFailed();
-  }
-}
-
-void Stm32BootLoaderUart::SendWithChecksum(std::vector<uint8_t>& buf) {
-  this->device.Send(buf);
-  this->device.SendChar(CalculateChecksum(buf));
-}
-
-void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
-  this->device.SendU16(value);
-  if (with_checksum) {
-    this->device.SendChar((value >> 8) ^ (value & 0xff));
   }
 }
 
@@ -49,6 +51,38 @@ void Stm32BootLoaderUart::SendAddress(uint32_t address) {
   this->RecvACK();
 }
 
+// * For Executing commands
+void Stm32BootLoaderUart::Erase(SpecialFlashPage page) {
+  if (this->commands.erase == 0x44) {
+    this->DoExtendedErase(page);
+  } else {
+    this->DoErase(page);
+  }
+}
+
+void Stm32BootLoaderUart::Erase(std::vector<FlashPage>& pages) {
+  if (this->commands.erase == 0x44) {
+    this->DoExtendedErase(pages);
+  } else {
+    this->DoErase(pages);
+  }
+}
+
+// * For Electrical controls
+
+// Todo: This is maybe common function
+void Stm32BootLoaderUart::Connect() {
+  this->Sync();
+  this->Get();
+  this->GetVersion();
+
+  ESP_LOGI(TAG, "Boot Loader version = %d.%d", this->GetVersion()->major,
+           this->GetVersion()->minor);
+
+  return;
+}
+
+//*
 void Stm32BootLoaderUart::DoGetVersion() {
   this->CommandHeader(this->commands.get_version);
 
@@ -106,17 +140,6 @@ Stm32BootLoaderUart::Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0,
 
 Stm32BootLoaderUart::~Stm32BootLoaderUart() = default;
 
-void Stm32BootLoaderUart::Connect() {
-  this->Sync();
-  this->Get();
-  this->GetVersion();
-
-  ESP_LOGI(TAG, "Boot Loader version = %d.%d", this->GetVersion()->major,
-           this->GetVersion()->minor);
-
-  return;
-}
-
 Version* Stm32BootLoaderUart::GetVersion() {
   if (!this->version.updated) {
     this->version.updated = true;
@@ -149,56 +172,6 @@ void Stm32BootLoaderUart::SendDataWithChecksum(std::vector<uint8_t>& data) {
   this->device.Send(data);
   this->device.SendChar(checksum);
   this->RecvACK();
-}
-
-void Stm32BootLoaderUart::Erase(SpecialFlashPage page) {
-  if (this->commands.erase == 0x44) {
-    this->DoExtendedErase(page);
-  } else {
-    this->DoErase(page);
-  }
-}
-
-void Stm32BootLoaderUart::Erase(std::vector<FlashPage>& pages) {
-  if (this->commands.erase == 0x44) {
-    this->DoExtendedErase(pages);
-  } else {
-    this->DoErase(pages);
-  }
-}
-
-void Stm32BootLoaderUart::Get() {
-  this->CommandHeader(this->commands.get);
-
-  std::vector<uint8_t> buf(2);
-  this->ReadData(buf);
-
-  std::vector<uint8_t> raw_commands(buf[0]);
-  this->ReadDataWithoutHeader(raw_commands);
-  this->RecvACK();
-
-  this->version.UpdateVersion(buf[1]);
-  this->commands = Commands(raw_commands);
-
-  return;
-}
-
-void Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
-                                           std::vector<uint8_t>& buffer) {
-  this->CommandHeader(0x31);
-  this->SendAddress(address);
-  this->SendDataWithChecksum(buffer);
-
-  return;
-}
-
-void Stm32BootLoaderUart::Go(uint32_t address) {
-  ESP_LOGI(TAG, "Go command");
-  this->CommandHeader(this->commands.go);
-
-  this->SendAddress(address);
-
-  return;
 }
 
 }  // namespace connection::application::stm32bl

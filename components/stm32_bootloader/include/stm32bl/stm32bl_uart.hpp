@@ -23,31 +23,29 @@ class Stm32BootLoaderUart : public STM32BootLoader {
 
   connection::data_link::UART device;
 
-  inline void ReadData(std::vector<uint8_t> &data) {
+  inline void ReadData(std::vector<uint8_t> &data) override {
     this->device.RecvExactly(data);
   }
-  inline void ReadDataWithoutHeader(std::vector<uint8_t> &data) {
+  inline void ReadDataWithoutHeader(std::vector<uint8_t> &data) override {
     this->device.RecvExactly(data);
   }
 
-  void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS);
+  void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) override;
+
+  //! Some functions for transferring datas
+  void SendDataWithChecksum(std::vector<uint8_t> &data) override;
+  void CommandHeader(uint8_t cmd) override;
+  void SendAddress(uint32_t address) override;
 
   void SendWithChecksum(std::vector<uint8_t> &buf);
 
   void SendU16(uint16_t value, bool with_checksum = false);
-
-  void CommandHeader(uint8_t cmd);
-
-  void SendAddress(uint32_t address);
 
   void DoGetVersion();
   void DoExtendedErase(SpecialFlashPage page);
   void DoExtendedErase(std::vector<uint16_t> &pages);
   void DoErase(SpecialFlashPage page);
   void DoErase(std::vector<uint16_t> &pages);
-
-  void WriteMemoryBlock(uint32_t address,
-                        std::vector<uint8_t> &buffer) override;
 
   void Erase(SpecialFlashPage page) override;
   void Erase(std::vector<FlashPage> &pages) override;
@@ -60,11 +58,8 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   Version *GetVersion();
 
   void Sync();
-  void Get();
 
   void Connect() override;
-
-  void Go(uint32_t address) override;
 };
 }  // namespace stm32bl
 using STM32BootLoaderUart = stm32bl::Stm32BootLoaderUart;

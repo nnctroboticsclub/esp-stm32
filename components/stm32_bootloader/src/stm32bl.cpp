@@ -78,6 +78,44 @@ void STM32BootLoader::BootBootLoader() {
   vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
+// Commands
+
+void STM32BootLoader::WriteMemoryBlock(uint32_t address,
+                                       std::vector<uint8_t> &buffer) {
+  this->CommandHeader(this->commands.write_memory);
+  this->SendAddress(address);
+  this->SendDataWithChecksum(buffer);
+
+  return;
+}
+
+void STM32BootLoader::Go(uint32_t address) {
+  ESP_LOGI(TAG, "Go to %08lx", address);
+  this->CommandHeader(this->commands.go);
+
+  this->SendAddress(address);
+
+  return;
+}
+
+void STM32BootLoader::Get() {
+  this->CommandHeader(this->commands.get);
+
+  std::vector<uint8_t> buf(2);
+  this->ReadData(buf);
+
+  std::vector<uint8_t> raw_command(buf[0]);
+  this->ReadDataWithoutHeader(raw_command);
+  this->RecvACK();
+
+  this->version.UpdateVersion(buf[1]);
+  this->commands = Commands(raw_command);
+
+  return;
+}
+
+// Utility functions
+
 void STM32BootLoader::Erase(uint32_t address, uint32_t length) {
   auto pages = MemoryRangeToPages(address, length);
   this->Erase(pages);

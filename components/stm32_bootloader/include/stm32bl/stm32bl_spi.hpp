@@ -16,24 +16,22 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   connection::data_link::SPIDevice device;
   uint8_t v;
 
-  void RecvACK();
+  void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) override;
 
   void Synchronization();
 
-  void CommandHeader(uint8_t cmd);
+  void CommandHeader(uint8_t cmd) override;
 
-  void SendAddress(uint32_t address);
+  void SendAddress(uint32_t address) override;
 
-  void SendDataWithChecksum(std::vector<uint8_t> &data);
+  void SendDataWithChecksum(std::vector<uint8_t> &data) override;
 
-  void ReadData(std::vector<uint8_t> &buf);
+  void ReadData(std::vector<uint8_t> &buf) override;
 
-  void ReadDataWithoutHeader(std::vector<uint8_t> &buf);
+  void ReadDataWithoutHeader(std::vector<uint8_t> &buf) override;
 
   void Erase(SpecialFlashPage page) override;
   void Erase(std::vector<FlashPage> &pages) override;
-
-  void WriteMemoryBlock(uint32_t addr, std::vector<uint8_t> &buffer) override;
 
  public:
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
@@ -42,11 +40,7 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
 
   void Connect() override;
 
-  void Get();
-
   inline void SetDebugVarU8(uint8_t v) { this->v = v; }
-
-  void Go(uint32_t addr) override;
 };
 }  // namespace stm32bl
 using STM32BootLoaderSPI = stm32bl::Stm32BootLoaderSPI;

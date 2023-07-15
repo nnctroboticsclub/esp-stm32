@@ -10,7 +10,7 @@
 #include <esp_debug_helpers.h>
 
 namespace connection::application::stm32bl {
-void Stm32BootLoaderSPI::RecvACK() {
+void Stm32BootLoaderSPI::RecvACK(TickType_t timeout) {
   auto trace_ = this->device.IsTraceEnabled();
   this->device.SetTraceEnabled(false);
   int fail_count = 0;
@@ -195,40 +195,6 @@ void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data) {
   this->device.RecvChar();
 
   this->RecvACK();
-}
-
-void Stm32BootLoaderSPI::Get() {
-  this->CommandHeader(this->commands.get);
-
-  std::vector<uint8_t> buf(2);
-  this->ReadData(buf);
-
-  std::vector<uint8_t> raw_command(buf[0]);
-  this->ReadDataWithoutHeader(raw_command);
-  this->RecvACK();
-
-  this->version.UpdateVersion(buf[1]);
-  this->commands = Commands(raw_command);
-
-  return;
-}
-
-void Stm32BootLoaderSPI::WriteMemoryBlock(uint32_t addr,
-                                          std::vector<uint8_t> &buffer) {
-  this->CommandHeader(this->commands.write_memory);
-  this->SendAddress(addr);
-  this->SendDataWithChecksum(buffer);
-
-  return;
-}
-
-void Stm32BootLoaderSPI::Go(uint32_t addr) {
-  ESP_LOGI(TAG, "Go to %08lx", addr);
-  this->CommandHeader(this->commands.go);
-
-  this->SendAddress(addr);
-
-  return;
 }
 
 }  // namespace connection::application::stm32bl
