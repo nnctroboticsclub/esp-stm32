@@ -141,23 +141,44 @@ void Stm32BootLoaderUart::Sync() {
   }
 }
 
+void Stm32BootLoaderUart::SendDataWithChecksum(std::vector<uint8_t>& data) {
+  auto n = (uint8_t)(data.size() - 1);
+  auto checksum = CalculateChecksum(data) ^ n;
+
+  this->device.SendChar(n);
+  this->device.Send(data);
+  this->device.SendChar(checksum);
+  this->RecvACK();
+}
+
+void Stm32BootLoaderUart::Erase(SpecialFlashPage page) {
+  if (this->commands.erase == 0x44) {
+    this->DoExtendedErase(page);
+  } else {
+    this->DoErase(page);
+  }
+}
+
+void Stm32BootLoaderUart::Erase(std::vector<FlashPage>& pages) {
+  if (this->commands.erase == 0x44) {
+    this->DoExtendedErase(pages);
+  } else {
+    this->DoErase(pages);
+  }
+}
+
 void Stm32BootLoaderUart::Get() {
   this->CommandHeader(this->commands.get);
 
   std::vector<uint8_t> buf(2);
   this->ReadData(buf);
-  this->version.UpdateVersion(buf[1]);
 
   std::vector<uint8_t> raw_commands(buf[0]);
   this->ReadDataWithoutHeader(raw_commands);
-
-  this->commands = Commands(raw_commands);
-
   this->RecvACK();
 
-  if (this->commands.erase == 0x44) {
-    this->use_extended_erase = true;
-  }
+  this->version.UpdateVersion(buf[1]);
+  this->commands = Commands(raw_commands);
 
   return;
 }
@@ -165,19 +186,8 @@ void Stm32BootLoaderUart::Get() {
 void Stm32BootLoaderUart::WriteMemoryBlock(uint32_t address,
                                            std::vector<uint8_t>& buffer) {
   this->CommandHeader(0x31);
-
   this->SendAddress(address);
-
-  this->device.SendChar((uint8_t)(buffer.size() - 1));
-
-  uint8_t checksum = buffer.size() - 1;
-  for (int i = 0; i < buffer.size(); i++) {
-    checksum ^= buffer[i];
-  }
-  this->device.Send(buffer);
-  this->device.SendChar(checksum);
-
-  this->RecvACK();
+  this->SendDataWithChecksum(buffer);
 
   return;
 }
@@ -191,19 +201,4 @@ void Stm32BootLoaderUart::Go(uint32_t address) {
   return;
 }
 
-void Stm32BootLoaderUart::Erase(SpecialFlashPage page) {
-  if (this->use_extended_erase) {
-    this->DoExtendedErase(page);
-  } else {
-    this->DoErase(page);
-  }
-}
-
-void Stm32BootLoaderUart::Erase(std::vector<FlashPage>& pages) {
-  if (this->use_extended_erase) {
-    this->DoExtendedErase(pages);
-  } else {
-    this->DoErase(pages);
-  }
-}
 }  // namespace connection::application::stm32bl

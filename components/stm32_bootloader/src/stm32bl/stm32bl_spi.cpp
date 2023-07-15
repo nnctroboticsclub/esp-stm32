@@ -112,23 +112,6 @@ void Stm32BootLoaderSPI::Connect() {
   this->Get();
 }
 
-void Stm32BootLoaderSPI::Get() {
-  this->CommandHeader(0x00);
-
-  std::vector<uint8_t> buf(2);
-  this->ReadData(buf);
-  auto n = buf[0];
-  this->version.UpdateVersion(buf[1]);
-
-  std::vector<uint8_t> raw_command(n);
-  this->ReadDataWithoutHeader(raw_command);
-
-  this->commands = Commands(raw_command);
-
-  this->RecvACK();
-  return;
-}
-
 void Stm32BootLoaderSPI::Erase(SpecialFlashPage page) {
   ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
   this->CommandHeader(this->commands.erase);
@@ -198,10 +181,9 @@ void Stm32BootLoaderSPI::SendAddress(uint32_t address) {
   this->RecvACK();
 }
 
-void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data,
-                                              uint8_t checksum_default) {
+void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data) {
   auto n = (uint8_t)(data.size() - 1);
-  auto checksum = CalculateChecksum(data) ^ checksum_default;
+  auto checksum = CalculateChecksum(data) ^ n;
 
   this->device.SendChar(n);
   this->device.RecvChar();
@@ -215,13 +197,27 @@ void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data,
   this->RecvACK();
 }
 
+void Stm32BootLoaderSPI::Get() {
+  this->CommandHeader(this->commands.get);
+
+  std::vector<uint8_t> buf(2);
+  this->ReadData(buf);
+
+  std::vector<uint8_t> raw_command(buf[0]);
+  this->ReadDataWithoutHeader(raw_command);
+  this->RecvACK();
+
+  this->version.UpdateVersion(buf[1]);
+  this->commands = Commands(raw_command);
+
+  return;
+}
+
 void Stm32BootLoaderSPI::WriteMemoryBlock(uint32_t addr,
                                           std::vector<uint8_t> &buffer) {
   this->CommandHeader(this->commands.write_memory);
-
   this->SendAddress(addr);
-
-  this->SendDataWithChecksum(buffer, );
+  this->SendDataWithChecksum(buffer);
 
   return;
 }
@@ -230,13 +226,7 @@ void Stm32BootLoaderSPI::Go(uint32_t addr) {
   ESP_LOGI(TAG, "Go to %08lx", addr);
   this->CommandHeader(this->commands.go);
 
-  std::vector<uint8_t> buf{(uint8_t)(addr >> 24), (uint8_t)(addr >> 16),
-                           (uint8_t)(addr >> 8), (uint8_t)(addr & 0xff)};
-  buf.emplace_back(CalculateChecksum(buf));
-  this->device.Send(buf);
-  this->device.Recv(buf);
-
-  this->RecvACK();
+  this->SendAddress(addr);
 
   return;
 }
