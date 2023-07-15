@@ -40,9 +40,6 @@ class Stm32BootLoaderUart : public STM32BootLoader {
 
   void SendU16(uint16_t value, bool with_checksum = false);
 
-  void Erase(SpecialFlashPage page) override;
-  void Erase(std::vector<FlashPage> &pages) override;
-
  public:
   Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0, uart_port_t num,
                       int tx, int rx);

@@ -90,9 +90,7 @@ void Stm32BootLoaderSPI::ReadDataWithoutHeader(std::vector<uint8_t> &buf) {
 
 Stm32BootLoaderSPI::Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                                        idf::SPIMaster &spi_host, idf::CS cs)
-    : STM32BootLoader(reset, boot0), device(spi_host, cs) {
-  this->device.SetTraceEnabled(false);
-}
+    : STM32BootLoader(reset, boot0), device(spi_host, cs) {}
 
 Stm32BootLoaderSPI::~Stm32BootLoaderSPI() = default;
 
@@ -197,7 +195,10 @@ void Stm32BootLoaderSPI::SendAddress(uint32_t address) {
 
 void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data) {
   auto n = (uint8_t)(data.size() - 1);
-  auto checksum = CalculateChecksum(data) ^ n;
+
+  Checksum checksum;
+  checksum << n;
+  checksum << data;
 
   this->device.SendChar(n);
   this->device.RecvChar();
@@ -205,7 +206,7 @@ void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data) {
   this->device.Send(data);
   this->device.Recv(data);
 
-  this->device.SendChar(checksum);
+  this->device.SendChar((uint8_t)checksum);
   this->device.RecvChar();
 
   this->RecvACK();
