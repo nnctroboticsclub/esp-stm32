@@ -6,7 +6,10 @@
 namespace connection::session {
 
 STM32BL::STM32BL(idf::GPIONum reset, idf::GPIONum boot0)
-    : reset(reset), boot0(boot0) {}
+    : reset(reset), boot0(boot0) {
+  this->reset.set_high();
+  this->boot0.set_low();
+}
 
 void STM32BL::TurnOnBoot1() { this->boot0.set_high(); }
 void STM32BL::TurnOffBoot1() { this->boot0.set_low(); }
