@@ -93,15 +93,15 @@ void STM32BootLoader::WriteMemoryBlock(uint32_t address,
   OutboundData packet1{
       .data = ToU8Vector(address),
       .size = OutboundData::SizeMode::kNone,
-      .checksum = OutboundData::ChecksumMode::kUnused,
+      .checksum = OutboundData::ChecksumMode::kData,
   };
+  this->SendData(packet1);
+
   OutboundData packet2{
       .data = buffer,
       .size = OutboundData::SizeMode::kU8,
       .checksum = OutboundData::ChecksumMode::kWithLength,
   };
-
-  this->SendData(packet1);
   this->SendData(packet2);
 
   return;
@@ -114,7 +114,7 @@ void STM32BootLoader::Go(uint32_t address) {
   OutboundData packet1{
       .data = ToU8Vector(address),
       .size = OutboundData::SizeMode::kNone,
-      .checksum = OutboundData::ChecksumMode::kUnused,
+      .checksum = OutboundData::ChecksumMode::kData,
   };
   this->SendData(packet1);
 
@@ -177,6 +177,7 @@ void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
         .size = OutboundData::SizeMode::kNone,
         .checksum = OutboundData::ChecksumMode::kData,
     };
+    this->SendData(packet_1);
 
     std::vector<uint8_t> buf(pages.size() * 2, 0x77);
     for (size_t i = 0; i < pages.size(); i++) {
@@ -187,12 +188,11 @@ void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
         .data = buf,
         .size = OutboundData::SizeMode::kNone,
         .checksum = OutboundData::ChecksumMode::kData,
-        .checksum_base = 0x5A  // WHAT IS 0x5A (NANNMO-WAKARAN) /* cspell:
-                               // disable-line */
+        // cspell: disable-next-line
+        .checksum_base = 0x5A  // WHAT IS 0x5A (NANNMO-WAKARAN)
     };
-
-    this->SendData(packet_1);
     this->SendData(packet_2);
+
   } else {  //! Legacy Erase
     // TODO(syoch): Impl
     throw NotImplemented();

@@ -104,11 +104,14 @@ void Stm32BootLoaderSPI::SendData(OutboundData &data) {
     case kU8:
       assert(data.data.size() <= 0x100);
       this->device.SendChar(uint8_t(data.data.size() - 1));
+      this->device.RecvChar();
       data_checksum << uint8_t(data.data.size() - 1);
       break;
     case kU16:
       assert(data.data.size() <= 0xffff);
       this->device.SendU16((uint16_t)data.data.size());
+      this->device.RecvChar();
+      this->device.RecvChar();
       data_checksum << (uint16_t)data.data.size();
       break;
 
@@ -118,7 +121,11 @@ void Stm32BootLoaderSPI::SendData(OutboundData &data) {
 
   this->device.Send(data.data);
 
+  std::vector<uint8_t> dummy(data.data.size());
+  this->device.Recv(dummy);
+
   Checksum checksum;
+  checksum << data.checksum_base;
   switch (data.checksum) {
     case kUnused:
       break;
@@ -129,6 +136,7 @@ void Stm32BootLoaderSPI::SendData(OutboundData &data) {
       checksum << data.data;
 
       this->device.SendChar(uint8_t(checksum));
+      this->device.RecvChar();
       break;
   }
 

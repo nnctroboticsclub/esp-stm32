@@ -60,6 +60,7 @@ void Stm32BootLoaderUart::SendData(OutboundData& data) {
   this->device.Send(data.data);
 
   Checksum checksum;
+  checksum << data.checksum_base;
   switch (data.checksum) {
     case kUnused:
       break;
