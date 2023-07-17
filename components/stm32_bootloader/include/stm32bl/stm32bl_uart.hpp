@@ -30,11 +30,7 @@ class Stm32BootLoaderUart : public STM32BootLoader {
   void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) override;
 
   //! Some functions for transferring datas
-  void SendDataWithChecksum(std::vector<uint8_t> &data) override;
   void CommandHeader(uint8_t cmd) override;
-  void SendAddress(uint32_t address) override;
-  void SendFlashPage(SpecialFlashPage address) override;
-  void SendFlashPage(std::vector<FlashPage> &address) override;
 
   void SendData(OutboundData &data) override;
 

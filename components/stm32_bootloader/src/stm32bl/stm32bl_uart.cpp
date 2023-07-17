@@ -2,6 +2,7 @@
 
 #include <esp_log.h>
 #include <memory>
+#include "helper.hpp"
 
 namespace connection::application::stm32bl {
 
@@ -35,39 +36,11 @@ void Stm32BootLoaderUart::CommandHeader(uint8_t cmd) {
   this->RecvACK();
 }
 
-void Stm32BootLoaderUart::SendAddress(uint32_t address) {
-  this->device.SendU32(address);
-
-  uint32_t checksum = address;
-  checksum = (checksum >> 16) ^ (checksum & 0xFFFF);
-  checksum = (checksum >> 8) ^ (checksum & 0xFF);
-  this->device.SendChar(checksum);
-
-  this->RecvACK();
-}
-
-void Stm32BootLoaderUart::SendFlashPage(SpecialFlashPage page) {
-  this->SendU16(static_cast<uint16_t>(page), true);
-  this->RecvACK(portMAX_DELAY);
-}
-void Stm32BootLoaderUart::SendFlashPage(std::vector<FlashPage>& pages) {
-  std::vector<uint8_t> buf(pages.size() * 2 + 2);
-
-  buf[0] = (pages.size() - 1) >> 8;
-  buf[1] = (pages.size() - 1) & 0xff;
-  for (int i = 0; i < pages.size(); i++) {
-    buf[2 + i * 2] = (pages[i] >> 8) & 0xff;
-    buf[2 + i * 2 + 1] = pages[i] & 0xff;
-  }
-
-  this->device.Send(buf);
-  this->device.SendChar(CalculateChecksum(buf));
-
-  this->RecvACK(portMAX_DELAY);
-}
-
 void Stm32BootLoaderUart::SendData(OutboundData& data) {
   using enum OutboundData::SizeMode;
+  using enum OutboundData::ChecksumMode;
+
+  Checksum data_checksum;
 
   switch (data.size) {
     case kNone:
@@ -75,18 +48,31 @@ void Stm32BootLoaderUart::SendData(OutboundData& data) {
     case kU8:
       assert(data.data.size() <= 0x100);
       this->device.SendChar((uint8_t)data.data.size() - 1);
+      data_checksum << (uint8_t)(data.data.size() - 1);
       break;
     case kU16:
       assert(data.data.size() <= 0xffff);
       this->SendU16((uint16_t)data.data.size(), false);
+      data_checksum << (uint16_t)data.data.size();
       break;
   }
 
   this->device.Send(data.data);
 
-  if (data.with_checksum) {
-    this->device.SendChar(CalculateChecksum(data.data));
+  Checksum checksum;
+  switch (data.checksum) {
+    case kUnused:
+      break;
+    case kWithLength:
+      checksum << data_checksum;
+    case kData:
+      checksum << data.data;
+
+      this->device.SendChar(uint8_t(checksum));
+      break;
   }
+
+  this->RecvACK();
 }
 
 // * For Electrical controls
@@ -113,16 +99,6 @@ void Stm32BootLoaderUart::Sync() {
     ESP_LOGW(TAG, "Unknown sync byte %#02x", ret);
     throw ACKFailed();
   }
-}
-
-void Stm32BootLoaderUart::SendDataWithChecksum(std::vector<uint8_t>& data) {
-  auto n = (uint8_t)(data.size() - 1);
-  auto checksum = CalculateChecksum(data) ^ n;
-
-  this->device.SendChar(n);
-  this->device.Send(data);
-  this->device.SendChar(checksum);
-  this->RecvACK();
 }
 
 }  // namespace connection::application::stm32bl

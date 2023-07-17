@@ -7,7 +7,7 @@ class Checksum {
   uint8_t checksum = 0;
 
  public:
-  Checksum(){};
+  Checksum(uint8_t initialize_value = 0x00) : checksum(initialize_value){};
 
   inline Checksum &operator<<(std::vector<uint8_t> &data) {
     for (auto x : data) {
@@ -29,6 +29,11 @@ class Checksum {
   inline Checksum &operator<<(uint32_t x) {
     *this << uint16_t(x >> 16);
     *this << uint16_t(x & 0xffff);
+    return *this;
+  }
+
+  inline Checksum &operator<<(Checksum &x) {
+    *this << uint8_t(x);
     return *this;
   }
 

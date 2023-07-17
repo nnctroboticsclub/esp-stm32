@@ -48,12 +48,18 @@ struct Version {
 class OutboundData {
  public:
   enum class SizeMode { kNone = 0, kU16, kU8 };
-
+  enum class ChecksumMode {
+    kUnused = 0,
+    kData,
+    kWithLength,
+  };
   //* Datas
   std::vector<uint8_t> data;
 
-  SizeMode size;
-  bool with_checksum = false;
+  SizeMode size = SizeMode::kNone;
+  ChecksumMode checksum = ChecksumMode::kUnused;
+
+  Checksum checksum_base;
 };
 
 class STM32BootLoader {
@@ -64,10 +70,6 @@ class STM32BootLoader {
   //* Some commands for transfering data
 
   virtual void CommandHeader(uint8_t cmd) = 0;
-  virtual void SendAddress(uint32_t address) = 0;
-  virtual void SendFlashPage(SpecialFlashPage address) = 0;
-  virtual void SendFlashPage(std::vector<FlashPage> &address) = 0;
-  virtual void SendDataWithChecksum(std::vector<uint8_t> &data) = 0;
   virtual void ReadData(std::vector<uint8_t> &buffer) = 0;
   virtual void ReadDataWithoutHeader(std::vector<uint8_t> &buffer) = 0;
 
@@ -82,8 +84,8 @@ class STM32BootLoader {
 
   void WriteMemoryBlock(uint32_t address, std::vector<uint8_t> &buf);
 
-  virtual void Erase(SpecialFlashPage page);
-  virtual void Erase(std::vector<FlashPage> &pages);
+  void Erase(SpecialFlashPage page);
+  void Erase(std::vector<FlashPage> &pages);
 
   //* internal
   virtual void Sync() = 0;

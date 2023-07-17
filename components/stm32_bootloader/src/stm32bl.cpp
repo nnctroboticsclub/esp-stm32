@@ -4,7 +4,13 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <stm32bl/presentation.hpp>
+
+#include <helper.hpp>
+
 #include <cmath>
+
+using namespace connection::presentation::stm32bl;
 
 namespace connection::application::stm32bl {
 
@@ -83,8 +89,20 @@ void STM32BootLoader::Connect() {
 void STM32BootLoader::WriteMemoryBlock(uint32_t address,
                                        std::vector<uint8_t> &buffer) {
   this->CommandHeader(this->commands.write_memory);
-  this->SendAddress(address);
-  this->SendDataWithChecksum(buffer);
+
+  OutboundData packet1{
+      .data = ToU8Vector(address),
+      .size = OutboundData::SizeMode::kNone,
+      .checksum = OutboundData::ChecksumMode::kUnused,
+  };
+  OutboundData packet2{
+      .data = buffer,
+      .size = OutboundData::SizeMode::kU8,
+      .checksum = OutboundData::ChecksumMode::kWithLength,
+  };
+
+  this->SendData(packet1);
+  this->SendData(packet2);
 
   return;
 }
@@ -93,7 +111,12 @@ void STM32BootLoader::Go(uint32_t address) {
   ESP_LOGI(TAG, "Go to %08lx", address);
   this->CommandHeader(this->commands.go);
 
-  this->SendAddress(address);
+  OutboundData packet1{
+      .data = ToU8Vector(address),
+      .size = OutboundData::SizeMode::kNone,
+      .checksum = OutboundData::ChecksumMode::kUnused,
+  };
+  this->SendData(packet1);
 
   return;
 }
@@ -130,7 +153,12 @@ void STM32BootLoader::Erase(SpecialFlashPage page) {
   ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
   if (this->commands.UseLegacyErase()) {
     this->CommandHeader(this->commands.erase);
-    this->SendFlashPage(page);
+    OutboundData packet1{
+        .data = ToU8Vector((uint16_t)page),
+        .size = OutboundData::SizeMode::kNone,
+        .checksum = OutboundData::ChecksumMode::kData,
+    };
+    this->SendData(packet1);
   } else {  //! Legacy Erase
     // TODO(syoch): Impl
     throw NotImplemented();
@@ -143,7 +171,28 @@ void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
            0x0800'0000 + pages[pages.size() - 1] * 0x800);
   if (this->commands.UseLegacyErase()) {
     this->CommandHeader(this->commands.erase);
-    this->SendFlashPage(pages);
+
+    OutboundData packet_1{
+        .data = ToU8Vector(uint16_t(pages.size())),
+        .size = OutboundData::SizeMode::kNone,
+        .checksum = OutboundData::ChecksumMode::kData,
+    };
+
+    std::vector<uint8_t> buf(pages.size() * 2, 0x77);
+    for (size_t i = 0; i < pages.size(); i++) {
+      buf[2 * i] = pages[i] >> 8;
+      buf[2 * i + 1] = pages[i] & 0xff;
+    }
+    OutboundData packet_2{
+        .data = buf,
+        .size = OutboundData::SizeMode::kNone,
+        .checksum = OutboundData::ChecksumMode::kData,
+        .checksum_base =
+            Checksum((uint8_t)0x5A)  // WHAT IS 0x5A (NANNMO-WAKARAN)
+    };
+
+    this->SendData(packet_1);
+    this->SendData(packet_2);
   } else {  //! Legacy Erase
     // TODO(syoch): Impl
     throw NotImplemented();

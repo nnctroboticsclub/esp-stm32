@@ -20,13 +20,7 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
 
   void CommandHeader(uint8_t cmd) override;
 
-  void SendAddress(uint32_t address) override;
-  void SendFlashPage(SpecialFlashPage address) override;
-  void SendFlashPage(std::vector<FlashPage> &address) override;
-
   void SendData(OutboundData &data) override;
-
-  void SendDataWithChecksum(std::vector<uint8_t> &data) override;
 
   void ReadData(std::vector<uint8_t> &buf) override;
 

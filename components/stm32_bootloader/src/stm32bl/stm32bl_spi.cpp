@@ -96,15 +96,20 @@ Stm32BootLoaderSPI::~Stm32BootLoaderSPI() = default;
 
 void Stm32BootLoaderSPI::SendData(OutboundData &data) {
   using enum OutboundData::SizeMode;
+  using enum OutboundData::ChecksumMode;
+
+  Checksum data_checksum;
 
   switch (data.size) {
     case kU8:
-      assert(data.data.size() <= 0xff);
-      this->device.SendChar((uint8_t)data.data.size());
+      assert(data.data.size() <= 0x100);
+      this->device.SendChar(uint8_t(data.data.size() - 1));
+      data_checksum << uint8_t(data.data.size() - 1);
       break;
     case kU16:
       assert(data.data.size() <= 0xffff);
       this->device.SendU16((uint16_t)data.data.size());
+      data_checksum << (uint16_t)data.data.size();
       break;
 
     default:  // includes kNone
@@ -113,83 +118,18 @@ void Stm32BootLoaderSPI::SendData(OutboundData &data) {
 
   this->device.Send(data.data);
 
-  if (data.with_checksum) {
-    this->device.SendChar(CalculateChecksum(data.data));
-  }
-}
-
-void Stm32BootLoaderSPI::SendFlashPage(SpecialFlashPage page) {
-  std::vector<uint8_t> buf(3);
-  buf[0] = ((uint16_t)page >> 8);
-  buf[1] = ((uint16_t)page & 0xff);
-  buf[2] = buf[0] ^ buf[1];
-
-  this->device.Send(buf);
-  this->device.Recv(buf);
-  this->RecvACK();
-}
-
-void Stm32BootLoaderSPI::SendFlashPage(std::vector<FlashPage> &pages) {
   Checksum checksum;
-  {
-    std::vector<uint8_t> buf(3);
-    buf[0] = (uint8_t)(pages.size() >> 8);
-    buf[1] = pages.size() & 0xff;
-    checksum << (uint16_t)pages.size();
-    buf[2] = (uint8_t)checksum;
+  switch (data.checksum) {
+    case kUnused:
+      break;
+    case kWithLength:
+      checksum << data_checksum;
+    case kData:
+      checksum << data.data;
 
-    this->device.Send(buf);
-    this->device.Recv(buf);
-    this->RecvACK();
+      this->device.SendChar(uint8_t(checksum));
+      break;
   }
-
-  // Send pages and checksum
-  {
-    std::vector<uint8_t> buf(pages.size() * 2, 0x77);
-    for (size_t i = 0; i < pages.size(); i++) {
-      buf[2 * i] = pages[i] >> 8;
-      buf[2 * i + 1] = pages[i] & 0xff;
-    }
-    checksum.Reset();
-    checksum << (uint8_t)0x5a;  // WHAT IS 0x5A (NANNMO-WAKARAN)
-    checksum << buf;
-    buf.push_back((uint8_t)checksum);
-
-    this->device.Send(buf);
-    this->device.Recv(buf);
-    this->RecvACK();
-  }
-}
-
-void Stm32BootLoaderSPI::SendAddress(uint32_t address) {
-  uint32_t ch = address;
-  ch = (ch >> 16) ^ (ch & 0xffff);
-  ch = (ch >> 8) ^ (ch & 0xff);
-
-  this->device.SendU32(address);
-  this->device.RecvU32();
-
-  this->device.SendChar((char)ch);
-  this->device.RecvChar();
-
-  this->RecvACK();
-}
-
-void Stm32BootLoaderSPI::SendDataWithChecksum(std::vector<uint8_t> &data) {
-  auto n = (uint8_t)(data.size() - 1);
-
-  Checksum checksum;
-  checksum << n;
-  checksum << data;
-
-  this->device.SendChar(n);
-  this->device.RecvChar();
-
-  this->device.Send(data);
-  this->device.Recv(data);
-
-  this->device.SendChar((uint8_t)checksum);
-  this->device.RecvChar();
 
   this->RecvACK();
 }
