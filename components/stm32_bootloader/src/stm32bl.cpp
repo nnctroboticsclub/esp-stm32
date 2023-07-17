@@ -55,35 +55,16 @@ void Version::UpdateVersion(uint8_t byte) {
 }
 
 STM32BootLoader::STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0)
-    : reset(reset), boot0(boot0) {
-  this->reset.set_high();
-  this->boot0.set_low();
-}
+    : session(reset, boot0) {}
 
 STM32BootLoader::~STM32BootLoader() = default;
 
-void STM32BootLoader::BootBootLoader() {
-  ESP_LOGI(TAG, "Booting Bootloader");
-
-  this->boot0.set_high();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-
-  this->reset.set_low();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-
-  this->reset.set_high();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-
-  this->boot0.set_low();
-  vTaskDelay(100 / portTICK_PERIOD_MS);
-}
-
 void STM32BootLoader::Connect() {
   ESP_LOGI(TAG, "Connect...");
-
+  this->session.TurnOnBoot1();
   while (true) {
-    this->BootBootLoader();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    this->session.Reset();
+    vTaskDelay(200 / portTICK_PERIOD_MS);
     try {
       this->Sync();
     } catch (ACKFailed &) {
@@ -92,6 +73,7 @@ void STM32BootLoader::Connect() {
     }
     break;
   }
+  this->session.TurnOffBoot1();
 
   this->Get();
 }

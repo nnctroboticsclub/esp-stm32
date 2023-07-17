@@ -5,6 +5,7 @@
 #include <freertos/FreeRTOS.h>
 
 #include "stm32bl/helper.hpp"
+#include "stm32bl/session.hpp"
 #include <gpio_cxx.hpp>
 
 namespace connection::application {
@@ -58,8 +59,7 @@ class OutboundData {
 class STM32BootLoader {
   static constexpr const char *TAG = "STM32 BootLoader";
 
-  idf::GPIO_Output reset;
-  idf::GPIO_Output boot0;
+  session::STM32BL session;
 
   //* Some commands for transfering data
 
@@ -86,7 +86,6 @@ class STM32BootLoader {
   virtual void Erase(std::vector<FlashPage> &pages);
 
   //* internal
-  void BootBootLoader();
   virtual void Sync() = 0;
 
  public:
