@@ -14,7 +14,6 @@ namespace stm32bl {
 class Stm32BootLoaderUart : public STM32BootLoader {
   static constexpr const char *TAG = "STM32 BootLoader[UART]";
 
- private:
   uint8_t ack = (uint8_t)ACK::ACK;
   bool use_extended_erase = false;
 
