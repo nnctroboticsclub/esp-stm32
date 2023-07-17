@@ -59,7 +59,7 @@ class OutboundData {
   SizeMode size = SizeMode::kNone;
   ChecksumMode checksum = ChecksumMode::kUnused;
 
-  Checksum checksum_base;
+  uint8_t checksum_base = 0x00;
 };
 
 class STM32BootLoader {

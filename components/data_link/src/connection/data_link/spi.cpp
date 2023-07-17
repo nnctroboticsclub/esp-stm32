@@ -5,7 +5,7 @@
 namespace connection::data_link {
 using namespace idf;
 
-SPIDevice::SPIDevice() : queue{} {}
+SPIDevice::SPIDevice() { this->SetTraceEnabled(true); }
 
 SPIDevice::SPIDevice(SPIMaster &master, CS &cs) : SPIDevice() {
   this->device = master.create_dev(cs);

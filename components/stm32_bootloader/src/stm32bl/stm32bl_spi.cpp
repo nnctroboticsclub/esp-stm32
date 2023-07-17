@@ -124,6 +124,7 @@ void Stm32BootLoaderSPI::SendData(OutboundData &data) {
       break;
     case kWithLength:
       checksum << data_checksum;
+      [[fallthrough]];
     case kData:
       checksum << data.data;
 

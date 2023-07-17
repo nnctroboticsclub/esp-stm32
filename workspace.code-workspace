@@ -93,7 +93,8 @@
 			"csignal": "cpp",
 			"csetjmp": "cpp",
 			"mstd_mutex": "cpp",
-			"format": "cpp"
+			"format": "cpp",
+			"ranges": "cpp"
 		},
 		"cSpell.words": [
 			"bootloader",

@@ -66,7 +66,6 @@ struct ClientHandler {
          * The opcodes related STM32 BootLoader
          */
         case BootBootLoader: {
-          config::Config::GetSTM32BootLoader()->BootBootLoader();
           config::Config::GetSTM32BootLoader()->Connect();
           vTaskDelay(200 / portTICK_PERIOD_MS);
 

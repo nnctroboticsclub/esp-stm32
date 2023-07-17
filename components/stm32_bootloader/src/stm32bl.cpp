@@ -187,8 +187,8 @@ void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
         .data = buf,
         .size = OutboundData::SizeMode::kNone,
         .checksum = OutboundData::ChecksumMode::kData,
-        .checksum_base =
-            Checksum((uint8_t)0x5A)  // WHAT IS 0x5A (NANNMO-WAKARAN)
+        .checksum_base = 0x5A  // WHAT IS 0x5A (NANNMO-WAKARAN) /* cspell:
+                               // disable-line */
     };
 
     this->SendData(packet_1);
