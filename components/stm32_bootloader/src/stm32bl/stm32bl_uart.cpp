@@ -13,7 +13,7 @@ void Stm32BootLoaderUart::SendU16(uint16_t value, bool with_checksum) {
   }
 }
 
-//* Overrided functions
+//* Overriden functions
 // * For Transferring Datas
 void Stm32BootLoaderUart::RecvACK(TickType_t timeout) {
   auto coming_ack = this->device.RecvChar(timeout);
