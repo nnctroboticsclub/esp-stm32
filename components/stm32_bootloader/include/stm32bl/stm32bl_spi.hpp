@@ -16,7 +16,7 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
 
   void RecvACK(TickType_t timeout = 100 / portTICK_PERIOD_MS) override;
 
-  void Synchronization();
+  void Sync() override;
 
   void CommandHeader(uint8_t cmd) override;
 
@@ -36,8 +36,6 @@ class Stm32BootLoaderSPI : public stm32bl::STM32BootLoader {
   Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
                      idf::SPIMaster &spi_host, idf::CS cs);
   ~Stm32BootLoaderSPI() override;
-
-  void Connect() override;
 
   inline void SetDebugVarU8(uint8_t new_v) { this->v = new_v; }
 };

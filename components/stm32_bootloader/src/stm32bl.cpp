@@ -78,6 +78,24 @@ void STM32BootLoader::BootBootLoader() {
   vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
+void STM32BootLoader::Connect() {
+  ESP_LOGI(TAG, "Connect...");
+
+  while (true) {
+    this->BootBootLoader();
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    try {
+      this->Sync();
+    } catch (ACKFailed &) {
+      ESP_LOGE(TAG, "Failed to connect to STM32 Bootloader");
+      continue;
+    }
+    break;
+  }
+
+  this->Get();
+}
+
 // Commands
 
 void STM32BootLoader::WriteMemoryBlock(uint32_t address,

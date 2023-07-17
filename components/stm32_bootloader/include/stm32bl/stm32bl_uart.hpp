@@ -45,9 +45,7 @@ class Stm32BootLoaderUart : public STM32BootLoader {
                       int tx, int rx);
   ~Stm32BootLoaderUart() override;
 
-  void Sync();
-
-  void Connect() override;
+  void Sync() override;
 };
 }  // namespace stm32bl
 using STM32BootLoaderUart = stm32bl::Stm32BootLoaderUart;

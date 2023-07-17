@@ -91,15 +91,6 @@ void Stm32BootLoaderUart::SendData(OutboundData& data) {
 
 // * For Electrical controls
 
-// Todo: This is maybe common function
-void Stm32BootLoaderUart::Connect() {
-  this->Sync();
-  this->Get();
-  this->GetVersion();
-
-  return;
-}
-
 Stm32BootLoaderUart::Stm32BootLoaderUart(idf::GPIONum reset, idf::GPIONum boot0,
                                          uart_port_t num, int tx, int rx)
     : STM32BootLoader(reset, boot0), device(num) {

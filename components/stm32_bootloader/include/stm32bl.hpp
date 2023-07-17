@@ -85,13 +85,15 @@ class STM32BootLoader {
   virtual void Erase(SpecialFlashPage page);
   virtual void Erase(std::vector<FlashPage> &pages);
 
+  //* internal
+  void BootBootLoader();
+  virtual void Sync() = 0;
+
  public:
   STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0);
   virtual ~STM32BootLoader();
 
-  void BootBootLoader();
-
-  virtual void Connect() = 0;
+  void Connect();
 
   //* Commands
   void Get();

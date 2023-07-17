@@ -45,7 +45,7 @@ void Stm32BootLoaderSPI::RecvACK(TickType_t timeout) {
   return;
 }
 
-void Stm32BootLoaderSPI::Synchronization() {
+void Stm32BootLoaderSPI::Sync() {
   ESP_LOGI(TAG, "Sync...");
 
   std::vector<uint8_t> buf;
@@ -93,24 +93,6 @@ Stm32BootLoaderSPI::Stm32BootLoaderSPI(idf::GPIONum reset, idf::GPIONum boot0,
     : STM32BootLoader(reset, boot0), device(spi_host, cs) {}
 
 Stm32BootLoaderSPI::~Stm32BootLoaderSPI() = default;
-
-void Stm32BootLoaderSPI::Connect() {
-  ESP_LOGI(TAG, "Connect...");
-
-  while (true) {
-    this->BootBootLoader();
-
-    try {
-      this->Synchronization();
-    } catch (ACKFailed &) {
-      ESP_LOGE(TAG, "Failed to connect to STM32 Bootloader");
-      continue;
-    }
-    break;
-  }
-
-  this->Get();
-}
 
 void Stm32BootLoaderSPI::SendData(OutboundData &data) {
   using enum OutboundData::SizeMode;
