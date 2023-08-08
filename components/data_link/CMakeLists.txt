@@ -2,7 +2,7 @@
 # without default 'CMakeLists.txt' file.
 
 idf_component_register(
-  SRCS src/uart.cpp src/connection/data_link/spi.cpp src/connection/data_link/base.cpp
+  SRCS src/data_link/uart.cpp src/data_link/spi.cpp src/data_link/base.cpp
   INCLUDE_DIRS "include"
   REQUIRES driver esp-idf-cxx
 )

@@ -26,7 +26,7 @@ class SPIDevice : public RecvAndSend {
  public:
   explicit SPIDevice(idf::SPIMaster &master, idf::CS &cs);
 
-  size_t Send(std::vector<uint8_t> &buf) override;
+  size_t Send(const std::vector<uint8_t> &buf) override;
 
   size_t Recv(std::vector<uint8_t> &buf,
               TickType_t timeout = 1000 / portTICK_PERIOD_MS) override;

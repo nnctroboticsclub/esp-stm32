@@ -19,7 +19,7 @@ class RecvAndSend {
   inline bool IsTraceEnabled() const { return this->trace_enabled; }
   inline void SetTraceEnabled(bool enabled) { this->trace_enabled = enabled; }
 
-  virtual size_t Send(std::vector<uint8_t> &buf) = 0;
+  virtual size_t Send(const std::vector<uint8_t> &buf) = 0;
   virtual size_t Recv(std::vector<uint8_t> &buf,
                       TickType_t timeout = 1000 / portTICK_PERIOD_MS) = 0;
 
@@ -37,7 +37,7 @@ class RecvAndSend {
     return c[0];
   }
 
-  void SendChar(char ch) {
+  void SendChar(const char ch) {
     std::vector<uint8_t> c(1);
     c[0] = ch;
     this->Send(c);
@@ -70,7 +70,7 @@ class RecvAndSend {
     return ret;
   }
 
-  void SendU16(uint16_t value) {
+  void SendU16(const uint16_t value) {
     std::vector<uint8_t> buf(2);
     buf[0] = (value >> 8) & 0xff;
     buf[1] = value & 0xff;
@@ -78,7 +78,7 @@ class RecvAndSend {
     this->Send(buf);
   }
 
-  void SendU32(uint32_t value) {
+  void SendU32(const uint32_t value) {
     std::vector<uint8_t> buf(4);
     buf[0] = (value >> 24) & 0xff;
     buf[1] = (value >> 16) & 0xff;

@@ -31,7 +31,7 @@ class UART : public RecvAndSend {
 
   void Flush() const;
 
-  size_t Send(std::vector<uint8_t> &buf) noexcept override;
+  size_t Send(const std::vector<uint8_t> &buf) noexcept override;
 
   size_t Recv(std::vector<uint8_t> &buf, TickType_t timeout) override;
 };

@@ -1,4 +1,4 @@
-#include "uart.hpp"
+#include <connection/data_link/uart.hpp>
 #include <esp_log.h>
 
 #include <freertos/FreeRTOS.h>
@@ -36,7 +36,7 @@ size_t UART::GetRXBufferDataLength() const {
 
 void UART::Flush() const { uart_flush_input(this->port); }
 
-size_t UART::Send(std::vector<uint8_t> &buf) noexcept {
+size_t UART::Send(const std::vector<uint8_t> &buf) noexcept {
   if (this->IsTraceEnabled())
     ESP_LOG_BUFFER_HEX("UART-->", buf.data(), buf.size());
 

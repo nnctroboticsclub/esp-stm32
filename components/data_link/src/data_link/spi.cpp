@@ -3,15 +3,17 @@
 #include <esp_log.h>
 
 namespace connection::data_link {
-using namespace idf;
+using idf::CS;
+using idf::SPIDevice;
+using idf::SPIMaster;
 
-SPIDevice::SPIDevice() {}
+SPIDevice::SPIDevice() = default;
 
 SPIDevice::SPIDevice(SPIMaster &master, CS &cs) : SPIDevice() {
   this->device = master.create_dev(cs);
 }
 
-size_t SPIDevice::Send(std::vector<uint8_t> &buf) {
+size_t SPIDevice::Send(const std::vector<uint8_t> &buf) {
   if (this->IsTraceEnabled())
     ESP_LOG_BUFFER_HEX("SPIDevice-->", buf.data(), buf.size());
 

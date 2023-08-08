@@ -1,9 +1,9 @@
 #include "server.hpp"
 
-#include <connection/data_link/base.hpp>
 #include <esp_log.h>
 #include <lwip/sockets.h>
 #include <optional>
+#include <connection/data_link/base.hpp>
 
 #include "config/config.hpp"
 
@@ -12,7 +12,7 @@ class SocketWrapper : public connection::data_link::RecvAndSend {
   int socket;
   explicit SocketWrapper(int socket) : socket(socket) {}
 
-  size_t Send(std::vector<uint8_t>& buf) override {
+  size_t Send(const std::vector<uint8_t>& buf) override {
     auto ret = send(this->socket, buf.data(), buf.size(), 0);
 
     return ret;
