@@ -34,8 +34,9 @@ class ScanCommand {
 
   void InitArgs() { args.end = arg_end(10); }
   int Handler() {
+    config::network.Stop();
     config::network.InitSta();
-    ESP_ERROR_CHECK(esp_wifi_start());
+    config::network.Start();
     if (ap_list) {
       free(ap_list);
     }
@@ -150,9 +151,9 @@ class ConnectCommand {
       profile.password = p;
     }
 
-    ESP_ERROR_CHECK(esp_wifi_stop());
+    config::network.Stop();
     config::network.InitSta();
-    ESP_ERROR_CHECK(esp_wifi_start());
+    config::network.Start();
     config::network.ConnectToAP(&profile);
     config::network.WaitUntilConnected();
 

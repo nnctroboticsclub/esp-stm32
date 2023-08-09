@@ -19,6 +19,7 @@ class Wifi {
   static constexpr const char* TAG = "Wi-Fi";
 
   EventGroupHandle_t s_wifi_event_group;
+  bool started = false;
 
  public:
   esp_netif_t* netif;
@@ -38,7 +39,10 @@ class Wifi {
   void InitAp(const char* ssid, const char* password);
   void InitSta();
 
-  void ConnectToAP(WifiConnectionProfile* profile);
+  void ConnectToAP(WifiConnectionProfile const* profile);
+
+  void Start();
+  void Stop();
 
   void WaitUntilConnected();
   void WaitForIP();

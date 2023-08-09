@@ -1,27 +1,28 @@
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <esp_log.h>
 #include <nvs.h>
 #include <esp_system.h>
 #include <esp_console.h>
 
+#include <thread>
+
+#include <stm32bl/stm32bl_spi.hpp>
+#include <stm32bl/stm32bl_uart.hpp>
+#include <stm32.hpp>
+#include <stm32/raw_driver/impl/uart.hpp>
 #include <spi_host_cxx.hpp>
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#include "./bin.h"
 
+#include "./http_server.hpp"
 #include "config/config.hpp"
 #include "init/init.hpp"
 #include "libs/gpio.hpp"
 #include "libs/button.hpp"
 #include "console/wifi.hpp"
 
-#include "bin.h"
-
-#include <stm32bl/stm32bl_spi.hpp>
-#include <stm32bl/stm32bl_uart.hpp>
-
-#include <thread>
-
-const char* TAG = "Main";
+const char* const TAG = "Main";
 
 void BootStrap() {
   idf::GPIOInput flag(idf::GPIONum(22));
@@ -71,14 +72,51 @@ void Init() {
 }
 
 void Main() {
+  idf::SPIMaster master{(idf::SPINum)2, (idf::MOSI)23, (idf::MISO)19,
+                        (idf::SCLK)18};
+
+  auto blp = (STM32BootLoader*)(new Stm32BootLoaderSPI{
+      (idf::GPIONum)21, (idf::GPIONum)22, master, (idf::CS)5});
+
+  std::unique_ptr<STM32BootLoader> bl(blp);
+
+  ESP_LOGI(TAG, "Starting Debugger HTTP Server");
+  DebuggerHTTPServer server(std::move(bl));
+  server.Listen();
+
   ESP_LOGI(TAG, "Entering the Server's ClientLoop");
   config::server.StartClientLoopAtForeground();
 }
 
 extern "C" int app_main() {
   using namespace connection::application::stm32bl;
-  idf::SPIMaster master{(idf::SPINum)2, (idf::MOSI)23, (idf::MISO)19,
-                        (idf::SCLK)18};
+
+  using connection::data_link::UART;
+  using stm32::raw_driver::RawDriver;
+
+  auto dl = std::make_shared<UART>(UART(UART_NUM_1));
+  auto rd = std::make_shared<RawDriver<UART>>(RawDriver<UART>(dl));
+
+  stm32::Session<RawDriver<UART>> session(rd, (idf::GPIONum)21,
+                                          (idf::GPIONum)22);
+
+  { auto bl_sess = session.EnterBL(); }
+
+  BootStrap();
+  wifi::WifiConnectionProfile profile{
+      .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
+      .ssid = "SYOCH-DESU 0136",
+      .password = "j281D4<2",
+      .user = "",
+      .id = "",
+  };
+  config::network.InitSta();
+  config::network.Start();
+  config::network.ConnectToAP(&profile);
+  config::network.WaitUntilConnected();
+  config::network.WaitForIP();
+
+  Init();
 
   // Stm32BootLoaderUart bl_(  //
   //     (idf::GPIONum)21,     // reset
@@ -88,22 +126,7 @@ extern "C" int app_main() {
   //     16   // rx
   // );
 
-  Stm32BootLoaderSPI bl_{(idf::GPIONum)21, (idf::GPIONum)22, master,
-                         (idf::CS)5};
-
-  STM32BootLoader& bl = bl_;
-
-  bl.Connect();
-
-  std::vector<uint8_t> buf(new_flash, new_flash + new_flash_len);
-  bl.Erase(0x0800'0000, new_flash_len);
-  bl.WriteMemory(0x0800'0000, buf);
-
-  bl.Go(0x0800'0000);
-
-  return 0;
-
-  /* std::jthread t([]() {
+  std::jthread t([]() {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     esp_console_repl_t* repl = nullptr;
@@ -120,12 +143,14 @@ extern "C" int app_main() {
         esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
     ESP_ERROR_CHECK(esp_console_start_repl(repl));
   });
-  t.join(); */
 
-  /* Init();
+  t.join();
+
   Main();
   printf("Entering the idle loop\n");
   while (true) {
     vTaskDelay(100 / portTICK_PERIOD_MS);
-  } */
+  }
+
+  return 0;
 }

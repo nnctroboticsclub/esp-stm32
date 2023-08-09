@@ -1,5 +1,5 @@
 #pragma once
-#include "uart.hpp"
+#include <connection/data_link/uart.hpp>
 
 #include <optional>
 #include <vector>

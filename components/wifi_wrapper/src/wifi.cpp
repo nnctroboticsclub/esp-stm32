@@ -122,7 +122,7 @@ void Wifi::InitSta() {
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 }
 
-void Wifi::ConnectToAP(WifiConnectionProfile* prof) {
+void Wifi::ConnectToAP(WifiConnectionProfile const* prof) {
   wifi_config_t wifi_config{};
   strncpy((char*)wifi_config.sta.ssid, prof->ssid,
           sizeof(wifi_config.sta.ssid));
@@ -152,6 +152,25 @@ void Wifi::ConnectToAP(WifiConnectionProfile* prof) {
   }
 
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+}
+
+void Wifi::Start() {
+  if (this->started) {
+    ESP_LOGE(TAG, "Wifi::Start() is called. but wifi is already started");
+    return;
+  }
+  ESP_ERROR_CHECK(esp_wifi_start());
+  this->started = true;
+}
+void Wifi::Stop() {
+  if (!this->started) {
+    ESP_LOGW(
+        TAG,
+        "Wifi::Stop() is called. but wifi is already stopped or not started");
+    return;
+  }
+  ESP_ERROR_CHECK(esp_wifi_stop());
+  this->started = false;
 }
 
 void Wifi::WaitUntilConnected() {

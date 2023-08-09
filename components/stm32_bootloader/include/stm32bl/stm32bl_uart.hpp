@@ -1,12 +1,11 @@
 #pragma once
 
-#include <uart.hpp>
+#include <connection/data_link/uart.hpp>
 #include <inttypes.h>
 #include <driver/gpio.h>
 #include <freertos/FreeRTOS.h>
 
 #include <vector>
-#include <uart.hpp>
 #include "../stm32bl.hpp"
 
 namespace connection::application {

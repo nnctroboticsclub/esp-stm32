@@ -4,7 +4,6 @@
 
 namespace connection::data_link {
 using idf::CS;
-using idf::SPIDevice;
 using idf::SPIMaster;
 
 SPIDevice::SPIDevice() = default;

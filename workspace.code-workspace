@@ -94,7 +94,8 @@
 			"csetjmp": "cpp",
 			"mstd_mutex": "cpp",
 			"format": "cpp",
-			"ranges": "cpp"
+			"ranges": "cpp",
+			"mstd_atomic": "cpp"
 		},
 		"cSpell.words": [
 			"bootloader",

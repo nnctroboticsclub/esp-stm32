@@ -72,5 +72,6 @@
   "idf.adapterTargetName": "esp32",
   "idf.port": "/dev/ttyUSB0",
   "idf.flashType": "UART",
-  "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
+  "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "C_Cpp.default.compilerPath": "/home/syoch093194/.espressif/tools/xtensa-esp32-elf/esp-2022r1-11.2.0/xtensa-esp32-elf/bin/xtensa-esp32-elf-g++"
 }

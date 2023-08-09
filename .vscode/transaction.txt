@@ -1,0 +1,395 @@
+I (406) STM32 BootLoader[SPI]: Connect...
+I (406) STM32 BootLoader: Booting Bootloader
+I (816) STM32 BootLoader[SPI]: Sync...
+I (816) SPIDevice-->: 5a
+I (816) SPIDevice<--: a5
+I (816) STM32 BootLoader[SPI]: Connection established
+I (816) SPIDevice-->: 5a 00 ff
+I (816) SPIDevice<--: 79 a5 a5
+I (826) SPIDevice-->: 00
+I (826) SPIDevice<--: 79
+I (826) SPIDevice-->: 00 00
+I (836) SPIDevice<--: 0b 11
+I (836) SPIDevice-->: 00 00 00 00 00 00 00 00 00 00 00
+I (846) SPIDevice<--: 00 01 02 11 21 31 44 63 73 82 92
+
+I (846) STM32 BootLoader: Erasing 4 sub-pages... [0 1 2 3]
+I (856) STM32 BootLoader: Erasing 4 pages
+I (856) STM32 BootLoader:   08000000 --> 08001800
+I (866) SPIDevice-->: 5a 44 bb
+I (866) SPIDevice<--: 79 a5 a5
+I (876) SPIDevice-->: 00 04 04
+I (876) SPIDevice<--: 79 a5 a5
+I (886) SPIDevice-->: 00 00 00 01 00 02 00 03 5a
+I (886) SPIDevice<--: 79 a5 a5 a5 a5 a5 a5 a5 a5
+
+I (2426) STM32 BootLoader: Erasing 4 sub-pages... [4 5 6 7]
+I (2426) STM32 BootLoader: Erasing 4 pages
+I (2426) STM32 BootLoader:   08002000 --> 08003800
+I (2426) SPIDevice-->: 5a 44 bb
+I (2426) SPIDevice<--: 79 a5 a5
+I (2436) SPIDevice-->: 00 04 04
+I (2436) SPIDevice<--: 79 a5 a5
+I (2446) SPIDevice-->: 00 04 00 05 00 06 00 07 5a
+I (2446) SPIDevice<--: 79 a5 a5 a5 a5 a5 a5 a5 a5
+
+I (9596) STM32 BootLoader: Erasing pages... (All 11 pages)
+I (9596) STM32 BootLoader: Erasing 3 pages
+I (9596) STM32 BootLoader:   08004000 --> 08005000
+I (9596) SPIDevice-->: 5a 44 bb
+I (9596) SPIDevice<--: 79 a5 a5
+I (9606) SPIDevice-->: 00 03 03
+I (9606) SPIDevice<--: 79 a5 a5
+I (9616) SPIDevice-->: 00 08 00 09 00 0a 51
+I (9616) SPIDevice<--: 79 a5 a5 a5 a5 a5 a5
+
+
+
+
+I (31566) STM32 BootLoader: Writing Memory at 08005000 (2048 bytes)
+I (31566) SPIDevice-->: 5a 31 ce
+I (31576) SPIDevice<--: 79 a5 a5
+I (31576) SPIDevice-->: 08 00 50 00
+I (31576) SPIDevice<--: 79 a5 a5 a5
+I (31586) SPIDevice-->: 58
+I (31586) SPIDevice<--: a5
+I (31596) SPIDevice-->: ff
+I (31596) SPIDevice<--: 79
+I (31596) SPIDevice-->: 6f 62 6a 2d 3e 70 69 6e 20 21 3d 20 28 50 69 6e
+I (31606) SPIDevice-->: 4e 61 6d 65 29 4e 43 00 70 b5 14 46 0d 46 06 46
+I (31616) SPIDevice-->: ff f7 0c fe 23 46 2a 46 31 46 03 a0 00 f0 56 f8
+I (31616) SPIDevice-->: bd e8 70 40 00 f0 1a b8 6d 62 65 64 20 61 73 73
+I (31626) SPIDevice-->: 65 72 74 61 74 69 6f 6e 20 66 61 69 6c 65 64 3a
+I (31636) SPIDevice-->: 20 25 73 2c 20 66 69 6c 65 3a 20 25 73 2c 20 6c
+I (31646) SPIDevice-->: 69 6e 65 20 25 64 20 0a 00 00 00 00 86 b0 ff f7
+I (31646) SPIDevice-->: e5 fd 05 21 68 46 ff f7 c3 fe 00 bf bd f9 00 00
+I (31656) SPIDevice-->: b0 f1 ff 3f 04 d1 3a 22 0d 49 0e a0 ff f7 c4 ff
+I (31666) SPIDevice-->: 03 99 01 98 08 60 96 20 00 f0 30 fb bd f9 00 00
+I (31676) SPIDevice-->: b0 f1 ff 3f 04 d1 3a 22 05 49 06 a0 ff f7 b4 ff
+I (31676) SPIDevice-->: 01 98 04 99 00 04 08 60 96 20 00 f0 1f fb dd e7
+I (31686) SPIDevice-->: b8 5a 00 08 6f 62 6a 2d 3e 70 69 6e 20 21 3d 20
+I (31696) SPIDevice-->: 28 50 69 6e 4e 61 6d 65 29 4e 43 00 0f b4 70 b5
+I (31706) SPIDevice-->: a0 b0 25 ac 24 9d ff f7 a9 fd 22 46 29 46 68 46
+I (31706) SPIDevice-->: fb f7 7a f9 05 1e 10 dd 0b 48 00 68 20 b9 03 22
+I (31716) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31726) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31736) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31736) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31746) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31756) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31756) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31766) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31776) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31786) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31786) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31796) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31806) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31816) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31816) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31826) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31836) SPIDevice-->: db
+I (31836) SPIDevice<--: a5
+I (31846) SPIDevice-->: 5a 31 ce
+I (31846) SPIDevice<--: 79 a5 a5
+I (31846) SPIDevice-->: 08 00 51 00
+I (31856) SPIDevice<--: 79 a5 a5 a5
+I (31856) SPIDevice-->: 59
+I (31866) SPIDevice<--: a5
+I (31866) SPIDevice-->: ff
+I (31866) SPIDevice<--: 79
+I (31876) SPIDevice-->: 02 21 0a 48 00 f0 24 f9 00 24 6e 46 07 48 31 5d
+I (31876) SPIDevice-->: 00 f0 1c fa 64 1c ac 42 f8 db ff f7 d5 fd 20 b0
+I (31886) SPIDevice-->: 70 bc 5d f8 14 fb 00 00 dc 01 00 20 d0 04 00 20
+I (31896) SPIDevice-->: 70 b5 a0 b0 0c 46 05 46 ff f7 80 fd 22 46 29 46
+I (31906) SPIDevice-->: 68 46 fb f7 51 f9 05 1e 10 dd 0a 48 00 68 20 b9
+I (31906) SPIDevice-->: 03 22 02 21 08 48 00 f0 fb f8 00 24 6e 46 06 48
+I (31916) SPIDevice-->: 31 5d 00 f0 f3 f9 64 1c ac 42 f8 db ff f7 ac fd
+I (31926) SPIDevice-->: 20 b0 70 bd dc 01 00 20 d0 04 00 20 10 b5 ff f7
+I (31926) SPIDevice-->: 0d f8 bd e8 10 40 fd f7 e7 be 00 00 f0 b5 85 b0
+I (31936) SPIDevice-->: 0c 46 05 46 b0 f1 ff 3f 04 d1 81 22 0f 49 10 a0
+I (31946) SPIDevice-->: ff f7 3a ff 04 f0 0f 07 c4 f3 02 16 c5 f3 03 10
+I (31956) SPIDevice-->: c4 f3 c3 14 05 f0 0f 05 fe f7 72 ff 01 21 a9 40
+I (31956) SPIDevice-->: 00 91 0c 49 51 f8 27 10 cd e9 01 16 03 21 cd e9
+I (31966) SPIDevice-->: 03 14 69 46 fd f7 9c fd 05 b0 f0 bd 1c 5b 00 08
+I (31976) SPIDevice-->: 70 69 6e 20 21 3d 20 28 50 69 6e 4e 61 6d 65 29
+I (31986) SPIDevice-->: 4e 43 00 00 88 58 00 08 70 b5 0c 46 05 46 b0 f1
+I (31996) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (31996) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32006) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32016) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32016) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32026) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32036) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32046) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32046) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32056) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32066) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32076) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32076) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32086) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32096) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32096) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32106) SPIDevice-->: 5a
+I (32116) SPIDevice<--: a5
+I (32116) SPIDevice-->: 5a 31 ce
+I (32116) SPIDevice<--: 79 a5 a5
+I (32126) SPIDevice-->: 08 00 52 00
+I (32126) SPIDevice<--: 79 a5 a5 a5
+I (32136) SPIDevice-->: 5a
+I (32136) SPIDevice<--: a5
+I (32136) SPIDevice-->: ff
+I (32146) SPIDevice<--: 79
+I (32146) SPIDevice-->: ff 3f 04 d1 a6 22 0c 49 0c a0 ff f7 05 ff c5 f3
+I (32156) SPIDevice-->: 03 10 05 f0 0f 05 fe f7 43 ff 02 2c 88 bf 00 24
+I (32156) SPIDevice-->: c2 68 69 00 03 23 8b 40 9a 43 c2 60 c2 68 04 fa
+I (32166) SPIDevice-->: 01 f1 11 43 c1 60 70 bd 1c 5b 00 08 70 69 6e 20
+I (32176) SPIDevice-->: 21 3d 20 28 50 69 6e 4e 61 6d 65 29 4e 43 00 00
+I (32186) SPIDevice-->: 88 42 08 bf 70 47 b0 f1 ff 3f 04 bf 08 46 70 47
+I (32186) SPIDevice-->: 10 b5 b1 f1 ff 3f 08 bf 10 bd 03 a0 ff f7 58 fd
+I (32196) SPIDevice-->: 4f f0 ff 30 10 bd 00 00 70 69 6e 6d 61 70 20 6d
+I (32206) SPIDevice-->: 69 73 2d 6d 61 74 63 68 00 00 00 00 10 b5 b0 f1
+I (32216) SPIDevice-->: ff 3f 08 bf 10 bd b1 f9 00 20 b2 f1 ff 3f 0d d0
+I (32216) SPIDevice-->: b1 f9 00 20 82 42 04 d1 4c 68 b4 f1 ff 3f 0a d1
+I (32226) SPIDevice-->: 06 e0 31 f9 0c 2f b2 f1 ff 3f f1 d1 4f f0 ff 34
+I (32236) SPIDevice-->: 02 a0 ff f7 2d fd 20 46 10 bd 00 00 70 69 6e 6d
+I (32246) SPIDevice-->: 61 70 20 6e 6f 74 20 66 6f 75 6e 64 20 66 6f 72
+I (32246) SPIDevice-->: 20 70 65 72 69 70 68 65 72 61 6c 00 10 b5 04 46
+I (32256) SPIDevice-->: b0 f1 ff 3f 08 bf 10 bd b1 f9 00 00 b0 f1 ff 3f
+I (32266) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32266) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32276) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32286) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32296) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32296) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32306) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32316) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32326) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32326) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32336) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32346) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32356) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32356) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32366) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32376) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32386) SPIDevice-->: ff
+I (32386) SPIDevice<--: a5
+I (32386) SPIDevice-->: 5a 31 ce
+I (32396) SPIDevice<--: 79 a5 a5
+I (32396) SPIDevice-->: 08 00 53 00
+I (32396) SPIDevice<--: 79 a5 a5 a5
+I (32406) SPIDevice-->: 5b
+I (32406) SPIDevice<--: a5
+I (32416) SPIDevice-->: ff
+I (32416) SPIDevice<--: 79
+I (32416) SPIDevice-->: 13 d0 00 bf b1 f9 00 00 a0 42 09 d1 89 68 20 46
+I (32426) SPIDevice-->: ff f7 3c ff 20 46 bd e8 10 40 00 21 ff f7 6c bf
+I (32436) SPIDevice-->: 31 f9 0c 0f b0 f1 ff 3f ec d1 bd e8 10 40 01 a0
+I (32436) SPIDevice-->: ff f7 f6 bc 63 6f 75 6c 64 20 6e 6f 74 20 70 69
+I (32446) SPIDevice-->: 6e 6f 75 74 00 00 00 00 81 60 ff f7 bb bd 00 00
+I (32456) SPIDevice-->: 2d e9 f8 43 0f 46 04 46 16 46 6b 49 38 46 ff f7
+I (32466) SPIDevice-->: 95 ff 05 46 69 49 30 46 ff f7 90 ff 01 46 28 46
+I (32466) SPIDevice-->: ff f7 6e ff 20 60 b0 f1 ff 3f 04 d1 66 22 64 49
+I (32476) SPIDevice-->: 64 a0 ff f7 49 fe df f8 a8 c1 23 68 69 49 6a 48
+I (32486) SPIDevice-->: 00 25 a3 eb 0c 02 4f f0 01 08 63 45 5c d0 09 dc
+I (32496) SPIDevice-->: 12 f5 40 62 21 d0 b2 f5 80 6f 31 d0 b2 f5 00 6f
+I (32496) SPIDevice-->: 40 d0 75 e0 61 48 62 49 b2 f5 40 4f 03 d0 b2 f5
+I (32506) SPIDevice-->: 44 4f 5b d0 6c e0 02 68 42 f0 10 02 02 60 02 68
+I (32516) SPIDevice-->: 22 f0 10 02 02 60 08 68 40 f0 10 00 08 60 08 68
+I (32526) SPIDevice-->: 00 f0 10 00 00 90 65 60 5a e0 0a 68 42 f4 00 32
+I (32526) SPIDevice-->: 0a 60 0a 68 22 f4 00 32 0a 60 01 68 41 f4 00 31
+I (32536) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32546) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32556) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32556) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32566) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32576) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32586) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32586) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32596) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32606) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32606) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32616) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32626) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32636) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32636) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32646) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32656) SPIDevice-->: 5c
+I (32656) SPIDevice<--: a5
+I (32666) SPIDevice-->: 5a 31 ce
+I (32666) SPIDevice<--: 79 a5 a5
+I (32666) SPIDevice-->: 08 00 54 00
+I (32676) SPIDevice<--: 79 a5 a5 a5
+I (32676) SPIDevice-->: 5c
+I (32686) SPIDevice<--: a5
+I (32686) SPIDevice-->: ff
+I (32686) SPIDevice<--: 79
+I (32696) SPIDevice-->: 01 60 00 68 00 f4 00 30 00 90 c4 f8 04 80 47 e0
+I (32696) SPIDevice-->: 0a 68 42 f4 80 22 0a 60 0a 68 22 f4 80 22 0a 60
+I (32706) SPIDevice-->: 01 68 41 f4 80 21 01 60 00 68 02 21 00 f4 80 20
+I (32716) SPIDevice-->: 00 90 34 e0 0a 68 42 f4 00 22 0a 60 0a 68 22 f4
+I (32726) SPIDevice-->: 00 22 0a 60 01 68 41 f4 00 21 01 60 00 68 03 21
+I (32726) SPIDevice-->: 00 f4 00 20 00 90 22 e0 0a 68 42 f4 80 12 0a 60
+I (32736) SPIDevice-->: 0a 68 22 f4 80 12 0a 60 01 68 41 f4 80 11 01 60
+I (32746) SPIDevice-->: 00 68 04 21 00 f4 80 10 00 90 10 e0 02 68 42 f0
+I (32756) SPIDevice-->: 20 02 02 60 02 68 22 f0 20 02 02 60 08 68 40 f0
+I (32756) SPIDevice-->: 20 00 08 60 08 68 05 21 00 f0 20 00 00 90 61 60
+I (32766) SPIDevice-->: 19 49 38 46 ff f7 22 ff 18 49 30 46 ff f7 1e ff
+I (32776) SPIDevice-->: b7 f1 ff 3f 03 d0 01 21 38 46 ff f7 9d fe b6 f1
+I (32776) SPIDevice-->: ff 3f 03 d0 01 21 30 46 ff f7 96 fe 4f f4 16 51
+I (32786) SPIDevice-->: c4 e9 02 15 25 61 65 61 25 62 27 83 20 46 66 83
+I (32796) SPIDevice-->: ff f7 f0 fc 20 68 a0 f1 80 41 b1 f5 88 41 18 bf
+I (32806) SPIDevice-->: bd e8 f8 83 13 48 21 46 4c 22 c0 f8 00 80 bd e8
+I (32816) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32816) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32826) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32836) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32836) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32846) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32856) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32866) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32866) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32876) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32886) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32896) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32896) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32906) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32916) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32916) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (32926) SPIDevice-->: e4
+I (32936) SPIDevice<--: a5
+I (32936) SPIDevice-->: 5a 31 ce
+I (32936) SPIDevice<--: 79 a5 a5
+I (32946) SPIDevice-->: 08 00 55 00
+I (32946) SPIDevice<--: 79 a5 a5 a5
+I (32956) SPIDevice-->: 5d
+I (32956) SPIDevice<--: a5
+I (32956) SPIDevice-->: ff
+I (32966) SPIDevice<--: 79
+I (32966) SPIDevice-->: f8 43 11 48 fb f7 ee b8 b0 57 00 08 1c 58 00 08
+I (32976) SPIDevice-->: 74 5b 00 08 6f 62 6a 5f 73 2d 3e 75 61 72 74 20
+I (32976) SPIDevice-->: 21 3d 20 28 55 41 52 54 4e 61 6d 65 29 4e 43 00
+I (32986) SPIDevice-->: 00 50 00 40 20 38 02 40 40 38 02 40 24 38 02 40
+I (32996) SPIDevice-->: 44 38 02 40 dc 01 00 20 d0 04 00 20 42 68 07 48
+I (33006) SPIDevice-->: 00 eb 82 13 18 68 02 68 c2 f3 c0 12 00 2a fa d0
+I (33006) SPIDevice-->: c1 f3 08 00 19 68 48 60 70 47 00 00 d0 02 00 20
+I (33016) SPIDevice-->: 10 b5 04 46 00 68 c0 68 80 47 60 68 40 68 00 28
+I (33026) SPIDevice-->: 20 68 11 d0 40 68 80 47 61 68 02 46 48 68 03 68
+I (33036) SPIDevice-->: 9a 1a 00 2a 0c dc 82 68 4a 60 61 68 09 68 00 29
+I (33036) SPIDevice-->: 1c bf 40 68 88 47 e8 e7 80 68 bd e8 10 40 00 47
+I (33046) SPIDevice-->: 48 68 21 68 00 68 09 69 bd e8 10 40 08 47 00 00
+I (33056) SPIDevice-->: 70 b5 16 4c 20 68 01 69 11 f0 02 0f 1c bf c1 68
+I (33066) SPIDevice-->: 11 f0 02 0f 04 d0 6f f0 02 01 01 61 00 f0 4e f8
+I (33066) SPIDevice-->: 20 68 01 69 11 f0 04 0f 1a bf c1 68 11 f0 04 0f
+I (33076) SPIDevice-->: 70 bd 6f f0 04 01 01 61 20 68 45 6a 08 4e 30 68
+I (33086) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33096) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33096) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33106) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33116) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33116) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33126) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33136) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33146) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33146) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33156) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33166) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33176) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33176) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33186) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33196) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33206) SPIDevice-->: f5
+I (33206) SPIDevice<--: a5
+I (33206) SPIDevice-->: 5a 31 ce
+I (33216) SPIDevice<--: 79 a5 a5
+I (33216) SPIDevice-->: 08 00 56 00
+I (33226) SPIDevice<--: 79 a5 a5 a5
+I (33226) SPIDevice-->: 5e
+I (33226) SPIDevice<--: a5
+I (33236) SPIDevice-->: ff
+I (33236) SPIDevice<--: 79
+I (33236) SPIDevice-->: 28 1a b0 f5 7a 7f 38 bf 70 bd fd f7 9d fc 21 68
+I (33246) SPIDevice-->: 05 f5 7a 70 88 63 35 60 70 bd 00 00 1c 05 00 20
+I (33256) SPIDevice-->: d0 01 00 20 04 49 03 48 08 60 6f f0 02 01 01 61
+I (33266) SPIDevice-->: 70 47 00 00 00 0c 00 40 1c 05 00 20 04 49 03 48
+I (33266) SPIDevice-->: 08 60 c1 68 21 f0 02 01 c1 60 70 47 00 0c 00 40
+I (33276) SPIDevice-->: 1c 05 00 20 06 48 01 68 00 29 18 bf 70 47 01 21
+I (33286) SPIDevice-->: 01 60 05 49 03 48 08 60 00 20 fd f7 8d bc 00 00
+I (33286) SPIDevice-->: ec 01 00 20 00 0c 00 40 1c 05 00 20 01 48 ff f7
+I (33296) SPIDevice-->: 77 bf 00 00 08 59 00 08 07 48 10 b5 01 68 39 b9
+I (33306) SPIDevice-->: 01 21 01 60 06 49 05 48 08 60 00 20 fd f7 74 fc
+I (33316) SPIDevice-->: 04 48 00 68 10 bd 00 00 ec 01 00 20 00 0c 00 40
+I (33316) SPIDevice-->: 1c 05 00 20 24 0c 00 40 05 4a 04 49 11 60 48 63
+I (33326) SPIDevice-->: c8 68 40 f0 02 00 c8 60 70 47 00 00 00 0c 00 40
+I (33336) SPIDevice-->: 1c 05 00 20 df ed 08 0a 70 b5 20 ee 20 0a bd ee
+I (33346) SPIDevice-->: c0 0a 10 ee 10 4a ff f7 cf ff 05 46 ff f7 cc ff
+I (33346) SPIDevice-->: 40 1b a0 42 fa d3 70 bd 00 24 74 49 70 b5 4f f4
+I (33356) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33366) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33376) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33376) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33386) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33396) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33406) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33406) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33416) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33426) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33426) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33436) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33446) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33456) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33456) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33466) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33476) SPIDevice-->: 64
+I (33476) SPIDevice<--: a5
+I (33486) SPIDevice-->: 5a 31 ce
+I (33486) SPIDevice<--: 79 a5 a5
+I (33486) SPIDevice-->: 08 00 57 00
+I (33496) SPIDevice<--: 79 a5 a5 a5
+I (33496) SPIDevice-->: 5f
+I (33506) SPIDevice<--: a5
+I (33506) SPIDevice-->: ff
+I (33506) SPIDevice<--: 79
+I (33516) SPIDevice-->: 7a 71 00 fb 01 f5 ff f7 bf ff 04 46 ff f7 bc ff
+I (33516) SPIDevice-->: 00 1b a8 42 fa d3 70 bd 10 b5 00 29 0a d0 08 78
+I (33526) SPIDevice-->: 00 28 07 d0 05 48 78 44 fb f7 36 f8 00 28 01 d0
+I (33536) SPIDevice-->: 00 20 10 bd 02 48 78 44 10 bd 00 00 0e 05 00 00
+I (33546) SPIDevice-->: 06 05 00 00 10 b5 00 29 0a d0 08 78 00 28 07 d0
+I (33546) SPIDevice-->: 05 48 78 44 fb f7 20 f8 00 28 01 d0 00 20 10 bd
+I (33556) SPIDevice-->: 02 48 78 44 10 bd 00 00 fe 04 00 00 f6 04 00 00
+I (33566) SPIDevice-->: 10 b5 04 46 00 68 00 28 06 bf 20 1d 20 60 20 68
+I (33576) SPIDevice-->: 21 1d 88 42 04 d0 59 22 02 49 03 48 ff f7 44 fc
+I (33576) SPIDevice-->: 20 68 10 bd 20 5a 00 08 0c 5a 00 08 4f f0 40 70
+I (33586) SPIDevice-->: e1 ee 10 0a 70 47 fb f7 f5 be fc f7 29 b8 00 00
+I (33596) SPIDevice-->: 00 00 00 00 00 4c 00 40 13 04 00 00 02 00 00 00
+I (33606) SPIDevice-->: 00 44 00 40 93 03 00 00 09 00 00 00 00 10 01 40
+I (33606) SPIDevice-->: 93 03 00 00 16 00 00 00 00 10 01 40 93 03 00 00
+I (33616) SPIDevice-->: 1a 00 00 00 00 48 00 40 93 03 00 00 26 00 00 00
+I (33626) SPIDevice-->: 00 14 01 40 13 04 00 00 2a 00 00 00 00 48 00 40
+I (33636) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33636) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33646) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33656) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33656) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33666) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33676) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33686) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33686) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33696) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33706) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33716) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33716) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33726) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33736) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33746) SPIDevice<--: a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5 a5
+I (33746) SPIDevice-->: 94
+I (33756) SPIDevice<--: a5
+
+
+
+I (35346) STM32 BootLoader: Go to 08000000
+I (35346) SPIDevice-->: 5a 21 de
+I (35346) SPIDevice<--: 79 a5 a5
+I (35356) SPIDevice-->: 08 00 00 00
+I (35356) SPIDevice<--: 79 a5 a5 a5
+I (35366) SPIDevice-->: 08
+I (35366) SPIDevice<--: a5
