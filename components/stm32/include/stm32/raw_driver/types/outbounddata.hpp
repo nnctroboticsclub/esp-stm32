@@ -19,6 +19,8 @@ struct OutboundData {
 
   uint8_t checksum_base = 0x00;
 
+  uint8_t CalculateChecksum() const;
+
   static OutboundData U32WithChecksum(uint32_t x) {
     OutboundData data;
     data.data =
@@ -28,6 +30,7 @@ struct OutboundData {
     data.checksum = ChecksumMode::kData;
     return data;
   }
+
   static OutboundData U16WithChecksum(uint16_t x) {
     OutboundData data;
     data.data =

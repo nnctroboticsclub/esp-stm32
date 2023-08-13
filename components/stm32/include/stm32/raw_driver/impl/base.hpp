@@ -1,5 +1,8 @@
 #pragma once
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <cinttypes>
 #include <type_traits>
 
@@ -8,18 +11,17 @@
 
 namespace stm32::raw_driver {
 
-InboundData _dummy;
+class RawDriverBase {
+ public:
+  virtual ~RawDriverBase() = default;
 
-template <typename T>
-concept RawDriverConcept =
-    requires(T t) {  // NOLINT -- cv specifier is not needed.
-      { t.ACK() } -> std::same_as<void>;
-      { t.Send(OutboundData{}) } -> std::same_as<void>;
+  virtual void ACK(TickType_t timeout = portMAX_DELAY) = 0;
+  virtual void Send(OutboundData const &data) = 0;
 
-      { t.Recv(_dummy) } -> std::same_as<void>;
-      { t.CommandHeader((uint8_t)0) } -> std::same_as<void>;
+  virtual void Recv(InboundData &data) = 0;
+  virtual void CommandHeader(uint8_t command) = 0;
 
-      { t.Sync() } -> std::same_as<void>;
-    };  // NOLINT -- require's semicolon is needed
+  virtual void Sync() = 0;
+};
 
 }  // namespace stm32::raw_driver

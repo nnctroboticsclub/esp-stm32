@@ -47,7 +47,7 @@ class Driver {
 
     std::vector<uint8_t> buf(3);
     this->raw_driver_->Recv(
-        (raw_driver::InboundData){.data = buf, .resume = false});
+        (raw_driver::InboundData){.data = buf, .resume = true});
     this->version = Version(buf);
 
     this->raw_driver_->ACK();

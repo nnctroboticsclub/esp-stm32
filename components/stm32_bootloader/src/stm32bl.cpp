@@ -12,77 +12,10 @@
 
 using namespace connection::presentation::stm32bl;
 
-namespace connection::application::stm32bl {
-
-Commands::Commands(std::vector<uint8_t> &data) {
-  if (data.size() < 0x0b) {
-    ESP_LOGE("Stm32BL", "data size is too small: %d bytes", data.size());
-
-    throw InvalidSize();
-  }
-  this->get = data[0];
-  this->get_version = data[1];
-  this->get_id = data[2];
-  this->read_memory = data[3];
-  this->go = data[4];
-  this->write_memory = data[5];
-  this->erase = data[6];
-  this->write_protect = data[7];
-  this->write_unprotect = data[8];
-  this->readout_protect = data[9];
-  this->readout_unprotect = data[10];
-  if (data.size() > 0x0c) {
-    this->get_checksum = data[11];
-  }
-}
-
-Version::Version(std::vector<uint8_t> &data) {
-  if (data.empty()) {
-    this->major = 0;
-    this->minor = 0;
-    this->option1 = 0;
-    this->option2 = 0;
-    return;
-  }
-  this->UpdateVersion(data[0]);
-
-  if (data.size() > 1) {
-    this->option1 = data[1];
-  }
-
-  if (data.size() > 2) {
-    this->option1 = data[2];
-  }
-}
-
-void Version::UpdateVersion(uint8_t byte) {
-  this->major = byte >> 4;
-  this->minor = byte & 0x0f;
-}
-
 STM32BootLoader::STM32BootLoader(idf::GPIONum reset, idf::GPIONum boot0)
     : session(reset, boot0) {}
 
 STM32BootLoader::~STM32BootLoader() = default;
-
-void STM32BootLoader::Connect() {
-  ESP_LOGI(TAG, "Connect...");
-  this->session.TurnOnBoot1();
-  while (true) {
-    this->session.Reset();
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    try {
-      this->Sync();
-    } catch (ACKFailed &) {
-      ESP_LOGE(TAG, "Failed to connect to STM32 Bootloader");
-      continue;
-    }
-    break;
-  }
-  this->session.TurnOffBoot1();
-
-  this->Get();
-}
 
 // Commands
 
@@ -147,56 +80,6 @@ void STM32BootLoader::GetVersion() {
   this->RecvACK();
 
   return;
-}
-
-void STM32BootLoader::Erase(SpecialFlashPage page) {
-  ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
-  if (this->commands.UseLegacyErase()) {
-    this->CommandHeader(this->commands.erase);
-    OutboundData packet1{
-        .data = ToU8Vector((uint16_t)page),
-        .size = OutboundData::SizeMode::kNone,
-        .checksum = OutboundData::ChecksumMode::kData,
-    };
-    this->SendData(packet1);
-  } else {  //! Legacy Erase
-    // TODO(syoch): Impl
-    throw NotImplemented();
-  }
-}
-
-void STM32BootLoader::Erase(std::vector<FlashPage> &pages) {
-  ESP_LOGI(TAG, "Erasing %d pages", pages.size());
-  ESP_LOGI(TAG, "  %08x --> %08x", 0x0800'0000 + pages[0] * 0x800,
-           0x0800'0000 + pages[pages.size() - 1] * 0x800);
-  if (this->commands.UseLegacyErase()) {
-    this->CommandHeader(this->commands.erase);
-
-    OutboundData packet_1{
-        .data = ToU8Vector(uint16_t(pages.size())),
-        .size = OutboundData::SizeMode::kNone,
-        .checksum = OutboundData::ChecksumMode::kData,
-    };
-    this->SendData(packet_1);
-
-    std::vector<uint8_t> buf(pages.size() * 2, 0x77);
-    for (size_t i = 0; i < pages.size(); i++) {
-      buf[2 * i] = pages[i] >> 8;
-      buf[2 * i + 1] = pages[i] & 0xff;
-    }
-    OutboundData packet_2{
-        .data = buf,
-        .size = OutboundData::SizeMode::kNone,
-        .checksum = OutboundData::ChecksumMode::kData,
-        // cspell: disable-next-line
-        .checksum_base = 0x5A  // WHAT IS 0x5A (NANNMO-WAKARAN)
-    };
-    this->SendData(packet_2);
-
-  } else {  //! Legacy Erase
-    // TODO(syoch): Impl
-    throw NotImplemented();
-  }
 }
 
 // Utility functions

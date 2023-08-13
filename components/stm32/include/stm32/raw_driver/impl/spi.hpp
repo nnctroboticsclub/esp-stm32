@@ -1,28 +1,28 @@
 #pragma once
 
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include <memory>
-#include <vector>
 
-#include <connection/data_link/uart.hpp>
+#include <connection/data_link/spi.hpp>
 
 #include "../types/error.hpp"
-#include "../types/inbounddata.hpp"
-#include "../types/outbounddata.hpp"
 #include "./base.hpp"
 
 namespace stm32::raw_driver::impl {
-using UartDataLink = connection::data_link::UART;
+using SpiDataLink = connection::data_link::SPIDevice;
 
-class UART : public RawDriverBase {
+class SPI : public RawDriverBase {
   static constexpr const char *TAG = "RawDriver<UART>";
 
-  std::shared_ptr<UartDataLink> device;
+  std::shared_ptr<SpiDataLink> device;
 
  public:
-  explicit UART(std::shared_ptr<connection::data_link::UART> device);
-  ~UART() = default;
+  explicit SPI(std::shared_ptr<connection::data_link::SPIDevice> device);
+
+  ~SPI() = default;
 
   void ACK(TickType_t timeout = portMAX_DELAY) override;
 

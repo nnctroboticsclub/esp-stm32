@@ -13,4 +13,9 @@ class ACKFailed : public ConnectionDisrupted {
   ACKFailed() : ConnectionDisrupted(": ACK Failed") {}
 };
 
+class NoData : public ConnectionDisrupted {
+ public:
+  NoData() : ConnectionDisrupted(": No data is received.") {}
+};
+
 }  // namespace stm32::raw_driver

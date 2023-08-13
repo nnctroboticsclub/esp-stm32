@@ -95,7 +95,9 @@
 			"mstd_mutex": "cpp",
 			"format": "cpp",
 			"ranges": "cpp",
-			"mstd_atomic": "cpp"
+			"mstd_atomic": "cpp",
+			"any": "cpp",
+			"cassert": "cpp"
 		},
 		"cSpell.words": [
 			"bootloader",
