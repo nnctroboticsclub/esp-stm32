@@ -18,7 +18,7 @@ class RawDriverBase {
   virtual void ACK(TickType_t timeout = portMAX_DELAY) = 0;
   virtual void Send(OutboundData const &data) = 0;
 
-  virtual void Recv(InboundData &data) = 0;
+  virtual void Recv(InboundData &&data) = 0;
   virtual void CommandHeader(uint8_t command) = 0;
 
   virtual void Sync() = 0;

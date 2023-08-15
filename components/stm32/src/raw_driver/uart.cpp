@@ -1,14 +1,15 @@
-#pragma once
+#include <stm32/raw_driver/impl/uart.hpp>
 
 #include <memory>
 #include <vector>
-#include <stm32/raw_driver/impl/uart.hpp>
 
 namespace stm32::raw_driver::impl {
 UART::UART(std::shared_ptr<connection::data_link::UART> device)
     : device(device) {}
 
-void UART::ACK(TickType_t timeout = portMAX_DELAY) {
+UART::~UART() = default;
+
+void UART::ACK(TickType_t timeout) {
   auto coming_ack = this->device->RecvChar(timeout);
 
   if (coming_ack == 0x79) {
@@ -22,7 +23,7 @@ void UART::ACK(TickType_t timeout = portMAX_DELAY) {
   }
 }
 
-void UART::Send(const OutboundData &data) {
+void UART::Send(OutboundData const& data) {
   using enum OutboundData::SizeMode;
   using enum OutboundData::ChecksumMode;
 
@@ -53,7 +54,7 @@ void UART::Send(const OutboundData &data) {
 
   this->ACK();
 }
-void UART::Recv(InboundData &data) { this->device->RecvExactly(data.data); }
+void UART::Recv(InboundData&& data) { this->device->RecvExactly(data.data); }
 
 void UART::CommandHeader(uint8_t command) {
   std::vector<uint8_t> buf{command, uint8_t(command ^ 0xff)};

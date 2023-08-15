@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stm32/session/stm32.hpp"
+#include "stm32/session/bootloader.hpp"
 
 namespace stm32 {
 

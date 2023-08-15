@@ -6,37 +6,27 @@
 #include "../driver/driver.hpp"
 #include "../raw_driver/types/error.hpp"
 
-namespace stm32 {
+namespace stm32::session {
 
-template <typename RawBLDriver>
-  requires raw_driver::RawDriverConcept<RawBLDriver>
+class BootLoaderSession;
+
 class Session {
-  std::shared_ptr<RawBLDriver> raw_bl_driver_;
+  static constexpr const char *TAG = "[STM32] Session";
+  std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver_;
   idf::GPIO_Output boot0_;
   idf::GPIO_Output reset_;
 
-  friend class BootLoaderSession<RawBLDriver>;
+  friend class BootLoaderSession;
 
-  void SetModeBootLoader() { this->boot0_.set_high(); }
-  void UnsetModeBootLoader() { this->boot0_.set_low(); }
+  void SetModeBootLoader();
+  void UnsetModeBootLoader();
 
  public:
-  Session(std::shared_ptr<RawBLDriver> raw_bl_driver, idf::GPIONum boot0,
-          idf::GPIONum reset)
-      : raw_bl_driver_(raw_bl_driver), boot0_(boot0), reset_(reset) {
-    this->boot0_.set_low();
-    this->reset_.set_high();
-  }
+  Session(std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver,
+          idf::GPIONum boot0, idf::GPIONum reset);
 
-  void Reset() {
-    this->reset_.set_low();
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+  void Reset();
 
-    this->reset_.set_high();
-  }
-
-  BootLoaderSession<RawDriver> EnterBL() {
-    return BootLoaderSession(this->bl_driver_, this->shared_from_this());
-  }
+  BootLoaderSession EnterBL();
 };
-}  // namespace stm32
+}  // namespace stm32::session

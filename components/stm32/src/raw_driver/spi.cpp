@@ -6,9 +6,13 @@
 
 namespace stm32::raw_driver::impl {
 SPI::SPI(std::shared_ptr<connection::data_link::SPIDevice> device)
-    : device(device) {}
+    : device(device) {
+  this->device->SetTraceEnabled(true);
+}
 
-void SPI::ACK(TickType_t timeout = portMAX_DELAY) {
+SPI::~SPI() = default;
+
+void SPI::ACK(TickType_t timeout) {
   auto trace_ = this->device->IsTraceEnabled();
   this->device->SetTraceEnabled(false);
   int fail_count = 0;
@@ -18,7 +22,7 @@ void SPI::ACK(TickType_t timeout = portMAX_DELAY) {
 
   while (true) {
     this->device->SendChar(0x00);
-    if (auto ch = this->device->RecvChar(); ch == 0x79) {
+    if (auto ch = this->device->RecvChar(timeout); ch == 0x79) {
       break;
     } else if (ch == 0x1f) {
       ESP_LOGW(TAG, "NACK");
@@ -26,11 +30,11 @@ void SPI::ACK(TickType_t timeout = portMAX_DELAY) {
     } else {
       fail_count++;
       if (fail_count % 100 == 0) {
-        // ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times (wait 0.5 seconds)",
-        //          fail_count);
+        ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times (wait 0.5 seconds)",
+                 fail_count);
         vTaskDelay(500 / portTICK_PERIOD_MS);
       }
-      if (fail_count % 100000 == 0) {
+      if (fail_count % 10000 == 0) {
         throw NoData();
       }
     }
@@ -40,7 +44,7 @@ void SPI::ACK(TickType_t timeout = portMAX_DELAY) {
   this->device->SetTraceEnabled(trace_);
 }
 
-void SPI::Send(const OutboundData &data) {
+void SPI::Send(OutboundData const &data) {
   using enum OutboundData::SizeMode;
   using enum OutboundData::ChecksumMode;
 
@@ -79,7 +83,7 @@ void SPI::Send(const OutboundData &data) {
 
   this->ACK();
 }
-void SPI::Recv(InboundData &data) {
+void SPI::Recv(InboundData &&data) {
   std::ranges::fill(data.data, 0x00);
 
   if (!data.resume) {

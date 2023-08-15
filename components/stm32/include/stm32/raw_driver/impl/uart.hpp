@@ -1,7 +1,8 @@
 #pragma once
 
 #include <esp_log.h>
-
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <memory>
 #include <vector>
 
@@ -16,18 +17,18 @@ namespace stm32::raw_driver::impl {
 using UartDataLink = connection::data_link::UART;
 
 class UART : public RawDriverBase {
-  static constexpr const char *TAG = "RawDriver<UART>";
+  static constexpr const char *TAG = "[STM32-BL] RawDriver<UART>";
 
   std::shared_ptr<UartDataLink> device;
 
  public:
   explicit UART(std::shared_ptr<connection::data_link::UART> device);
-  ~UART() = default;
+  ~UART() override;
 
   void ACK(TickType_t timeout = portMAX_DELAY) override;
 
-  void Send(const OutboundData &data) override;
-  void Recv(InboundData &data) override;
+  void Send(OutboundData const &data) override;
+  void Recv(InboundData &&data) override;
 
   void CommandHeader(uint8_t command) override;
 

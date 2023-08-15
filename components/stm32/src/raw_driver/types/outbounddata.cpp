@@ -38,6 +38,8 @@ uint8_t OutboundData::CalculateChecksum() const {
 
       break;
   }
+
+  return (uint8_t)checksum;
 }
 
 }  // namespace stm32::raw_driver
