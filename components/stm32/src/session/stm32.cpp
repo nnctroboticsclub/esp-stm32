@@ -4,14 +4,12 @@
 namespace stm32::session {
 
 void Session::SetModeBootLoader() {
-  ESP_LOGI(TAG, "SetModeBootLoader");
   this->boot0_.set_high();
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  vTaskDelay(20 / portTICK_PERIOD_MS);
 }
 void Session::UnsetModeBootLoader() {
-  ESP_LOGI(TAG, "UnsetModeBootLoader");
   this->boot0_.set_low();
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  vTaskDelay(20 / portTICK_PERIOD_MS);
 }
 //* Public
 Session::Session(std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver,
@@ -21,14 +19,26 @@ Session::Session(std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver,
   this->reset_.set_high();
 }
 void Session::Reset() {
-  ESP_LOGI(TAG, "Reset...");
   this->reset_.set_low();
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  vTaskDelay(50 / portTICK_PERIOD_MS);
 
   this->reset_.set_high();
 }
 BootLoaderSession Session::EnterBL() {
   return BootLoaderSession(this->raw_bl_driver_,
                            std::make_shared<Session>(*this));
+}
+
+std::optional<BootLoaderSession> Session::TryEnterBL(int tries) {
+  for (int i = 0; i < tries; i++) {
+    ESP_LOGI(TAG, "Try %d", i);
+    try {
+      return this->EnterBL();
+    } catch (raw_driver::ConnectionDisrupted &) {
+      ESP_LOGW(TAG, "ConnectionDisrupted");
+    }
+  }
+
+  return std::nullopt;
 }
 }  // namespace stm32::session

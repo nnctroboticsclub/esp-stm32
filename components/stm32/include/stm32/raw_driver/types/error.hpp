@@ -12,6 +12,10 @@ class ACKFailed : public ConnectionDisrupted {
  public:
   ACKFailed() : ConnectionDisrupted(": ACK Failed") {}
 };
+class SyncFailed : public ConnectionDisrupted {
+ public:
+  SyncFailed() : ConnectionDisrupted(": Sync Failed") {}
+};
 
 class NoData : public ConnectionDisrupted {
  public:

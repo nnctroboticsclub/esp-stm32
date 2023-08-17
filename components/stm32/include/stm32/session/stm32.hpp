@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <gpio_cxx.hpp>
 #include "../driver/driver.hpp"
@@ -21,12 +22,14 @@ class Session {
   void SetModeBootLoader();
   void UnsetModeBootLoader();
 
+  BootLoaderSession EnterBL();
+
  public:
   Session(std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver,
           idf::GPIONum boot0, idf::GPIONum reset);
 
   void Reset();
 
-  BootLoaderSession EnterBL();
+  std::optional<BootLoaderSession> TryEnterBL(int tries = 5);
 };
 }  // namespace stm32::session

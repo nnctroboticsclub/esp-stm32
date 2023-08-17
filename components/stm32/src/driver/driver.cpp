@@ -9,30 +9,21 @@ using raw_driver::InboundData;
 using raw_driver::OutboundData;
 
 void BLDriver::Get() {
-  ESP_LOGI(TAG, "Doing Get...");
   this->raw_driver_->CommandHeader(this->commands.get);
 
-  std::vector<uint8_t> buf(2);
-  ESP_LOGI(TAG, "Getting Header...");
-  this->raw_driver_->Recv((InboundData){.data = buf, .resume = false});
+  std::vector<uint8_t> buf = this->raw_driver_->Recv(2);
 
-  std::vector<uint8_t> raw_commands(buf[0]);
-  ESP_LOGI(TAG, "Getting Version/Commands...");
-  this->raw_driver_->Recv((InboundData){.data = raw_commands, .resume = true});
+  std::vector<uint8_t> raw_commands = this->raw_driver_->Recv(buf[0], true);
   this->raw_driver_->ACK();
 
   this->version.UpdateVersion(buf[1]);
   this->commands = Commands(raw_commands);
-
-  return;
 }
 
 void BLDriver::DoGetVersion() {
-  ESP_LOGI(TAG, "Doing Get Version...");
   this->raw_driver_->CommandHeader(this->commands.get_version);
 
-  std::vector<uint8_t> buf(3);
-  this->raw_driver_->Recv((InboundData){.data = buf, .resume = true});
+  std::vector<uint8_t> buf = this->raw_driver_->Recv(3);
   this->version = Version(buf);
 
   this->raw_driver_->ACK();
@@ -48,10 +39,13 @@ BLDriver::BLDriver(std::shared_ptr<RawDriverBase> raw_driver)
 }
 
 void BLDriver::InitConnection() {
+  this->commands = Commands();
+  this->version = Version();
+
   this->raw_driver_->Sync();
+  this->is_connected_ = true;
   this->Get();
   this->GetVersion();
-  this->is_connected_ = true;
 
   return;
 }
@@ -65,7 +59,6 @@ Version BLDriver::GetVersion() {
 }
 
 void BLDriver::Erase(SpecialFlashPage page) const {
-  ESP_LOGI(TAG, "Erasing %s", SpecialFlashPageToString(page).c_str());
   if (this->commands.UseLegacyErase()) {
     this->raw_driver_->CommandHeader(this->commands.erase);
 
@@ -77,9 +70,6 @@ void BLDriver::Erase(SpecialFlashPage page) const {
 }
 
 void BLDriver::Erase(std::vector<FlashPage> const &pages) const {
-  ESP_LOGI(TAG, "Erasing %d pages", pages.size());
-  ESP_LOGI(TAG, "  %08x --> %08x", 0x0800'0000 + pages[0] * 0x800,
-           0x0800'0000 + pages[pages.size() - 1] * 0x800);
   if (this->commands.UseLegacyErase()) {
     this->raw_driver_->CommandHeader(this->commands.erase);
 

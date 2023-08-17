@@ -17,7 +17,7 @@ class BootLoaderSession {
 
   int failed_attempts_ = 0;
 
-  void Sync();
+  void Reset();
 
  public:
   BootLoaderSession(std::shared_ptr<raw_driver::RawDriverBase> bl_driver,

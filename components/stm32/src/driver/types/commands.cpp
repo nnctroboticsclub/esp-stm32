@@ -1,6 +1,7 @@
 #include <stm32/driver/types/commands.hpp>
 
 namespace stm32::driver {
+Commands::Commands() = default;
 Commands::Commands(const std::vector<uint8_t> &data) {
   if (data.size() < 0x0b) {
     ESP_LOGE("Stm32BL", "data size is too small: %d bytes", data.size());

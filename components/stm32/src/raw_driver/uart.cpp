@@ -54,7 +54,14 @@ void UART::Send(OutboundData const& data) {
 
   this->ACK();
 }
-void UART::Recv(InboundData&& data) { this->device->RecvExactly(data.data); }
+
+std::vector<uint8_t> UART::Recv(size_t length, bool resume) {
+  std::vector<uint8_t> result(length, 0x00);
+
+  this->device->RecvExactly(result);
+
+  return result;
+}
 
 void UART::CommandHeader(uint8_t command) {
   std::vector<uint8_t> buf{command, uint8_t(command ^ 0xff)};

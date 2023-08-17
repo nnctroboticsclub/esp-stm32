@@ -24,8 +24,8 @@ struct Commands {
   uint8_t readout_unprotect = 0x92;
   uint8_t get_checksum = 0xA1;
 
-  Commands() = default;
-  explicit Commands(const std::vector<uint8_t> &data) ;
+  Commands();
+  explicit Commands(const std::vector<uint8_t> &data);
 
   inline bool UseLegacyErase() const { return this->erase == 0x44; }
 };

@@ -4,19 +4,18 @@
 
 namespace stm32::session {
 
-void BootLoaderSession::Sync() {
+void BootLoaderSession::Reset() {
   int attempts = 0;
-  ESP_LOGI(TAG, "Syncing...");
   this->session_->SetModeBootLoader();
   while (true) {
     try {
+      ESP_LOGI(TAG, "Try %d", attempts);
       this->session_->Reset();
-      ESP_LOGI(TAG, "Initializing Connection...");
       this->bl_driver_->InitConnection();
       break;
-    } catch (const raw_driver::ConnectionDisrupted &) {
-      if (attempts++ > 10) {
-        throw raw_driver::ConnectionDisrupted();
+    } catch (const raw_driver::SyncFailed &) {
+      if (attempts++ > 2) {
+        throw raw_driver::SyncFailed();
       }
 
       vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -31,7 +30,7 @@ BootLoaderSession::BootLoaderSession(
     std::shared_ptr<Session> session)
     : session_(session) {
   this->bl_driver_ = std::make_shared<driver::BLDriver>(bl_driver);
-  this->Sync();  // This function must be called at least once
+  this->Reset();  // This function must be called at least once
 }
 
 void BootLoaderSession::WriteMemory(uint32_t address,
@@ -42,7 +41,12 @@ void BootLoaderSession::WriteMemory(uint32_t address,
       auto addr = address;
 
       while (it != buf.end()) {
+        if (addr % 0x10000 == 0) {
+          ESP_LOGI(TAG, "Writing Data to %08lx --> %08lx", addr,
+                   std::min(addr + 1024, address + buf.size()));
+        }
         std::vector<uint8_t> sub_buf(it, it + 256);
+
         this->bl_driver_->WriteMemoryBlock(addr, sub_buf);
         addr += 256;
         it += 256;
@@ -55,7 +59,7 @@ void BootLoaderSession::WriteMemory(uint32_t address,
       if (this->failed_attempts_ > 10) {
         throw raw_driver::ConnectionDisrupted();
       }
-      this->Sync();
+      this->Reset();
 
       vTaskDelay(200 / portTICK_PERIOD_MS);
     }
@@ -97,7 +101,7 @@ void BootLoaderSession::Erase(driver::ErasePages pages) {
       if (this->failed_attempts_ > 10) {
         throw raw_driver::ConnectionDisrupted();
       }
-      this->Sync();
+      this->Reset();
 
       vTaskDelay(200 / portTICK_PERIOD_MS);
     }
@@ -114,7 +118,7 @@ driver::Version BootLoaderSession::GetVersion() {
       if (this->failed_attempts_ > 10) {
         throw raw_driver::ConnectionDisrupted();
       }
-      this->Sync();
+      this->Reset();
 
       vTaskDelay(200 / portTICK_PERIOD_MS);
     }

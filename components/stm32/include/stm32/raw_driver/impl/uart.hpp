@@ -28,7 +28,7 @@ class UART : public RawDriverBase {
   void ACK(TickType_t timeout = portMAX_DELAY) override;
 
   void Send(OutboundData const &data) override;
-  void Recv(InboundData &&data) override;
+  std::vector<uint8_t> Recv(size_t length, bool resume = false) override;
 
   void CommandHeader(uint8_t command) override;
 

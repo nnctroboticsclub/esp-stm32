@@ -1,11 +1,12 @@
 #pragma once
 
-#include <spi_host_cxx.hpp>
-
+#include <memory>
 #include <string>
 #include <stdexcept>
 #include <vector>
 #include <queue>
+
+#include <spi_host_cxx.hpp>
 
 #include "connection/data_link/base.hpp"
 
@@ -24,7 +25,7 @@ class SPIDevice : public RecvAndSend {
   SPIDevice();
 
  public:
-  explicit SPIDevice(idf::SPIMaster &master, idf::CS &cs);
+  explicit SPIDevice(idf::SPIMaster &master, idf::CS cs);
 
   size_t Send(const std::vector<uint8_t> &buf) override;
 

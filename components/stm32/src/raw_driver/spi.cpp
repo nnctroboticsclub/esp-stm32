@@ -1,5 +1,3 @@
-#pragma once
-
 #include <memory>
 #include <vector>
 #include <stm32/raw_driver/impl/spi.hpp>
@@ -7,7 +5,7 @@
 namespace stm32::raw_driver::impl {
 SPI::SPI(std::shared_ptr<connection::data_link::SPIDevice> device)
     : device(device) {
-  this->device->SetTraceEnabled(true);
+  // this->device->SetTraceEnabled(true);
 }
 
 SPI::~SPI() = default;
@@ -83,16 +81,18 @@ void SPI::Send(OutboundData const &data) {
 
   this->ACK();
 }
-void SPI::Recv(InboundData &&data) {
-  std::ranges::fill(data.data, 0x00);
+std::vector<uint8_t> SPI::Recv(size_t length, bool resume) {
+  std::vector<uint8_t> result(length, 0x00);
 
-  if (!data.resume) {
+  if (!resume) {
     this->device->SendChar(0x00);
     this->device->RecvChar();
   }
 
-  this->device->Send(data.data);
-  this->device->Recv(data.data);
+  this->device->Send(result);
+  this->device->Recv(result);
+
+  return result;
 }
 
 void SPI::CommandHeader(uint8_t command) {
@@ -105,15 +105,14 @@ void SPI::CommandHeader(uint8_t command) {
 }
 
 void SPI::Sync() {
-  ESP_LOGI(TAG, "Sync...");
+  // ESP_LOGI(TAG, "Sync...");
 
   std::vector<uint8_t> buf;
 
   this->device->SendChar(0x5A);
-
   if (auto ret = this->device->RecvChar(); ret != 0xA5) {
     ESP_LOGE(TAG, "Failed Sync (ACK Return value = %#02x != %#02x)", ret, 0xA5);
-    throw ACKFailed();
+    throw SyncFailed();
   }
   this->ACK();
 
