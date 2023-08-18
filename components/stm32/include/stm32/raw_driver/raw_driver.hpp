@@ -6,5 +6,5 @@
 
 namespace stm32::raw_driver {
 using UartRawDriver = impl::UART;
-using SpiRawDriver = impl::SPI;
+using SPIRawDriver = impl::SPI;
 }  // namespace stm32::raw_driver
