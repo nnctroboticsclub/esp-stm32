@@ -1,6 +1,8 @@
 #include <stm32/session/stm32.hpp>
 #include <stm32/session/bootloader.hpp>
 
+#include <stm32/raw_driver/types/error.hpp>
+
 namespace stm32::session {
 
 void Session::SetModeBootLoader() {
@@ -12,9 +14,8 @@ void Session::UnsetModeBootLoader() {
   vTaskDelay(20 / portTICK_PERIOD_MS);
 }
 //* Public
-Session::Session(std::shared_ptr<raw_driver::RawDriverBase> raw_bl_driver,
-                 idf::GPIONum boot0, idf::GPIONum reset)
-    : raw_bl_driver_(raw_bl_driver), boot0_(boot0), reset_(reset) {
+Session::Session(idf::GPIONum boot0, idf::GPIONum reset)
+    : boot0_(boot0), reset_(reset) {
   this->boot0_.set_low();
   this->reset_.set_high();
 }
@@ -24,16 +25,12 @@ void Session::Reset() {
 
   this->reset_.set_high();
 }
-BootLoaderSession Session::EnterBL() {
-  return BootLoaderSession(this->raw_bl_driver_,
-                           std::make_shared<Session>(*this));
-}
-
-std::optional<BootLoaderSession> Session::TryEnterBL(int tries) {
+std::optional<BootLoaderSession> Session::TryEnterBL(
+    std::shared_ptr<driver::BLDriver> drv, int tries) {
   for (int i = 0; i < tries; i++) {
     ESP_LOGI(TAG, "Try %d", i);
     try {
-      return this->EnterBL();
+      return BootLoaderSession(drv, std::make_shared<Session>(*this));
     } catch (raw_driver::ConnectionDisrupted &) {
       ESP_LOGW(TAG, "ConnectionDisrupted");
     }
