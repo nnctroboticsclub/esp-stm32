@@ -20,7 +20,7 @@ class BootLoaderSession {
   void Reset();
 
  public:
-  BootLoaderSession(std::shared_ptr<raw_driver::RawDriverBase> bl_driver,
+  BootLoaderSession(std::shared_ptr<driver::BLDriver> bl_driver,
                     std::shared_ptr<Session> session);
 
   void WriteMemory(uint32_t address, std::vector<uint8_t> &buf);
