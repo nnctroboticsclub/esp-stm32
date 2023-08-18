@@ -9,7 +9,7 @@ using idf::SPIMaster;
 SPIDevice::SPIDevice() = default;
 
 SPIDevice::SPIDevice(SPIMaster &master, CS cs) : SPIDevice() {
-  this->device = master.create_dev(cs, idf::Frequency::KHz(1));
+  this->device = master.create_dev(cs, idf::Frequency::MHz(1));
 }
 
 size_t SPIDevice::Send(const std::vector<uint8_t> &buf) {
