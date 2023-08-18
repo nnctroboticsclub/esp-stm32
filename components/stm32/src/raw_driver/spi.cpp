@@ -3,16 +3,20 @@
 #include <stm32/raw_driver/impl/spi.hpp>
 
 namespace stm32::raw_driver::impl {
-SPI::SPI(std::shared_ptr<connection::data_link::SPIDevice> device)
-    : device(device) {
+using SPIDevice = connection::data_link::SPIDevice;
+
+SPI::SPI(std::shared_ptr<SPIDevice> device) : device(device) {
   // this->device->SetTraceEnabled(true);
 }
+SPI::SPI(idf::SPIMaster &master, idf::CS chip_select)
+    : SPI(std::make_shared<SPIDevice>(master, chip_select)) {}
 
 SPI::~SPI() = default;
 
 void SPI::ACK(TickType_t timeout) {
   auto trace_ = this->device->IsTraceEnabled();
   this->device->SetTraceEnabled(false);
+
   int fail_count = 0;
 
   this->device->SendChar(0x5A);
@@ -20,21 +24,22 @@ void SPI::ACK(TickType_t timeout) {
 
   while (true) {
     this->device->SendChar(0x00);
-    if (auto ch = this->device->RecvChar(timeout); ch == 0x79) {
+
+    if (auto res = this->device->RecvChar(timeout); res == 0x79) {
       break;
-    } else if (ch == 0x1f) {
-      ESP_LOGW(TAG, "NACK");
+    } else if (res == 0x1f) {
+      ESP_LOGW(TAG, "Explict NACK");
       throw ACKFailed();
-    } else {
-      fail_count++;
-      if (fail_count % 100 == 0) {
-        ESP_LOGW(TAG, "STM32 SPI ACK Fails %d times (wait 0.5 seconds)",
-                 fail_count);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-      }
-      if (fail_count % 10000 == 0) {
-        throw NoData();
-      }
+    }
+
+    fail_count++;
+    if (fail_count % 10000 == 0) {
+      ESP_LOGW(TAG, "ACK Fails %d times (wait 0.5 seconds)", fail_count);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+
+    if (fail_count == 100000) {
+      throw NoData();
     }
   }
   this->device->SendChar(0x79);
