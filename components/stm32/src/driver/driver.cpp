@@ -1,5 +1,7 @@
 #include <stm32/driver/driver.hpp>
 
+#include <stm32/raw_driver/raw_driver.hpp>
+
 #include <vector>
 #include <memory>
 
@@ -118,6 +120,12 @@ void BLDriver::Go(uint32_t address) const {
   this->raw_driver_->Send(OutboundData::U32WithChecksum(address));
 
   return;
+}
+
+std::shared_ptr<BLDriver> BLDriver::SPIDriver(idf::SPIMaster &master,
+                                              idf::CS chip_select) {
+  return std::make_shared<BLDriver>(
+      std::make_shared<raw_driver::SPIRawDriver>(master, chip_select));
 }
 
 }  // namespace stm32::driver
