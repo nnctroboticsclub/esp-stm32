@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <memory>
 
 #include "../libs/nvs_proxy.hpp"
@@ -8,27 +9,23 @@
 #include "types/ipv4.hpp"
 
 namespace profile {
-class NetworkProfile {  // a_nw%d
- private:
-  nvs::SharedNamespace ns_;
+class NetworkProfile : public nvs::Namespace {  // a_nw%d
+ public:
+  [[no_unique_address]] nvs::Proxy<types::NetworkMode> mode;
+  [[no_unique_address]] nvs::Proxy<types::IPMode> ip_mode;
+
+  [[no_unique_address]] nvs::Proxy<std::string> name;
+
+  [[no_unique_address]] nvs::Proxy<std::string> ssid;
+  [[no_unique_address]] nvs::Proxy<std::string> password;
+
+  [[no_unique_address]] nvs::Proxy<std::string> hostname;
+
+  [[no_unique_address]] nvs::Proxy<types::Ipv4> ip;
+  [[no_unique_address]] nvs::Proxy<types::Ipv4> subnet;
+  [[no_unique_address]] nvs::Proxy<types::Ipv4> gateway;
 
  public:
-  nvs::Proxy<types::NetworkMode> mode;
-  nvs::Proxy<types::IPMode> ip_mode;
-
-  nvs::Proxy<char[20]> name;
-
-  nvs::Proxy<char[20]> ssid;
-  nvs::Proxy<char[20]> password;
-
-  nvs::Proxy<char[20]> hostname;
-
-  nvs::Proxy<types::Ipv4> ip;
-  nvs::Proxy<types::Ipv4> subnet;
-  nvs::Proxy<types::Ipv4> gateway;
-
- public:
-  NetworkProfile(nvs::SharedNamespace ns);
-  void Save();
+  explicit NetworkProfile(std::string const& ns);
 };
 }  // namespace profile

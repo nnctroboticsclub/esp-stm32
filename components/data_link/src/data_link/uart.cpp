@@ -8,10 +8,9 @@
 #include <sdkconfig.h>
 
 namespace connection::data_link {
-UART::UART(uart_port_t port) : port(port) {}
-
-void UART::InstallDriver(int tx, int rx, int baud_rate,
-                         uart_parity_t parity) const {
+UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
+           uart_parity_t parity)
+    : port(port) {
   uart_config_t uart_config = {
       .baud_rate = baud_rate,
       .data_bits = UART_DATA_8_BITS,

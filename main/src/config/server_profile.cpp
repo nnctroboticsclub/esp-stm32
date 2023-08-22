@@ -1,10 +1,7 @@
-#include "server_profile.hpp"
+#include "./server_profile.hpp"
 
 namespace profile {
-ServerProfile::ServerProfile(nvs::SharedNamespace ns)
-    : ns(ns), ip(ns, "ip"), port(ns, "port") {}
+ServerProfile::ServerProfile(std::string const& ns)
+    : nvs::Namespace(ns), ip(this, "ip"), port(this, "port") {}
 
-void ServerProfile::Save() {
-    ns->Commit();
-}
 }  // namespace profile

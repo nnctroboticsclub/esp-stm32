@@ -89,22 +89,6 @@ void Main() {
 }
 
 extern "C" int app_main() {
-  using namespace connection::application::stm32bl;
-
-  /*
-  using connection::data_link::UART;
-  using stm32::raw_driver::RawDriver;
-
-  auto dl = std::make_shared<UART>(UART(UART_NUM_1));
-  auto rd = std::make_shared<RawDriver<UART>>(RawDriver<UART>(dl));
-
-  stm32::Session<RawDriver<UART>> session(rd, (idf::GPIONum)21,
-                                          (idf::GPIONum)22);
-
-  { auto bl_sess = session.EnterBL(); }
-
-  BootStrap();
-  */
   wifi::WifiConnectionProfile profile{
       .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
       .ssid = "SYOCH-DESU 0136",

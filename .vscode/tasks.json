@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "IDF Build",
+      "type": "shell",
+      "command": "${env:HOME}/.espressif/python_env/idf5.0_py3.11_env/bin/python3 ~/.platformio/packages/framework-espidf/tools/idf.py build",
+      "options": {
+        "env": {
+          "PATH": "${env:HOME}/.platformio/packages/toolchain-xtensa-esp32/bin:${env:HOME}/.platformio/packages/framework-espidf/tools:${env:HOME}/.platformio/penv/.espidf-5.0.2/lib/python3.11/site-packages:${env:PATH}",
+          "IDF_PATH": "${env:HOME}/.platformio/packages/framework-espidf",
+          "ESP_IDF_VERSION": "v5.0",
+        }
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

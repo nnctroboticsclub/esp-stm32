@@ -1,223 +1,346 @@
 #pragma once
 
+#include <string.h>
 #include <nvs.h>
 #include <esp_log.h>
-#include <memory>
 #include <esp_system.h>
 #include <nvs_flash.h>
-#include <string.h>
 #include <driver/gpio.h>
 
+#include <utility>
+#include <memory>
+#include <vector>
+#include <string>
+
 namespace nvs {
+namespace api {
+constexpr const char* TAG = "nvs::api";
+
+class NVSError : public std::runtime_error {
+ public:
+  NVSError() : std::runtime_error("NVS Error") {}
+};
+
+inline nvs_handle_t Open(std::string const& name, nvs_open_mode_t open_mode) {
+  nvs_handle_t handle;
+
+  auto result = nvs_open(name.c_str(), open_mode, &handle);
+  if (result == ESP_ERR_NVS_NOT_INITIALIZED) {
+    nvs_flash_init();
+    result = nvs_open(name.c_str(), open_mode, &handle);
+  }
+  if (result != ESP_OK) {
+    ESP_LOGE(TAG, "NVS open failed: %s[%d] %s", esp_err_to_name(result), result,
+             name.c_str());
+    throw NVSError();
+  }
+
+  return handle;
+}
+
+inline void Close(nvs_handle_t handle) { nvs_close(handle); }
+
+inline void Commit(nvs_handle_t handle) {
+  auto ret = nvs_commit(handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS commit failed: %s[%d]", esp_err_to_name(ret), ret);
+    throw NVSError();
+  }
+}
+
+template <typename T>
+T Get(nvs_handle_t, std::string const&) {
+  using T2 = T::NonExistType;  // SFINAE
+  (void)T2(0);  // Avoid 'typedef xxx locally defined but not used' error
+}
+
+template <>
+inline uint8_t Get<uint8_t>(nvs_handle_t handle, std::string const& key) {
+  uint8_t value;
+  if (auto ret = nvs_get_u8(handle, key.c_str(), &value); ret != ESP_OK) {
+    ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    return 0;
+  }
+  return value;
+}
+
+template <>
+inline uint16_t Get<uint16_t>(nvs_handle_t handle, std::string const& key) {
+  uint16_t value;
+  if (auto ret = nvs_get_u16(handle, key.c_str(), &value); ret != ESP_OK) {
+    ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    return 0;
+  }
+  return value;
+}
+
+template <>
+inline uint32_t Get<uint32_t>(nvs_handle_t handle, std::string const& key) {
+  uint32_t value;
+  if (auto ret = nvs_get_u32(handle, key.c_str(), &value); ret != ESP_OK) {
+    ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    return 0;
+  }
+  return value;
+}
+
+template <>
+inline std::string Get<std::string>(nvs_handle_t handle,
+                                    std::string const& key) {
+  size_t length = 0;
+  if (auto ret = nvs_get_str(handle, key.c_str(), nullptr, &length);
+      ret != ESP_OK) {
+    ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    return "";
+  }
+
+  auto value = new char[length];
+  if (auto ret = nvs_get_str(handle, key.c_str(), value, &length);
+      ret != ESP_OK) {
+    ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    return "";
+  }
+
+  std::string result(value);
+  delete[] value;
+
+  return result;
+}
+
+template <typename T>
+void Set(nvs_handle_t, std::string const&, T const&) {
+  using T2 = T::NonExistType;  // SFINAE
+  (void)T2(0);  // Avoid 'typedef xxx locally defined but not used' error
+}
+
+template <>
+inline void Set<uint8_t>(nvs_handle_t handle, std::string const& key,
+                         uint8_t const& value) {
+  auto ret = nvs_set_u8(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    throw NVSError();
+  }
+}
+
+template <>
+inline void Set<uint16_t>(nvs_handle_t handle, std::string const& key,
+                          uint16_t const& value) {
+  auto ret = nvs_set_u16(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    throw NVSError();
+  }
+}
+
+template <>
+inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
+                          uint32_t const& value) {
+  auto ret = nvs_set_u32(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    throw NVSError();
+  }
+}
+
+template <>
+inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
+                             std::string const& value) {
+  auto zero_terminated = new char[value.length() + 1];
+  snprintf(zero_terminated, value.length() + 1, "%s", value.c_str());
+
+  if (auto ret = nvs_set_str(handle, key.c_str(), zero_terminated);
+      ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
+             key.c_str());
+    throw NVSError();
+  }
+
+  delete[] zero_terminated;
+}
+}  // namespace api
+
+// Alias Proxy (Threats T as Base)
+template <typename T>
+class AliasProxyTable;
+
+template <>
+class AliasProxyTable<gpio_num_t> {
+  using type = uint8_t;
+};
+
+template <>
+class AliasProxyTable<bool> {
+  using type = uint8_t;
+};
+
+template <typename T>
+using AliasProxyBaseType = typename AliasProxyTable<T>::type;
+
+namespace detail {
+
+class NamespaceHandle {
+  nvs_handle_t handle;
+
+ public:
+  explicit NamespaceHandle(std::string const& ns) {
+    this->handle = api::Open(ns, NVS_READWRITE);
+  }
+
+  NamespaceHandle(NamespaceHandle const&) = delete;
+  NamespaceHandle& operator=(NamespaceHandle const&) = delete;
+
+  NamespaceHandle(NamespaceHandle&& other) noexcept
+      : handle(std::exchange(other.handle, 0)) {}
+
+  NamespaceHandle& operator=(NamespaceHandle&& other) noexcept {
+    this->handle = std::exchange(other.handle, 0);
+    return *this;
+  }
+
+  ~NamespaceHandle() { api::Close(this->handle); }
+
+  explicit operator nvs_handle_t() const { return this->handle; }
+};
+
 class Namespace {
   static constexpr const char* TAG = "nvs::Namespace";
 
- public:
-  nvs_handle_t handle_;
-  const char* ns;
+  NamespaceHandle handle_;
+  std::string ns;
+  bool dirty = false;
 
- public:
-  Namespace(const char* ns) {
-    this->ns = new char[strlen(ns) + 1];
-    strcpy((char*)this->ns, ns);
-
-    auto err = nvs_open(ns, NVS_READWRITE, &handle_);
-    if (err == ESP_ERR_NVS_NOT_INITIALIZED) {
-      nvs_flash_init();
-      err = nvs_open(ns, NVS_READWRITE, &handle_);
-    }
-    if (err != ESP_OK) {
-      ESP_LOGE(TAG, "NVS open failed: %s[%d] %s", esp_err_to_name(err), err,
-               ns);
-      esp_system_abort("NVS Open Failed nvs_proxy.hpp:L20");
-    }
-  }
-  ~Namespace() { nvs_close(handle_); }
-
-  void Commit() {
-    auto ret = nvs_commit(handle_);
-    if (ret != ESP_OK) {
-      ESP_LOGE(TAG, "NVS commit failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               ns);
-      esp_system_abort("NVS Commit Failed nvs_proxy.hpp:L39");
-    }
+  void Commit() const {
+    api::Commit(static_cast<nvs_handle_t>(this->handle_));
+    ESP_LOGI(TAG, "NVS Commited: %s", this->ns.c_str());
   }
 
-  nvs_handle& GetHandle() { return this->handle_; }
+ public:
+  Namespace() = delete;
+
+  Namespace(Namespace const&) = delete;
+  Namespace& operator=(Namespace const&) = delete;
+
+  explicit Namespace(std::string const& ns) : handle_(ns), ns(ns) {}
+
+  ~Namespace() {
+    if (this->dirty) this->Commit();
+    api::Close(static_cast<nvs_handle_t>(this->handle_));
+  }
+
+  template <typename T>
+  T Get(std::string const& key) const {
+    return api::Get<T>(static_cast<nvs_handle_t>(this->handle_), key);
+  }
+
+  template <typename T>
+  void Set(std::string const& key, T value) const {
+    this->dirty = true;
+    api::Set<T>(static_cast<nvs_handle_t>(this->handle_), key, value);
+  }
 };
 
 class SharedNamespace {
  private:
-  std::shared_ptr<nvs::Namespace> ns;
+  std::shared_ptr<Namespace> ns;
 
  public:
-  SharedNamespace(const char* ns)
-      : ns(std::shared_ptr<nvs::Namespace>(new nvs::Namespace(ns))) {}
+  explicit SharedNamespace(const char* ns)
+      : ns(std::make_shared<Namespace>(ns)) {}
+
+  explicit SharedNamespace(std::string const& ns)
+      : ns(std::make_shared<Namespace>(ns)) {}
+
+  explicit SharedNamespace(SharedNamespace const* other) : ns(other->ns) {}
+
   Namespace* operator->() { return this->ns.get(); }
 };
 
-class _Proxy {
- protected:
+// Direct Proxy (Use nvs::api's Get/Set)
+template <typename T>
+concept DirectProxySatisfy = requires {
+  api::Get<T>(nvs_handle_t{}, std::string{});
+  api::Set<T>(nvs_handle_t{}, std::string{}, T{});
+};
+
+template <DirectProxySatisfy T>
+class DirectProxy {
+ private:
   static constexpr const char* TAG = "nvs::Proxy";
   SharedNamespace ns_;
-  const char* key_;
+  std::string key_;
 
  public:
-  _Proxy(SharedNamespace ns_handle, const char* key)
+  DirectProxy(SharedNamespace ns_handle, std::string const& key)
+      : ns_(ns_handle), key_(key) {}
+  DirectProxy(SharedNamespace const* ns_handle, std::string const& key)
       : ns_(ns_handle), key_(key) {}
 
-  _Proxy() = delete;
-  ~_Proxy() {}
+  DirectProxy() = delete;
+  ~DirectProxy() = default;
 
   void Commit() { this->ns_->Commit(); }
+
+  T Get() { return this->ns_->Get<T>(key_); }
+  void Set(T const& value) { this->ns_->Set<T>(key_, value); }
+
+  explicit operator T() { return this->Get(); }
+
+  DirectProxy& operator=(T const& value) {
+    this->Set(value);
+    return *this;
+  }
 };
 
-// real Proxy objects
 template <typename T>
-class Proxy {};
+concept AliasProxyTableExist = requires { typename AliasProxyTable<T>::type; };
 
-template <>
-class Proxy<uint8_t> : public _Proxy {
+template <AliasProxyTableExist T>
+class AliasProxy : public DirectProxy<AliasProxyBaseType<T>> {
+  using Base = AliasProxyBaseType<T>;
+
  public:
-  using _Proxy::_Proxy;
+  using DirectProxy<Base>::DirectProxy;
 
-  operator uint8_t() {
-    uint8_t value;
-    auto ret = nvs_get_u8(ns_->GetHandle(), key_, &value);
-    if (ret != ESP_OK) {
-      ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      *this = 0;
-      value = 0;
-    }
-    return value;
-  }
+  explicit operator T() { return (T)DirectProxy<Base>::operator Base(); }
 
-  Proxy& operator=(uint8_t value) {
-    auto ret = nvs_set_u8(ns_->GetHandle(), key_, value);
-    if (ret != ESP_OK) {
-      ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      esp_system_abort("NVS Set Failed nvs_proxy.hpp:L80");
-    }
+  AliasProxy& operator=(T value) {
+    DirectProxy<Base>::operator=(value);
     return *this;
   }
 };
 
-template <>
-class Proxy<uint16_t> : public _Proxy {
- public:
-  using _Proxy::_Proxy;
+template <DirectProxySatisfy T>
+auto DummyFunc(T) -> DirectProxy<T>;
 
-  operator uint16_t() {
-    uint16_t value;
-    auto ret = nvs_get_u16(ns_->GetHandle(), key_, &value);
-    if (ret != ESP_OK) {
-      ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      *this = 0;
-      value = 0;
-    }
-    return value;
+template <AliasProxyTableExist T>
+auto DummyFunc(T) -> AliasProxy<T>;
+
+template <typename T>
+using Proxy = decltype(DummyFunc(std::declval<T>()));
+}  // namespace detail
+
+using Namespace = detail::SharedNamespace;
+
+template <typename T>
+using Proxy = detail::Proxy<T>;
+
+template <std::derived_from<Namespace> T>
+std::vector<T> LoadNamespaces(std::string const& group_name, size_t count) {
+  std::vector<T> result;
+  for (size_t i = 0; i < count; i++) {
+    result.push_back(T(group_name + std::to_string(i)));
   }
-
-  Proxy& operator=(uint16_t value) {
-    nvs_set_u16(ns_->GetHandle(), key_, value);
-    return *this;
-  }
-};
-
-template <>
-class Proxy<uint32_t> : public _Proxy {
- public:
-  using _Proxy::_Proxy;
-
-  operator uint32_t() {
-    uint32_t value;
-    auto ret = nvs_get_u32(ns_->GetHandle(), key_, &value);
-    if (ret != ESP_OK) {
-      ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      *this = 0;
-      value = 0;
-    }
-    return value;
-  }
-
-  Proxy& operator=(uint32_t value) {
-    auto ret = nvs_set_u32(ns_->GetHandle(), key_, value);
-    if (ret != ESP_OK) {
-      ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      esp_system_abort("NVS Set Failed nvs_proxy.hpp:L130");
-    }
-    return *this;
-  }
-};
-
-template <size_t N>
-class Proxy<char[N]> : public _Proxy {
- public:
-  using _Proxy::_Proxy;
-
-  operator char*() {
-    size_t len;
-    auto ret = nvs_get_str(ns_->GetHandle(), key_, NULL, &len);
-    if (ret != ESP_OK) {
-      static char buf[20]{};
-      ESP_LOGW(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      *this = buf;
-      len = 20;
-    }
-    if (len > N) {
-      ESP_LOGE(TAG, "NVS string length is too long: %u > %u", len, N);
-      esp_system_abort("NVS String Length Too Long nvs_proxy.hpp:L146");
-    }
-
-    char* value = new char[N];
-    ret = nvs_get_str(ns_->GetHandle(), key_, value, &len);
-    if (ret != ESP_OK) {
-      ESP_LOGE(TAG, "NVS get failed: %s[%d] %s", esp_err_to_name(ret), ret,
-               key_);
-      esp_system_abort("NVS Get Failed nvs_proxy.hpp:L154");
-    }
-    return value;
-  }
-
-  Proxy& operator=(const char* value) {
-    nvs_set_str(ns_->GetHandle(), key_, value);
-    return *this;
-  }
-};
-
-template <>
-class Proxy<gpio_num_t> : public Proxy<uint8_t> {
- public:
-  using Proxy<uint8_t>::Proxy;
-
-  operator gpio_num_t() {
-    return (gpio_num_t)Proxy<uint8_t>::operator uint8_t();
-  }
-
-  Proxy& operator=(gpio_num_t value) {
-    Proxy<uint8_t>::operator=(value);
-    return *this;
-  }
-};
-
-template <>
-class Proxy<bool> : public Proxy<uint8_t> {
- public:
-  using Proxy<uint8_t>::Proxy;
-
-  operator bool() { return (bool)Proxy<uint8_t>::operator uint8_t(); }
-
-  Proxy& operator=(bool value) {
-    Proxy<uint8_t>::operator=(value);
-    return *this;
-  }
-};
+  return result;
+}
 
 void DumpNVS();
 

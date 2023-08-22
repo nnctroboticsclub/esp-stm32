@@ -1,15 +1,16 @@
-#include "s32rc.hpp"
+#include "./s32rc.hpp"
 
 namespace profile {
-STM32RemoteControllerProfile::STM32RemoteControllerProfile(nvs::SharedNamespace ns)
-    : ns(ns),
-      uart_port(ns, "uart_port"),
-      uart_tx(ns, "uart_tx"),
-      uart_rx(ns, "uart_rx") {}
+using nvs::Namespace;
+STM32RemoteControllerProfile::STM32RemoteControllerProfile(
+    std::string const& ns)
+    : Namespace(ns),
+      uart_port(this, "uart_port"),
+      uart_tx(this, "uart_tx"),
+      uart_rx(this, "uart_rx") {}
 
-void STM32RemoteControllerProfile::Save() { this->ns->Commit(); }
-
-DebuggerMaster* STM32RemoteControllerProfile::GetDebuggerMaster() {
-  return new DebuggerMaster(this->uart_port, this->uart_tx, this->uart_rx);
+DebuggerMaster STM32RemoteControllerProfile::GetDebuggerMaster() {
+  return DebuggerMaster(this->uart_port.Get(), this->uart_tx.Get(),
+                        this->uart_rx.Get());
 }
 }  // namespace profile

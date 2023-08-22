@@ -1,19 +1,18 @@
 #pragma once
 
-#include "../libs/nvs_proxy.hpp"
+#include <string>
 #include <debugger_master.hpp>
+
+#include "../libs/nvs_proxy.hpp"
+
 namespace profile {
-class STM32RemoteControllerProfile {
- private:
-  nvs::SharedNamespace ns;
-
+class STM32RemoteControllerProfile : public nvs::Namespace {
  public:
-  nvs::Proxy<uint8_t> uart_port;
-  nvs::Proxy<uint8_t> uart_tx;
-  nvs::Proxy<uint8_t> uart_rx;
+  [[no_unique_address]] nvs::Proxy<uint8_t> uart_port;
+  [[no_unique_address]] nvs::Proxy<uint8_t> uart_tx;
+  [[no_unique_address]] nvs::Proxy<uint8_t> uart_rx;
 
-  STM32RemoteControllerProfile(nvs::SharedNamespace ns);
-  void Save();
-  DebuggerMaster* GetDebuggerMaster();
+  explicit STM32RemoteControllerProfile(std::string const &ns);
+  DebuggerMaster GetDebuggerMaster();
 };
 }  // namespace profile

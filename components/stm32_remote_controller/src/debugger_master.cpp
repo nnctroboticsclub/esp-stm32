@@ -7,10 +7,7 @@
 using connection::data_link::UART;
 
 DebuggerMaster::DebuggerMaster(uart_port_t port, int tx, int rx)
-    : uart_mutex(UART(port)), ui_cache{} {
-  auto uart = this->uart_mutex.Lock();
-  uart->InstallDriver(tx, rx, 9600, UART_PARITY_DISABLE);
-}
+    : uart_mutex(UART(port, tx, rx, 9600, UART_PARITY_DISABLE)), ui_cache{} {}
 
 void DebuggerMaster::DataUpdate(uint32_t cid, std::vector<uint8_t> &buf) {
   auto uart = this->uart_mutex.Lock();

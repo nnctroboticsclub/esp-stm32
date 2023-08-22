@@ -12,5 +12,5 @@ FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/main/src/*.*)
 idf_component_register(SRCS ${app_sources}
   INCLUDE_DIRS "include"
 
-  REQUIRES ${app_features_required_components} stm32
+  REQUIRES ${app_features_required_components} stm32 nvs_flash wifi_wrapper stm32_remote_controller
 )

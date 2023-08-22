@@ -23,9 +23,7 @@ class UART : public RecvAndSend {
   static void EventLoop(void *);
 
  public:
-  UART(uart_port_t port);
-
-  void InstallDriver(int tx, int rx, int baud_rate, uart_parity_t parity) const;
+  UART(uart_port_t port, int tx, int rx, int baud_rate, uart_parity_t parity);
 
   size_t GetRXBufferDataLength() const;
 
