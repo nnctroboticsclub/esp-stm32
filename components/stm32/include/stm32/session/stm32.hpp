@@ -10,8 +10,8 @@ namespace stm32::session {
 
 class BootLoaderSession;
 
-class Session {
-  static constexpr const char *TAG = "[STM32] Session";
+class STM32 {
+  static constexpr const char *TAG = "[STM32] STM32";
   idf::GPIO_Output boot0_;
   idf::GPIO_Output reset_;
 
@@ -21,7 +21,7 @@ class Session {
   void UnsetModeBootLoader();
 
  public:
-  Session(idf::GPIONum boot0, idf::GPIONum reset);
+  STM32(idf::GPIONum boot0, idf::GPIONum reset);
 
   void Reset();
 

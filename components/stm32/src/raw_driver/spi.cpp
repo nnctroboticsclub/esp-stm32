@@ -8,7 +8,7 @@ using SPIDevice = connection::data_link::SPIDevice;
 SPI::SPI(std::shared_ptr<SPIDevice> device) : device(device) {
   // this->device->SetTraceEnabled(true);
 }
-SPI::SPI(idf::SPIMaster &master, idf::CS chip_select)
+SPI::SPI(std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select)
     : SPI(std::make_shared<SPIDevice>(master, chip_select)) {}
 
 SPI::~SPI() = default;

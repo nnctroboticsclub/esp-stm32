@@ -51,7 +51,8 @@ inline void Commit(nvs_handle_t handle) {
 template <typename T>
 T Get(nvs_handle_t, std::string const&) {
   using T2 = T::NonExistType;  // SFINAE
-  (void)T2(0);  // Avoid 'typedef xxx locally defined but not used' error
+  return T2(0);  // Avoid 'typedef xxx locally defined but not used' error and
+                 // no return statement in function returning non-void error
 }
 
 template <>
@@ -166,24 +167,23 @@ inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
 
   delete[] zero_terminated;
 }
+
+template <typename T>
+struct DirectProxySatisfy : std::false_type {};
+
+template <>
+struct DirectProxySatisfy<uint8_t> : std::true_type {};
+
+template <>
+struct DirectProxySatisfy<uint16_t> : std::true_type {};
+
+template <>
+struct DirectProxySatisfy<uint32_t> : std::true_type {};
+
+template <>
+struct DirectProxySatisfy<std::string> : std::true_type {};
+
 }  // namespace api
-
-// Alias Proxy (Threats T as Base)
-template <typename T>
-class AliasProxyTable;
-
-template <>
-class AliasProxyTable<gpio_num_t> {
-  using type = uint8_t;
-};
-
-template <>
-class AliasProxyTable<bool> {
-  using type = uint8_t;
-};
-
-template <typename T>
-using AliasProxyBaseType = typename AliasProxyTable<T>::type;
 
 namespace detail {
 
@@ -214,8 +214,8 @@ class NamespaceHandle {
 class Namespace {
   static constexpr const char* TAG = "nvs::Namespace";
 
-  NamespaceHandle handle_;
-  std::string ns;
+  const NamespaceHandle handle_;
+  const std::string ns;
   bool dirty = false;
 
   void Commit() const {
@@ -261,15 +261,12 @@ class SharedNamespace {
 
   explicit SharedNamespace(SharedNamespace const* other) : ns(other->ns) {}
 
-  Namespace* operator->() { return this->ns.get(); }
+  Namespace* operator->() const { return this->ns.get(); }
 };
 
 // Direct Proxy (Use nvs::api's Get/Set)
 template <typename T>
-concept DirectProxySatisfy = requires {
-  api::Get<T>(nvs_handle_t{}, std::string{});
-  api::Set<T>(nvs_handle_t{}, std::string{}, T{});
-};
+concept DirectProxySatisfy = api::DirectProxySatisfy<T>::value;
 
 template <DirectProxySatisfy T>
 class DirectProxy {
@@ -289,10 +286,10 @@ class DirectProxy {
 
   void Commit() { this->ns_->Commit(); }
 
-  T Get() { return this->ns_->Get<T>(key_); }
+  T Get() const { return this->ns_->Get<T>(key_); }
   void Set(T const& value) { this->ns_->Set<T>(key_, value); }
 
-  explicit operator T() { return this->Get(); }
+  explicit operator T() const { return this->Get(); }
 
   DirectProxy& operator=(T const& value) {
     this->Set(value);
@@ -300,17 +297,15 @@ class DirectProxy {
   }
 };
 
-template <typename T>
-concept AliasProxyTableExist = requires { typename AliasProxyTable<T>::type; };
-
-template <AliasProxyTableExist T>
-class AliasProxy : public DirectProxy<AliasProxyBaseType<T>> {
-  using Base = AliasProxyBaseType<T>;
-
+template <typename T, DirectProxySatisfy Base>
+class AliasProxy : public DirectProxy<Base> {
  public:
   using DirectProxy<Base>::DirectProxy;
 
-  explicit operator T() { return (T)DirectProxy<Base>::operator Base(); }
+  T Get() const { return (T)DirectProxy<Base>::Get(); }
+  void Set(T value) { DirectProxy<Base>::Set((Base)value); }
+
+  explicit operator T() const { return (T)DirectProxy<Base>::operator Base(); }
 
   AliasProxy& operator=(T value) {
     DirectProxy<Base>::operator=(value);
@@ -318,20 +313,34 @@ class AliasProxy : public DirectProxy<AliasProxyBaseType<T>> {
   }
 };
 
-template <DirectProxySatisfy T>
-auto DummyFunc(T) -> DirectProxy<T>;
-
-template <AliasProxyTableExist T>
-auto DummyFunc(T) -> AliasProxy<T>;
-
-template <typename T>
-using Proxy = decltype(DummyFunc(std::declval<T>()));
 }  // namespace detail
 
 using Namespace = detail::SharedNamespace;
 
 template <typename T>
-using Proxy = detail::Proxy<T>;
+struct AliasProxyTable {};
+
+template <>
+struct AliasProxyTable<gpio_num_t> {
+  using type = uint8_t;
+};
+template <>
+struct AliasProxyTable<bool> {
+  using type = uint8_t;
+};
+
+template <typename T>
+concept AliasProxySatisfy = requires { typename AliasProxyTable<T>::type; };
+
+template <detail::DirectProxySatisfy T>
+auto proxy_guesser(T) -> detail::DirectProxy<T>;
+
+template <AliasProxySatisfy T>
+auto proxy_guesser(T)
+    -> detail::AliasProxy<T, typename AliasProxyTable<T>::type>;
+
+template <typename T>
+using Proxy = decltype(proxy_guesser(std::declval<T>()));
 
 template <std::derived_from<Namespace> T>
 std::vector<T> LoadNamespaces(std::string const& group_name, size_t count) {

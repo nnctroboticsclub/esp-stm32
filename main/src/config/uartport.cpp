@@ -11,7 +11,7 @@ UartPort::UartPort(std::string const& ns)
       parity(this, "prt") {
   if ((gpio_num_t)this->tx != 0) {
     this->dev = std::make_shared<connection::data_link::UART>(
-        (uart_port_t)this->uart_port, (gpio_num_t)this->tx,
+        (uart_port_t)this->uart_port.Get(), (gpio_num_t)this->tx,
         (gpio_num_t)this->rx, (uint32_t)this->baud_rate,
         (uart_parity_t)this->parity);
   }

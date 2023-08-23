@@ -76,7 +76,7 @@ void Wifi::InitCommon() {
   wifi::init::init_eventloop();
 }
 
-void Wifi::InitAp(const char* ssid, const char* password) {
+void Wifi::InitAp(std::string const& ssid, std::string const& password) {
   static bool initialized = false;
   if (initialized) {
     ESP_LOGW(TAG, "Wi-Fi AP already initialized");
@@ -92,10 +92,11 @@ void Wifi::InitAp(const char* ssid, const char* password) {
   wifi::init::init_wifi_lib(&Wifi::event_handler, (void*)this);
 
   wifi_config_t wifi_config;
-  strncpy((char*)wifi_config.ap.ssid, ssid, sizeof(wifi_config.ap.ssid));
-  strncpy((char*)wifi_config.ap.password, password,
+  strncpy((char*)wifi_config.ap.ssid, ssid.c_str(),
+          sizeof(wifi_config.ap.ssid));
+  strncpy((char*)wifi_config.ap.password, password.c_str(),
           sizeof(wifi_config.ap.password));
-  wifi_config.ap.ssid_len = strlen(ssid);
+  wifi_config.ap.ssid_len = ssid.length();
   wifi_config.ap.channel = 11;
   wifi_config.ap.authmode = WIFI_AUTH_WPA2_WPA3_PSK;
   wifi_config.ap.max_connection = 11;
@@ -124,7 +125,7 @@ void Wifi::InitSta() {
 
 void Wifi::ConnectToAP(WifiConnectionProfile const* prof) {
   wifi_config_t wifi_config{};
-  strncpy((char*)wifi_config.sta.ssid, prof->ssid,
+  strncpy((char*)wifi_config.sta.ssid, prof->ssid.c_str(),
           sizeof(wifi_config.sta.ssid));
 
   wifi_config.sta.threshold.authmode = prof->auth_mode;
@@ -136,15 +137,16 @@ void Wifi::ConnectToAP(WifiConnectionProfile const* prof) {
       break;
 
     case AuthModeKind::kPassOnly:
-      strncpy((char*)wifi_config.sta.password, prof->password,
+      strncpy((char*)wifi_config.sta.password, prof->password.c_str(),
               sizeof(wifi_config.sta.password));
       break;
     case AuthModeKind::kPassAndUser:
-      esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)prof->id, strlen(prof->id));
-      esp_wifi_sta_wpa2_ent_set_username((uint8_t*)prof->user,
-                                         strlen(prof->user));
-      esp_wifi_sta_wpa2_ent_set_password((uint8_t*)prof->password,
-                                         strlen(prof->password));
+      esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)prof->id.c_str(),
+                                         prof->id.length());
+      esp_wifi_sta_wpa2_ent_set_username((uint8_t*)prof->user.c_str(),
+                                         prof->user.length());
+      esp_wifi_sta_wpa2_ent_set_password((uint8_t*)prof->password.c_str(),
+                                         prof->password.length());
       break;
     default:
       ESP_LOGE(TAG, "Unknown auth mode: %d", prof->auth_mode);

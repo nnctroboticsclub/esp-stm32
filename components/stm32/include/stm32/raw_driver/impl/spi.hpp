@@ -21,7 +21,7 @@ class SPI : public RawDriverBase {
 
  public:
   explicit SPI(std::shared_ptr<connection::data_link::SPIDevice> device);
-  SPI(idf::SPIMaster &master, idf::CS chip_select);
+  SPI(std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select);
 
   ~SPI() override;
 

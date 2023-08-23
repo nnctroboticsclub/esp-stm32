@@ -11,6 +11,9 @@ SPIDevice::SPIDevice() = default;
 SPIDevice::SPIDevice(SPIMaster &master, CS cs) : SPIDevice() {
   this->device = master.create_dev(cs, idf::Frequency::MHz(1));
 }
+SPIDevice::SPIDevice(std::shared_ptr<SPIMaster> master, CS cs) : SPIDevice() {
+  this->device = master->create_dev(cs, idf::Frequency::MHz(1));
+}
 
 size_t SPIDevice::Send(const std::vector<uint8_t> &buf) {
   if (this->IsTraceEnabled())

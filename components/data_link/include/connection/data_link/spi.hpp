@@ -26,6 +26,7 @@ class SPIDevice : public RecvAndSend {
 
  public:
   explicit SPIDevice(idf::SPIMaster &master, idf::CS cs);
+  explicit SPIDevice(std::shared_ptr<idf::SPIMaster> master, idf::CS cs);
 
   size_t Send(const std::vector<uint8_t> &buf) override;
 

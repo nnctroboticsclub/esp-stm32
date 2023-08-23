@@ -122,8 +122,8 @@ void BLDriver::Go(uint32_t address) const {
   return;
 }
 
-std::shared_ptr<BLDriver> BLDriver::SPIDriver(idf::SPIMaster &master,
-                                              idf::CS chip_select) {
+std::shared_ptr<BLDriver> BLDriver::SPIDriver(
+    std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select) {
   return std::make_shared<BLDriver>(
       std::make_shared<raw_driver::SPIRawDriver>(master, chip_select));
 }

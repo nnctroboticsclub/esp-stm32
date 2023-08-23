@@ -15,6 +15,7 @@
 #include "../server.hpp"
 #include <debugger_master.hpp>
 #include <stm32.hpp>
+#include "types/bus_type.hpp"
 
 #include "spibus.hpp"
 #include "uartport.hpp"
@@ -53,22 +54,24 @@ class Master : public nvs::Namespace {
         primary_s32rc(this, "asr") {}
 };
 
-
-
 class STM32BL : public nvs::Namespace {
  public:
-  nvs::Proxy<uint8_t> bus_type;
+  nvs::Proxy<types::BusType> bus_type;
   nvs::Proxy<uint8_t> bus_port;
+  nvs::Proxy<uint8_t> cs;
 
   explicit STM32BL(std::string const& ns)
       : nvs::Namespace(ns),
         bus_type(this, "bus_type"),
-        bus_port(this, "bus_port") {}
+        bus_port(this, "bus_port"),
+        cs(this, "cs") {}
+
+  std::shared_ptr<stm32::driver::BLDriver> GetDriver() const;
 };
 
 class STM32RC : public nvs::Namespace {
  public:
-  nvs::Proxy<uint8_t> bus_type;
+  nvs::Proxy<types::BusType> bus_type;
   nvs::Proxy<uint8_t> bus_port;
 
   explicit STM32RC(std::string const& ns)
@@ -83,8 +86,8 @@ class STM32 : public nvs::Namespace {
   nvs::Proxy<gpio_num_t> boot0;
   nvs::Proxy<uint8_t> bl_id;
   nvs::Proxy<uint8_t> rc_id;
- public:
 
+ public:
   explicit STM32(std::string const& ns)
       : nvs::Namespace(ns),
         reset(this, "reset"),
@@ -107,7 +110,7 @@ class Config {
   using NetworkProfile = profile::NetworkProfile;
   using ServerProfile = profile::ServerProfile;
 
-  static std::shared_ptr<Config> instance;
+  static Config instance;
   Config() {
     using nvs::LoadNamespaces;
     this->spi_buses = LoadNamespaces<SPIBus>("a_cs", (uint8_t)master.spi_buses);
@@ -138,14 +141,24 @@ class Config {
   std::vector<ServerProfile> server_profiles;
 
  public:
-  static std::shared_ptr<Config> GetInstance() {
-    if (instance == nullptr) {
-      instance = std::make_shared<Config>();
-    }
-    return instance;
+  static Config& GetInstance() { return instance; }
+
+  static std::shared_ptr<idf::SPIMaster> GetSPIBus(uint8_t id) {
+    return instance.spi_buses[id].GetDevice();
   }
 
-  static STM32
+  static std::shared_ptr<connection::data_link::UART> GetUARTPort(uint8_t id) {
+    return instance.uart_buses[id].GetDevice();
+  }
+
+  static std::shared_ptr<NetworkProfile> GetActiveNetworkProfile() {
+    return std::make_shared<NetworkProfile>(
+        instance.network_profiles[(uint8_t)instance.master.active_net]);
+  }
+
+  // static stm32::STM32& GetSTM32(uint8_t id) {
+  //   return *GetInstance()->stm32[id].GetDevice();
+  // }
 };
 
 extern Server server;

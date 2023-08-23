@@ -4,7 +4,7 @@
 
 namespace stm32::session {
 
-void BootLoaderSession::Reset() {
+void BootLoaderSession::Reset() const {
   int attempts = 0;
   this->session_->SetModeBootLoader();
   while (true) {
@@ -30,7 +30,7 @@ void BootLoaderSession::Reset() {
 }
 BootLoaderSession::BootLoaderSession(
     std::shared_ptr<driver::BLDriver> bl_driver,
-    std::shared_ptr<Session> session)
+    std::shared_ptr<STM32> session)
     : bl_driver_(bl_driver), session_(session) {
   this->Reset();  // This function must be called at least once
 }

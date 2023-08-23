@@ -44,13 +44,12 @@ class BLDriver {
                         const std::vector<uint8_t> &buffer) const;
   void Go(uint32_t address) const;
 
-  static std::shared_ptr<BLDriver> SPIDriver(idf::SPIMaster &master,
-                                             idf::CS chip_select);
+  static std::shared_ptr<BLDriver> SPIDriver(
+      std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select);
 
   static inline std::shared_ptr<BLDriver> UARTDriver(
-      connection::data_link::UART &uart) {
-    auto raw_driver = std::make_shared<raw_driver::UartRawDriver>(
-        std::make_shared<connection::data_link::UART>(uart));
+      std::shared_ptr<connection::data_link::UART> uart) {
+    auto raw_driver = std::make_shared<raw_driver::UartRawDriver>(uart);
     return std::make_shared<BLDriver>(raw_driver);
   }
 };

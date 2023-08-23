@@ -9,12 +9,7 @@
 
 namespace nvs {
 template <>
-class AliasProxyTable<uart_port_t> {
-  using type = uint8_t;
-};
-
-template <>
-class AliasProxyTable<uart_parity_t> {
+struct AliasProxyTable<uart_parity_t> {
   using type = uint8_t;
 };
 }  // namespace nvs
@@ -23,7 +18,7 @@ namespace profile {
 class UartPort : public nvs::Namespace {
   std::shared_ptr<connection::data_link::UART> dev;
 
-  nvs::Proxy<uart_port_t> uart_port;
+  nvs::Proxy<uint8_t> uart_port;
   nvs::Proxy<gpio_num_t> tx;
   nvs::Proxy<gpio_num_t> rx;
   nvs::Proxy<uint32_t> baud_rate;

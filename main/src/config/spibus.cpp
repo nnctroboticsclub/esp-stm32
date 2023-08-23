@@ -9,8 +9,11 @@ SPIBus::SPIBus(std::string const& ns)
       mosi(this, "mosi"),
       sclk(this, "sclk") {
   if ((gpio_num_t)this->sclk != 0) {
-    this->dev = std::make_shared<idf::SPIMaster>(this->spi_port, this->miso,
-                                                 this->mosi, this->sclk);
+    this->dev = std::make_shared<idf::SPIMaster>(
+        static_cast<idf::SPINum>(this->spi_port.Get()),
+        static_cast<idf::MOSI>(this->mosi.Get()),
+        static_cast<idf::MISO>(this->miso.Get()),
+        static_cast<idf::SCLK>(this->sclk.Get()));
   }
 }
 

@@ -7,8 +7,6 @@
 
 #include <thread>
 
-#include <stm32bl/stm32bl_spi.hpp>
-#include <stm32bl/stm32bl_uart.hpp>
 #include <stm32.hpp>
 #include <stm32/raw_driver/impl/uart.hpp>
 #include <spi_host_cxx.hpp>

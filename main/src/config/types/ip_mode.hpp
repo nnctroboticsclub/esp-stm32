@@ -11,7 +11,5 @@ enum class IPMode : uint8_t {
 
 namespace nvs {
 template <>
-class AliasProxyTable<types::IPMode> {
-  using type = uint8_t;
-};
+struct AliasProxyTable<types::IPMode>{ using type = uint8_t; };
 }  // namespace nvs

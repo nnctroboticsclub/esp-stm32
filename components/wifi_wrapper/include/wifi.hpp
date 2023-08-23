@@ -36,7 +36,7 @@ class Wifi {
 
   void SetIP(const esp_netif_ip_info_t& ip_info);
 
-  void InitAp(const char* ssid, const char* password);
+  void InitAp(std::string const& ssid, std::string const& password);
   void InitSta();
 
   void ConnectToAP(WifiConnectionProfile const* profile);
