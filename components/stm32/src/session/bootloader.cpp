@@ -29,8 +29,7 @@ void BootLoaderSession::Reset() const {
   return;
 }
 BootLoaderSession::BootLoaderSession(
-    std::shared_ptr<driver::BLDriver> bl_driver,
-    std::shared_ptr<STM32> session)
+    std::shared_ptr<driver::BLDriver> bl_driver, std::shared_ptr<STM32> session)
     : bl_driver_(bl_driver), session_(session) {
   this->Reset();  // This function must be called at least once
 }
@@ -109,6 +108,23 @@ void BootLoaderSession::Erase(driver::ErasePages pages) {
         }
       }
 
+      this->failed_attempts_ = 0;
+      break;
+    } catch (const raw_driver::ACKFailed &) {
+      this->failed_attempts_++;
+      if (this->failed_attempts_ > 10) {
+        throw raw_driver::ConnectionDisrupted();
+      }
+      this->Reset();
+
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+  }
+}
+void BootLoaderSession::Go(uint32_t address) {
+  while (true) {
+    try {
+      this->bl_driver_->Go(address);
       this->failed_attempts_ = 0;
       break;
     } catch (const raw_driver::ACKFailed &) {

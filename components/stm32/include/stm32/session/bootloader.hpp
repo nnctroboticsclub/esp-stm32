@@ -25,6 +25,7 @@ class BootLoaderSession {
 
   void WriteMemory(uint32_t address, std::vector<uint8_t> &buf);
   void Erase(driver::ErasePages pages);
+  void Go(uint32_t address);
   driver::Version GetVersion();
 };
 }  // namespace stm32::session
