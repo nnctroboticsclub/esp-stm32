@@ -52,7 +52,11 @@ void UART::Send(OutboundData const& data) {
       break;
   }
 
-  this->ACK();
+  if (data.no_ack) {
+    ESP_LOGI(TAG, "No ACK");
+  } else {
+    this->ACK();
+  }
 }
 
 std::vector<uint8_t> UART::Recv(size_t length, bool resume) {

@@ -16,10 +16,16 @@ struct OutboundData {
 
   SizeMode size = SizeMode::kNone;
   ChecksumMode checksum = ChecksumMode::kUnused;
+  bool no_ack = false;
 
   uint8_t checksum_base = 0x00;
 
   uint8_t CalculateChecksum() const;
+
+  inline OutboundData &NoAck() {
+    this->no_ack = true;
+    return *this;
+  }
 
   static OutboundData U32WithChecksum(uint32_t x) {
     OutboundData data;
