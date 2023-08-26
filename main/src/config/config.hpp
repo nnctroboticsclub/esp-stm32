@@ -70,9 +70,9 @@ class STM32BL : public nvs::Namespace {
         bus_port(this, "bus_port"),
         cs(this, "cs") {}
 
-  std::shared_ptr<stm32::driver::BLDriver> GetDriver() const;
+  std::shared_ptr<stm32::driver::BLDriver> GetDriver();
 
-  inline uint8_t GetID() const { return id; }
+  inline uint8_t GetID() { return id; }
 
   inline STM32BL& SetID(uint8_t id_) {
     this->id = id_;
@@ -126,7 +126,7 @@ class STM32 : public nvs::Namespace {
 
   std::shared_ptr<stm32::STM32> Get();
 
-  inline uint8_t GetID() const { return id; }
+  inline uint8_t GetID() { return id; }
 
   inline STM32& SetID(uint8_t id_) {
     this->id = id_;
@@ -168,7 +168,7 @@ class Config {
   using NetworkProfile = profile::NetworkProfile;
   using ServerProfile = profile::ServerProfile;
 
-  static Config instance;
+  static Config* instance;
 
  public:
   Master master{"mas"};
@@ -182,24 +182,29 @@ class Config {
 
  private:
   Config()
-      : spi_buses((uint8_t)master.spi_buses),
-        uart_buses((uint8_t)master.uart_buses),
-        stm32((uint8_t)master.s32_count),
-        stm32_bootloader((uint8_t)master.s32bl_count),
-        stm32_remote_controller((uint8_t)master.s32rc_count),
-        network_profiles((uint8_t)master.nw_count),
-        server_profiles((uint8_t)master.srv_count) {}
+      : spi_buses(master.spi_buses),
+        uart_buses(master.uart_buses),
+        stm32(master.s32_count),
+        stm32_bootloader(master.s32bl_count),
+        stm32_remote_controller(master.s32rc_count),
+        network_profiles(master.nw_count),
+        server_profiles(master.srv_count) {}
   ~Config() = default;
 
   friend std::shared_ptr<Config>;
 
  public:
-  static Config& GetInstance() { return instance; }
+  static Config& GetInstance() {
+    if (!instance) {
+      instance = new Config();
+    }
+    return *instance;
+  }
 
   //* Getter
 
   static std::shared_ptr<idf::SPIMaster> GetSPIBus(uint8_t port) {
-    for (auto& bus : instance.spi_buses) {
+    for (auto& bus : instance->spi_buses) {
       if (bus.GetPort() == port) {
         return bus.GetDevice();
       }
@@ -208,7 +213,7 @@ class Config {
   }
 
   static std::shared_ptr<connection::data_link::UART> GetUARTPort(uint8_t id) {
-    for (auto& bus : instance.uart_buses) {
+    for (auto& bus : instance->uart_buses) {
       if (bus.GetPort() == id) {
         return bus.GetDevice();
       }
@@ -217,7 +222,7 @@ class Config {
   }
 
   static std::shared_ptr<stm32::driver::BLDriver> GetSTM32BL(uint8_t id) {
-    for (auto& s32 : instance.stm32_bootloader) {
+    for (auto& s32 : instance->stm32_bootloader) {
       if (s32.GetID() == id) {
         return s32.GetDriver();
       }
@@ -227,11 +232,11 @@ class Config {
 
   static std::shared_ptr<NetworkProfile> GetActiveNetworkProfile() {
     return std::make_shared<NetworkProfile>(
-        instance.network_profiles[(uint8_t)instance.master.active_net]);
+        instance->network_profiles[(uint8_t)instance->master.active_net]);
   }
 
   static std::shared_ptr<stm32::STM32> GetSTM32(uint8_t id) {
-    for (auto& s32 : instance.stm32) {
+    for (auto& s32 : instance->stm32) {
       if (s32.GetID() == id) {
         return s32.Get();
       }
@@ -240,33 +245,35 @@ class Config {
   }
 
   static std::shared_ptr<stm32::STM32> GetPrimarySTM32() {
-    return GetSTM32(instance.master.primary_s32bl);
+    return GetSTM32(instance->master.primary_s32bl);
   }
 
   //* Set
 
-  static void SetActiveSTM32(uint8_t id) { instance.master.primary_s32bl = id; }
+  static void SetActiveSTM32(uint8_t id) {
+    instance->master.primary_s32bl = id;
+  }
 
   //* New
 
-  static SPIBus& NewSPIBus() { return instance.spi_buses.New(); }
+  static SPIBus& NewSPIBus() { return instance->spi_buses.New(); }
 
-  static UARTPort& NewUARTPort() { return instance.uart_buses.New(); }
+  static UARTPort& NewUARTPort() { return instance->uart_buses.New(); }
 
-  static STM32& NewSTM32() { return instance.stm32.New(); }
+  static STM32& NewSTM32() { return instance->stm32.New(); }
 
-  static STM32BL& NewSTM32BL() { return instance.stm32_bootloader.New(); }
+  static STM32BL& NewSTM32BL() { return instance->stm32_bootloader.New(); }
 
   static STM32RC& NewSTM32RC() {
-    return instance.stm32_remote_controller.New();
+    return instance->stm32_remote_controller.New();
   }
 
   static NetworkProfile& NewNetworkProfile() {
-    return instance.network_profiles.New();
+    return instance->network_profiles.New();
   }
 
   static ServerProfile& NewServerProfile() {
-    return instance.server_profiles.New();
+    return instance->server_profiles.New();
   }
 };
 

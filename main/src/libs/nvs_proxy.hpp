@@ -63,6 +63,8 @@ inline uint8_t Get<uint8_t>(nvs_handle_t handle, std::string const& key) {
              key.c_str());
     return 0;
   }
+
+  ESP_LOGI(TAG, "NVS get: %s = %hd", key.c_str(), value);
   return value;
 }
 
@@ -74,6 +76,8 @@ inline uint16_t Get<uint16_t>(nvs_handle_t handle, std::string const& key) {
              key.c_str());
     return 0;
   }
+
+  ESP_LOGI(TAG, "NVS get: %s = %d", key.c_str(), value);
   return value;
 }
 
@@ -85,6 +89,8 @@ inline uint32_t Get<uint32_t>(nvs_handle_t handle, std::string const& key) {
              key.c_str());
     return 0;
   }
+
+  ESP_LOGI(TAG, "NVS get: %s = %ld", key.c_str(), value);
   return value;
 }
 
@@ -107,6 +113,8 @@ inline std::string Get<std::string>(nvs_handle_t handle,
     return "";
   }
 
+  ESP_LOGI(TAG, "NVS get: %s = %s", key.c_str(), value);
+
   std::string result(value);
   delete[] value;
 
@@ -122,10 +130,11 @@ void Set(nvs_handle_t, std::string const&, T const&) {
 template <>
 inline void Set<uint8_t>(nvs_handle_t handle, std::string const& key,
                          uint8_t const& value) {
+  ESP_LOGI(TAG, "NVS set: %s = %hd", key.c_str(), value);
   auto ret = nvs_set_u8(handle, key.c_str(), value);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-             key.c_str());
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
     throw NVSError();
   }
 }
@@ -133,10 +142,11 @@ inline void Set<uint8_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<uint16_t>(nvs_handle_t handle, std::string const& key,
                           uint16_t const& value) {
+  ESP_LOGI(TAG, "NVS set: %s = %d", key.c_str(), value);
   auto ret = nvs_set_u16(handle, key.c_str(), value);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-             key.c_str());
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
     throw NVSError();
   }
 }
@@ -144,10 +154,11 @@ inline void Set<uint16_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
                           uint32_t const& value) {
+  ESP_LOGI(TAG, "NVS set: %s = %ld", key.c_str(), value);
   auto ret = nvs_set_u32(handle, key.c_str(), value);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-             key.c_str());
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
     throw NVSError();
   }
 }
@@ -155,13 +166,14 @@ inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
                              std::string const& value) {
+  ESP_LOGI(TAG, "NVS set: %s = %s", key.c_str(), value.c_str());
   auto zero_terminated = new char[value.length() + 1];
   snprintf(zero_terminated, value.length() + 1, "%s", value.c_str());
 
   if (auto ret = nvs_set_str(handle, key.c_str(), zero_terminated);
       ret != ESP_OK) {
-    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s", esp_err_to_name(ret), ret,
-             key.c_str());
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
     throw NVSError();
   }
 
@@ -193,6 +205,8 @@ class NamespaceHandle {
  public:
   explicit NamespaceHandle(std::string const& ns) {
     this->handle = api::Open(ns, NVS_READWRITE);
+    ESP_LOGI("nvs::detail", "NVS Opened: %s, handle: %ld", ns.c_str(),
+             this->handle);
   }
 
   NamespaceHandle(NamespaceHandle const&) = delete;
@@ -218,11 +232,6 @@ class Namespace {
   const std::string ns;
   bool dirty = false;
 
-  void Commit() const {
-    api::Commit(static_cast<nvs_handle_t>(this->handle_));
-    ESP_LOGI(TAG, "NVS Commited: %s", this->ns.c_str());
-  }
-
  public:
   Namespace() = delete;
 
@@ -234,6 +243,11 @@ class Namespace {
   ~Namespace() {
     if (this->dirty) this->Commit();
     api::Close(static_cast<nvs_handle_t>(this->handle_));
+  }
+
+  void Commit() const {
+    api::Commit(static_cast<nvs_handle_t>(this->handle_));
+    ESP_LOGI(TAG, "NVS Commited: %s", this->ns.c_str());
   }
 
   template <typename T>
@@ -261,6 +275,8 @@ class SharedNamespace {
 
   explicit SharedNamespace(SharedNamespace const* other) : ns(other->ns) {}
 
+  void Commit() { this->ns->Commit(); }
+
   Namespace* operator->() const { return this->ns.get(); }
 };
 
@@ -274,7 +290,8 @@ class DirectProxy {
   static constexpr const char* TAG = "nvs::Proxy";
   SharedNamespace ns_;
   std::string key_;
-  T buffer;
+  bool buffer_enable = false;
+  T buffer{};
 
  public:
   DirectProxy(SharedNamespace ns_handle, std::string const& key)
@@ -287,10 +304,22 @@ class DirectProxy {
 
   void Commit() { this->ns_->Commit(); }
 
-  T Get() const { return this->ns_->Get<T>(key_); }
-  void Set(T const& value) { this->ns_->Set<T>(key_, value); }
+  T Get() {
+    if (this->buffer_enable) return this->buffer;
 
-  operator T() const { return this->Get(); }
+    this->buffer = this->ns_->Get<T>(key_);
+    this->buffer_enable = true;
+
+    return this->buffer;
+  }
+  void Set(T const& value) {
+    this->buffer = value;
+    this->buffer_enable = true;
+
+    this->ns_->Set<T>(key_, value);
+  }
+
+  operator T() { return this->Get(); }
 
   DirectProxy& operator=(T const& value) {
     this->Set(value);
@@ -303,10 +332,10 @@ class AliasProxy : public DirectProxy<Base> {
  public:
   using DirectProxy<Base>::DirectProxy;
 
-  T Get() const { return (T)DirectProxy<Base>::Get(); }
+  T Get() { return (T)DirectProxy<Base>::Get(); }
   void Set(T value) { DirectProxy<Base>::Set((Base)value); }
 
-  explicit operator T() const { return (T)DirectProxy<Base>::operator Base(); }
+  explicit operator T() { return (T)DirectProxy<Base>::operator Base(); }
 
   AliasProxy& operator=(T value) {
     DirectProxy<Base>::operator=(static_cast<Base>(value));
@@ -365,10 +394,11 @@ template <std::derived_from<Namespace> T, CeString prefix>
 class Namespaces {
   using iterator = typename std::vector<T>::iterator;
   std::vector<T> namespaces;
+  nvs::Proxy<uint8_t> size;
 
  public:
-  Namespaces(size_t namespaces) {
-    for (size_t i = 1; i <= namespaces; i++) {
+  Namespaces(nvs::Proxy<uint8_t> size) : size(size) {
+    for (size_t i = 1; i <= size.Get(); i++) {
       this->New();
     }
   }
@@ -382,6 +412,7 @@ class Namespaces {
   T& New() {
     this->namespaces.push_back(
         T(std::string(prefix) + std::to_string(this->namespaces.size() + 1)));
+    this->size = this->namespaces.size();
     return this->namespaces.back();
   }
 };

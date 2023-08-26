@@ -10,7 +10,7 @@ namespace profile {
 using namespace types;
 using stm32::driver::BLDriver;
 
-std::shared_ptr<BLDriver> STM32BL::GetDriver() const {
+std::shared_ptr<BLDriver> STM32BL::GetDriver() {
   using enum types::BusType;
   switch ((types::BusType)this->bus_type) {
     case SPI:
@@ -38,7 +38,7 @@ std::shared_ptr<stm32::STM32> STM32::Get() {
 
 namespace config {
 
-Config Config::instance;
+Config *Config::instance;
 
 // Server server;
 wifi::Wifi network;

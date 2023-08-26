@@ -29,7 +29,7 @@ class UartPort : public nvs::Namespace {
 
   std::shared_ptr<connection::data_link::UART> GetDevice() const;
 
-  inline uint8_t GetPort() const { return port; }
+  inline uint8_t GetPort()  { return port; }
 
   inline UartPort& SetPort(uint8_t port_) {
     this->port = port_;

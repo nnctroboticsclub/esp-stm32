@@ -20,7 +20,7 @@ class SPIBus : public nvs::Namespace {
 
   std::shared_ptr<idf::SPIMaster> GetDevice();
 
-  inline uint8_t GetPort() const { return spi_port; }
+  inline uint8_t GetPort()  { return spi_port; }
 
   inline SPIBus& SetSpiPort(uint8_t port) {
     spi_port = port;
