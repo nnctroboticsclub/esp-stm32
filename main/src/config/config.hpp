@@ -107,8 +107,9 @@ class STM32RC : public nvs::Namespace {
 };
 
 class STM32 : public nvs::Namespace {
+  std::shared_ptr<stm32::STM32> stm32 = nullptr;
+
   nvs::Proxy<uint8_t> id;
-  std::shared_ptr<stm32::STM32> stm32;
   nvs::Proxy<gpio_num_t> reset;
   nvs::Proxy<gpio_num_t> boot0;
   nvs::Proxy<uint8_t> bl_id;
