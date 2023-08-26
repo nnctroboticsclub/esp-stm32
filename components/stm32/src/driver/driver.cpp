@@ -47,7 +47,7 @@ void BLDriver::InitConnection() {
   this->raw_driver_->Sync();
   this->is_connected_ = true;
   this->Get();
-  this->GetVersion();
+  this->DoGetVersion();
 
   return;
 }
@@ -117,7 +117,7 @@ void BLDriver::Go(uint32_t address) const {
   ESP_LOGI(TAG, "Go to %08lx", address);
   this->raw_driver_->CommandHeader(this->commands.go);
 
-  this->raw_driver_->Send(OutboundData::U32WithChecksum(address));
+  this->raw_driver_->Send(OutboundData::U32WithChecksum(address).NoAck());
 
   return;
 }
