@@ -75,7 +75,13 @@ class DebuggerHTTPServer {
 
  public:
   explicit DebuggerHTTPServer(std::shared_ptr<stm32::STM32> stm32)
-      : stm32(stm32) {}
+      : stm32(stm32) {
+    if (!stm32) {
+      throw std::runtime_error("STM32 is nullptr");
+    }
+  }
+
+  DebuggerHTTPServer() = delete;
 
   void Listen(int port = 80) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
