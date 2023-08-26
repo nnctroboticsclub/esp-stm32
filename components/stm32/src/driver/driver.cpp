@@ -52,7 +52,7 @@ void BLDriver::InitConnection() {
   this->is_connected_ = true;
 
   this->Get();
-  this->GetVersion();
+  this->DoGetVersion();
 
   return;
 }
