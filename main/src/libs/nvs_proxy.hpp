@@ -242,7 +242,7 @@ class Namespace {
   }
 
   template <typename T>
-  void Set(std::string const& key, T value) const {
+  void Set(std::string const& key, T value) {
     this->dirty = true;
     api::Set<T>(static_cast<nvs_handle_t>(this->handle_), key, value);
   }
@@ -274,6 +274,7 @@ class DirectProxy {
   static constexpr const char* TAG = "nvs::Proxy";
   SharedNamespace ns_;
   std::string key_;
+  T buffer;
 
  public:
   DirectProxy(SharedNamespace ns_handle, std::string const& key)
@@ -289,7 +290,7 @@ class DirectProxy {
   T Get() const { return this->ns_->Get<T>(key_); }
   void Set(T const& value) { this->ns_->Set<T>(key_, value); }
 
-  explicit operator T() const { return this->Get(); }
+  operator T() const { return this->Get(); }
 
   DirectProxy& operator=(T const& value) {
     this->Set(value);
@@ -308,7 +309,7 @@ class AliasProxy : public DirectProxy<Base> {
   explicit operator T() const { return (T)DirectProxy<Base>::operator Base(); }
 
   AliasProxy& operator=(T value) {
-    DirectProxy<Base>::operator=(value);
+    DirectProxy<Base>::operator=(static_cast<Base>(value));
     return *this;
   }
 };
@@ -342,14 +343,48 @@ auto proxy_guesser(T)
 template <typename T>
 using Proxy = decltype(proxy_guesser(std::declval<T>()));
 
-template <std::derived_from<Namespace> T>
-std::vector<T> LoadNamespaces(std::string const& group_name, size_t count) {
-  std::vector<T> result;
-  for (size_t i = 0; i < count; i++) {
-    result.push_back(T(group_name + std::to_string(i)));
+// Ref: https://qiita.com/TwilightUncle/items/aadc9f60f857e1ab7031
+template <int Size>
+struct CeString {
+  static constexpr int length = Size - 1;
+
+  // 文字列リテラルより推論を行うためのコンストラクタ
+  constexpr CeString(const char (&s_literal)[Size]) {
+    for (int i = 0; i < Size; i++) buf[i] = s_literal[i];
+    buf[length] = '\0';
   }
-  return result;
-}
+
+  constexpr operator std::string_view() const { return buf; }
+  constexpr operator std::string() const { return buf; }
+
+  // 文字列格納領域
+  char buf[Size];
+};
+
+template <std::derived_from<Namespace> T, CeString prefix>
+class Namespaces {
+  using iterator = typename std::vector<T>::iterator;
+  std::vector<T> namespaces;
+
+ public:
+  Namespaces(size_t namespaces) {
+    for (size_t i = 1; i <= namespaces; i++) {
+      this->New();
+    }
+  }
+
+  T& operator[](size_t index) { return this->namespaces[index]; }
+  size_t Size() const { return this->namespaces.size(); }
+
+  iterator begin() { return this->namespaces.begin(); }
+  iterator end() { return this->namespaces.end(); }
+
+  T& New() {
+    this->namespaces.push_back(
+        T(std::string(prefix) + std::to_string(this->namespaces.size() + 1)));
+    return this->namespaces.back();
+  }
+};
 
 void DumpNVS();
 

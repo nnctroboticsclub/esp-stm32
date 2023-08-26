@@ -9,6 +9,7 @@ using gCfg = config::Config;
 namespace profile {
 using namespace types;
 using stm32::driver::BLDriver;
+
 std::shared_ptr<BLDriver> STM32BL::GetDriver() const {
   using enum types::BusType;
   switch ((types::BusType)this->bus_type) {
@@ -21,10 +22,24 @@ std::shared_ptr<BLDriver> STM32BL::GetDriver() const {
       throw std::runtime_error("Invalid bus type");
   }
 }
+
+std::shared_ptr<stm32::STM32> STM32::Get() {
+  if (!stm32) {
+    auto bl = gCfg::GetSTM32BL(this->bl_id.Get());
+    ESP_LOGI("STM32 Profile", "Creating STM32 with BL ID %d[%p]",
+             this->bl_id.Get(), bl.get());
+    stm32 = std::make_shared<stm32::STM32>((idf::GPIONum)this->reset.Get(),
+                                           (idf::GPIONum)this->boot0.Get(), bl);
+  }
+  return stm32;
+}
+
 }  // namespace profile
 
 namespace config {
 
-Server server;
+Config Config::instance;
+
+// Server server;
 wifi::Wifi network;
 }  // namespace config

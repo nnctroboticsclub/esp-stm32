@@ -119,7 +119,7 @@ class ConnectCommand {
       std::string password;
       printf("Password: ");
       std::cin >> password;
-      profile.password = password.c_str();
+      profile.password = password;
 
       auto p = new char[password.length() + 1];
       memcpy(p, password.c_str(), password.length() + 1);
@@ -140,15 +140,15 @@ class ConnectCommand {
 
       auto p = new char[identify.length() + 1];
       memcpy(p, identify.c_str(), identify.length() + 1);
-      profile.id = p;
+      profile.id = std::string(p);
 
       p = new char[username.length() + 1];
       memcpy(p, username.c_str(), username.length() + 1);
-      profile.user = p;
+      profile.user = std::string(p);
 
       p = new char[password.length() + 1];
       memcpy(p, password.c_str(), password.length() + 1);
-      profile.password = p;
+      profile.password = std::string(p);
     }
 
     config::network.Stop();

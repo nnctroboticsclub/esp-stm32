@@ -23,6 +23,8 @@
 const char* const TAG = "Main";
 
 void BootStrap() {
+  using Config = config::Config;
+
   idf::GPIOInput flag(idf::GPIONum(22));
   flag.set_pull_mode(idf::GPIOPullMode::PULLDOWN());
   if (flag.get_level() == idf::GPIOLevel::HIGH) {
@@ -30,67 +32,66 @@ void BootStrap() {
     nvs_flash_erase();
   }
 
-  idf::SPIMaster master(idf::SPINum(2), idf::MOSI(23), idf::MISO(19),
-                        idf::SCLK(18));
+  auto& config = Config::GetInstance();
 
-  nvs::SharedNamespace flags("a_flags");
-  nvs::Proxy<bool> initialised{flags, "initialized"};
-  if (!initialised) {
+  if (!config.master.initialised) {
     ESP_LOGI(TAG, "First boot, initialising the nvs");
-    initialised = true;
+    config.master.initialised = true;
 
-    auto stm32bl =
-        profile::SpiSTM32BootLoaderProfile(nvs::SharedNamespace("a_s32bl"));
+    Config::NewSPIBus()
+        .SetSpiPort(2)
+        .SetMiso(GPIO_NUM_19)
+        .SetMosi(GPIO_NUM_23)
+        .SetSclk(GPIO_NUM_18);
 
-    stm32bl.reset = GPIO_NUM_21;
-    stm32bl.boot0 = GPIO_NUM_22;
-    stm32bl.cs = GPIO_NUM_5;
-    stm32bl.spi_port = 2;
+    Config::NewSTM32BL()
+        .SetID(0)
+        .SetBusType(types::BusType::SPI)
+        .SetBusPort(2)
+        .SetCS(0);
 
-    stm32bl.Save();
+    Config::NewSTM32()
+        .SetID(0)
+        .SetReset(GPIO_NUM_21)
+        .SetBoot0(GPIO_NUM_22)
+        .SetBL_ID(0)
+        .SetRC_ID(0);
 
-    flags->Commit();
+    Config::SetActiveSTM32(0);
   }
 }
+
 void Init() {
-  init::init_data_server();
+  // init::init_data_server();
   return;
 
-  auto config = config::Config::GetInstance();
-  xTaskCreate((TaskFunction_t)([](void* args) {
-                while (true) {
-                  vTaskDelay(50 / portTICK_PERIOD_MS);
-                  ((DebuggerMaster*)args)->Idle();
-                }
-                return;
-              }),
-              "Debugger Idling Thread", 0x1000,
-              config->stm32_remote_controller_profile.GetDebuggerMaster(), 1,
-              nullptr);
+  // auto config = config::Config::GetInstance();
+  // xTaskCreate((TaskFunction_t)([](void* args) {
+  //               while (true) {
+  //                 vTaskDelay(50 / portTICK_PERIOD_MS);
+  //                 ((DebuggerMaster*)args)->Idle();
+  //               }
+  //               return;
+  //             }),
+  //             "Debugger Idling Thread", 0x1000,
+  //             config->stm32_remote_controller_profile.GetDebuggerMaster(), 1,
+  //             nullptr);
 }
 
 void Main() {
-  idf::SPIMaster master{(idf::SPINum)2, (idf::MOSI)23, (idf::MISO)19,
-                        (idf::SCLK)18};
-
-  auto blp = (STM32BootLoader*)(new Stm32BootLoaderSPI{
-      (idf::GPIONum)21, (idf::GPIONum)22, master, (idf::CS)5});
-
-  std::unique_ptr<STM32BootLoader> bl(blp);
-
   ESP_LOGI(TAG, "Starting Debugger HTTP Server");
-  DebuggerHTTPServer server(std::move(bl));
+  DebuggerHTTPServer server(config::Config::GetPrimarySTM32());
   server.Listen();
 
-  ESP_LOGI(TAG, "Entering the Server's ClientLoop");
-  config::server.StartClientLoopAtForeground();
+  // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
+  // config::server.StartClientLoopAtForeground();
 }
 
 extern "C" int app_main() {
   wifi::WifiConnectionProfile profile{
       .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
-      .ssid = "SYOCH-DESU 0136",
-      .password = "j281D4<2",
+      .ssid = "3-303-Abe 2.4Ghz",
+      .password = "syochnetwork",
       .user = "",
       .id = "",
   };
@@ -101,14 +102,6 @@ extern "C" int app_main() {
   config::network.WaitForIP();
 
   Init();
-
-  // Stm32BootLoaderUart bl_(  //
-  //     (idf::GPIONum)21,     // reset
-  //     (idf::GPIONum)22,     // boot0
-  //     UART_NUM_1,
-  //     17,  // tx
-  //     16   // rx
-  // );
 
   std::jthread t([]() {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -128,7 +121,7 @@ extern "C" int app_main() {
     ESP_ERROR_CHECK(esp_console_start_repl(repl));
   });
 
-  t.join();
+  // t.join();
 
   Main();
   printf("Entering the idle loop\n");

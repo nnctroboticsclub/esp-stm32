@@ -1,32 +1,49 @@
 #pragma once
 
 #include <esp_http_server.h>
-#include <stm32bl.hpp>
 #include <memory>
+#include <vector>
 
-using namespace connection::application::stm32bl;
+#include "config/config.hpp"
 
 class DebuggerHTTPServer {
   static constexpr const char *TAG = "Debug HTTPd";
   httpd_handle_t httpd = nullptr;
-  std::unique_ptr<STM32BootLoader> bl;
+  std::shared_ptr<stm32::STM32> stm32;
+  std::optional<stm32::session::BootLoaderSession> stm32_bl;
 
   static esp_err_t BL_Boot(httpd_req_t *req) {
-    auto &obj = *(DebuggerHTTPServer *)req->user_ctx;
-    auto &bl = obj.bl;
+    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
+    if (!obj.stm32_bl.has_value()) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                          "Bootloader is already launched");
+      return ESP_FAIL;
+    }
 
-    bl->Connect();
+    auto bl = obj.stm32->EnterBootloader();
+    if (!bl.has_value()) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                          "Failed to enter Bootloader");
+      return ESP_FAIL;
+    }
+
+    obj.stm32_bl = bl;
 
     return ESP_OK;
   }
   static esp_err_t BL_Upload(httpd_req_t *req) {
-    auto &obj = *(DebuggerHTTPServer *)req->user_ctx;
-    auto &bl = obj.bl;
+    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
+    if (!obj.stm32_bl.has_value()) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                          "No Bootloader is launched");
+      return ESP_FAIL;
+    }
+    auto bl = *obj.stm32_bl;
 
     auto size = req->content_len;
 
     // Erasing...
-    bl->Erase(0x0800'0000, size);
+    bl.Erase(stm32::driver::ErasePages(0x0800'0000, size));
 
     // Receive & Write Loop
     size_t read = 0;
@@ -35,23 +52,30 @@ class DebuggerHTTPServer {
       auto data_size_to_read = std::min(int(size - read), 2048);
       buf.resize(data_size_to_read);
 
-      ESP_ERROR_CHECK(
-          httpd_req_recv(req, (char *)buf.data(), data_size_to_read));
+      ESP_ERROR_CHECK(httpd_req_recv(req, reinterpret_cast<char *>(buf.data()),
+                                     data_size_to_read));
 
-      bl->WriteMemory(0x0800'0000 + read, buf);
+      bl.WriteMemory(0x0800'0000 + read, buf);
     }
     return ESP_OK;
   }
   static esp_err_t BL_Go(httpd_req_t *req) {
-    auto &obj = *(DebuggerHTTPServer *)req->user_ctx;
-    auto &bl = obj.bl;
+    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
+    if (!obj.stm32_bl.has_value()) {
+      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                          "No Bootloader is launched");
+      return ESP_FAIL;
+    }
+    auto bl = *obj.stm32_bl;
 
-    bl->Go(0x0800'0000);
+    bl.Go(0x0800'0000);
+    obj.stm32_bl.reset();
     return ESP_OK;
   }
 
  public:
-  DebuggerHTTPServer(std::unique_ptr<STM32BootLoader> bl) : bl(std::move(bl)){};
+  explicit DebuggerHTTPServer(std::shared_ptr<stm32::STM32> stm32)
+      : stm32(stm32) {}
 
   void Listen(int port = 80) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -63,16 +87,16 @@ class DebuggerHTTPServer {
     const httpd_uri_t handlers[] = {{.uri = "/api/bootloader/boot",
                                      .method = HTTP_POST,
                                      .handler = DebuggerHTTPServer::BL_Boot,
-                                     .user_ctx = (void *)&this->bl},
+                                     .user_ctx = static_cast<void *>(this)},
                                     {.uri = "/api/bootloader/go",
                                      .method = HTTP_POST,
                                      .handler = DebuggerHTTPServer::BL_Boot,
-                                     .user_ctx = (void *)&this->bl},
+                                     .user_ctx = static_cast<void *>(this)},
                                     {
                                         .uri = "/api/bootloader/upload",
                                         .method = HTTP_POST,
                                         .handler = DebuggerHTTPServer::BL_Boot,
-                                        .user_ctx = (void *)&this->bl
+                                        .user_ctx = static_cast<void *>(this)
                                         // upload : erase + write
                                     }};
 

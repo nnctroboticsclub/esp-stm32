@@ -1,16 +1,18 @@
 #include <wifi.hpp>
-#include <wifi/authmode_kind.hpp>
 
-#include <cstring>
 #include <lwip/netif.h>
-
 #include <esp_log.h>
 #include <esp_wpa2.h>
+
+#include <cstring>
+#include <wifi/authmode_kind.hpp>
+
 #include "init/init.hpp"
 
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 #define WIFI_GOT_IP BIT2
+
 namespace {
 constexpr const char* TAG = "Wi-Fi Lib Functions";
 
@@ -191,8 +193,8 @@ void Wifi::WaitUntilConnected() {
 }
 void Wifi::WaitForIP() {
   ESP_LOGI(TAG, "Waiting for IP...");
-  EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_GOT_IP,
-                                         pdFALSE, pdFALSE, portMAX_DELAY);
+  xEventGroupWaitBits(s_wifi_event_group, WIFI_GOT_IP, pdFALSE, pdFALSE,
+                      portMAX_DELAY);
   ESP_LOGI(TAG, "Got IP");
 }
 }  // namespace wifi
