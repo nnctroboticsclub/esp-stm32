@@ -42,22 +42,25 @@ void BootStrap() {
         .SetSpiPort(2)
         .SetMiso(GPIO_NUM_19)
         .SetMosi(GPIO_NUM_23)
-        .SetSclk(GPIO_NUM_18);
+        .SetSclk(GPIO_NUM_18)
+        .Commit();
 
     Config::NewSTM32BL()
-        .SetID(0)
+        .SetID(1)
         .SetBusType(types::BusType::SPI)
         .SetBusPort(2)
-        .SetCS(0);
+        .SetCS(5)
+        .Commit();
 
     Config::NewSTM32()
-        .SetID(0)
+        .SetID(2)
         .SetReset(GPIO_NUM_21)
         .SetBoot0(GPIO_NUM_22)
-        .SetBL_ID(0)
-        .SetRC_ID(0);
+        .SetBL_ID(1)
+        .SetRC_ID(0)
+        .Commit();
 
-    Config::SetActiveSTM32(0);
+    Config::SetActiveSTM32(2);
   }
 }
 
