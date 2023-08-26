@@ -1,9 +1,8 @@
-#include <stm32/driver/driver.hpp>
-
-#include <stm32/raw_driver/raw_driver.hpp>
-
 #include <vector>
 #include <memory>
+
+#include <stm32/driver/driver.hpp>
+#include <stm32/raw_driver/raw_driver.hpp>
 
 namespace stm32::driver {
 
@@ -25,8 +24,13 @@ void BLDriver::Get() {
 void BLDriver::DoGetVersion() {
   this->raw_driver_->CommandHeader(this->commands.get_version);
 
-  std::vector<uint8_t> buf = this->raw_driver_->Recv(3);
-  this->version = Version(buf);
+  if (this->raw_driver_->info.use_legacy_get_version) {
+    std::vector<uint8_t> buf = this->raw_driver_->Recv(3);
+    this->version = Version(buf);
+  } else {
+    std::vector<uint8_t> buf = this->raw_driver_->Recv(1);
+    this->version.UpdateVersion(buf[0]);
+  }
 
   this->raw_driver_->ACK();
 
@@ -46,8 +50,9 @@ void BLDriver::InitConnection() {
 
   this->raw_driver_->Sync();
   this->is_connected_ = true;
+
   this->Get();
-  this->DoGetVersion();
+  this->GetVersion();
 
   return;
 }

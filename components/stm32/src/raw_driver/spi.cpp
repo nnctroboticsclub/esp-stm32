@@ -1,4 +1,5 @@
 #include <memory>
+#include <map>
 #include <vector>
 #include <stm32/raw_driver/impl/spi.hpp>
 

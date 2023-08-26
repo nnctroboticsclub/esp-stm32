@@ -3,15 +3,30 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <vector>
 #include <cinttypes>
 #include <type_traits>
 
 #include "../types/inbounddata.hpp"
 #include "../types/outbounddata.hpp"
 
-namespace stm32::raw_driver {
+namespace stm32 {
+namespace driver {
+class BLDriver;
+}
+
+namespace raw_driver {
+
+struct RawDriverInfo {
+  bool use_legacy_get_version = false;
+};
 
 class RawDriverBase {
+  friend class driver::BLDriver;
+
+ protected:
+  RawDriverInfo info;
+
  public:
   virtual ~RawDriverBase() = default;
 
@@ -24,4 +39,6 @@ class RawDriverBase {
   virtual void Sync() = 0;
 };
 
-}  // namespace stm32::raw_driver
+}  // namespace raw_driver
+
+}  // namespace stm32
