@@ -35,8 +35,7 @@ class Master : public nvs::Namespace {
   nvs::Proxy<uint8_t> srv_count;
   nvs::Proxy<uint8_t> active_net;
   nvs::Proxy<uint8_t> active_srv;
-  nvs::Proxy<uint8_t> primary_s32bl;
-  nvs::Proxy<uint8_t> primary_s32rc;
+  nvs::Proxy<uint8_t> primary_s32;
 
   nvs::Proxy<bool> initialised;
 
@@ -51,8 +50,7 @@ class Master : public nvs::Namespace {
         srv_count(this, "cfs"),
         active_net(this, "an"),
         active_srv(this, "afs"),
-        primary_s32bl(this, "asb"),
-        primary_s32rc(this, "asr"),
+        primary_s32(this, "as3"),
         initialised(this, "init") {}
 };
 
@@ -245,13 +243,13 @@ class Config {
   }
 
   static std::shared_ptr<stm32::STM32> GetPrimarySTM32() {
-    return GetSTM32(instance->master.primary_s32bl);
+    return GetSTM32(instance->master.primary_s32);
   }
 
   //* Set
 
   static void SetActiveSTM32(uint8_t id) {
-    instance->master.primary_s32bl = id;
+    instance->master.primary_s32 = id;
   }
 
   //* New
