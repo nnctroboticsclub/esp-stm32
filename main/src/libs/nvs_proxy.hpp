@@ -64,7 +64,6 @@ inline uint8_t Get<uint8_t>(nvs_handle_t handle, std::string const& key) {
     return 0;
   }
 
-  ESP_LOGI(TAG, "NVS get: %s = %hd", key.c_str(), value);
   return value;
 }
 
@@ -77,7 +76,6 @@ inline uint16_t Get<uint16_t>(nvs_handle_t handle, std::string const& key) {
     return 0;
   }
 
-  ESP_LOGI(TAG, "NVS get: %s = %d", key.c_str(), value);
   return value;
 }
 
@@ -90,7 +88,6 @@ inline uint32_t Get<uint32_t>(nvs_handle_t handle, std::string const& key) {
     return 0;
   }
 
-  ESP_LOGI(TAG, "NVS get: %s = %ld", key.c_str(), value);
   return value;
 }
 
@@ -113,8 +110,6 @@ inline std::string Get<std::string>(nvs_handle_t handle,
     return "";
   }
 
-  ESP_LOGI(TAG, "NVS get: %s = %s", key.c_str(), value);
-
   std::string result(value);
   delete[] value;
 
@@ -130,7 +125,6 @@ void Set(nvs_handle_t, std::string const&, T const&) {
 template <>
 inline void Set<uint8_t>(nvs_handle_t handle, std::string const& key,
                          uint8_t const& value) {
-  ESP_LOGI(TAG, "NVS set: %s = %hd", key.c_str(), value);
   auto ret = nvs_set_u8(handle, key.c_str(), value);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
@@ -142,7 +136,6 @@ inline void Set<uint8_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<uint16_t>(nvs_handle_t handle, std::string const& key,
                           uint16_t const& value) {
-  ESP_LOGI(TAG, "NVS set: %s = %d", key.c_str(), value);
   auto ret = nvs_set_u16(handle, key.c_str(), value);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
@@ -154,7 +147,6 @@ inline void Set<uint16_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
                           uint32_t const& value) {
-  ESP_LOGI(TAG, "NVS set: %s = %ld", key.c_str(), value);
   auto ret = nvs_set_u32(handle, key.c_str(), value);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
@@ -166,7 +158,6 @@ inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
 template <>
 inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
                              std::string const& value) {
-  ESP_LOGI(TAG, "NVS set: %s = %s", key.c_str(), value.c_str());
   auto zero_terminated = new char[value.length() + 1];
   snprintf(zero_terminated, value.length() + 1, "%s", value.c_str());
 
