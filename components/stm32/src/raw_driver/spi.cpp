@@ -40,7 +40,7 @@ void SPI::ACK(TickType_t timeout) {
     }
 
     if (fail_count == 100000) {
-      throw NoData();
+      throw ACKFailed();
     }
   }
   this->device->SendChar(0x79);
