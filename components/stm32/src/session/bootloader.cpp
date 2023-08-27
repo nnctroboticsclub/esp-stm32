@@ -45,7 +45,7 @@ void BootLoaderSession::WriteMemory(uint32_t address,
       while (it != buf.end()) {
         auto it_next = std::min(buf.end(), it + 256);
 
-        if (addr % 0x1000 == 0) {
+        if ((addr - address) % 0x1000 == 0) {
           auto end = std::min(addr_end, addr + 0x1000);
           ESP_LOGI(TAG, "Writing Data to %08lx --> %08lx [%3ld%%]", addr, end,
                    (100 * (end - address)) / (addr_end - address));
