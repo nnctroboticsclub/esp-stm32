@@ -3,9 +3,10 @@
 void nvs::DumpNVS() {
   static constexpr const char* TAG = "nvs";
   nvs_iterator_t it;
-  auto ret = nvs_entry_find(NVS_DEFAULT_PART_NAME, NULL,
-                            nvs_type_t::NVS_TYPE_ANY, &it);
-  if (ret != ESP_OK) {
+
+  if (auto ret = nvs_entry_find(NVS_DEFAULT_PART_NAME, nullptr,
+                                nvs_type_t::NVS_TYPE_ANY, &it);
+      ret != ESP_OK) {
     ESP_LOGE(TAG, "Error ocurred while finding nvs entries: %s",
              esp_err_to_name(ret));
 
@@ -86,7 +87,7 @@ void nvs::DumpNVS() {
       }
       case NVS_TYPE_STR: {
         size_t length = 0;
-        nvs_get_str(handle, info.key, NULL, &length);
+        nvs_get_str(handle, info.key, nullptr, &length);
 
         char* value = (char*)malloc(length);
         nvs_get_str(handle, info.key, value, &length);
@@ -100,7 +101,7 @@ void nvs::DumpNVS() {
 
       case NVS_TYPE_BLOB: {
         size_t length = 0;
-        nvs_get_blob(handle, info.key, NULL, &length);
+        nvs_get_blob(handle, info.key, nullptr, &length);
 
         uint8_t* value = (uint8_t*)malloc(length);
         nvs_get_blob(handle, info.key, (void*)value, &length);
