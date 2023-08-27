@@ -40,6 +40,7 @@ class DebuggerHTTPServer {
 
     obj.stm32_bl = bl;
 
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
 
     return ESP_OK;
@@ -84,6 +85,7 @@ class DebuggerHTTPServer {
       read += ret;
     }
 
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
@@ -101,6 +103,7 @@ class DebuggerHTTPServer {
     obj.stm32_bl.reset();
     obj.stm32_bl = std::nullopt;
 
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
@@ -111,6 +114,7 @@ class DebuggerHTTPServer {
     obj.stm32->Reset();
     obj.stm32_bl = std::nullopt;
 
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
