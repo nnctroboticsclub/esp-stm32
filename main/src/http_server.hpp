@@ -6,15 +6,26 @@
 
 #include "config/config.hpp"
 
+namespace debug_httpd {
+struct STM32State {
+  std::shared_ptr<stm32::STM32> stm32;
+  std::optional<stm32::session::BootLoaderSession> stm32_bl = std::nullopt;
+
+  STM32State(uint8_t id) {
+    auto stm32 = config::Config::GetSTM32(id);
+    this->stm32 = stm32;
+  }
+
+  STM32State() : STM32State(config::Config::GetInstance().master.primary_s32) {}
+};
+
 class DebuggerHTTPServer {
   static constexpr const char *TAG = "Debug HTTPd";
   httpd_handle_t httpd = nullptr;
-  std::shared_ptr<stm32::STM32> stm32;
-  std::optional<stm32::session::BootLoaderSession> stm32_bl;
 
   static esp_err_t BL_Boot(httpd_req_t *req) {
-    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
-    if (!obj.stm32_bl.has_value()) {
+    auto &obj = *static_cast<STM32State *>(req->user_ctx);
+    if (obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
                           "Bootloader is already launched");
       return ESP_FAIL;
@@ -29,10 +40,12 @@ class DebuggerHTTPServer {
 
     obj.stm32_bl = bl;
 
+    httpd_resp_sendstr(req, "OK");
+
     return ESP_OK;
   }
   static esp_err_t BL_Upload(httpd_req_t *req) {
-    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
+    auto &obj = *static_cast<STM32State *>(req->user_ctx);
     if (!obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
                           "No Bootloader is launched");
@@ -41,26 +54,41 @@ class DebuggerHTTPServer {
     auto bl = *obj.stm32_bl;
 
     auto size = req->content_len;
+    ESP_LOGI(TAG, "Uploading %d bytes", size);
 
     // Erasing...
     bl.Erase(stm32::driver::ErasePages(0x0800'0000, size));
 
     // Receive & Write Loop
     size_t read = 0;
-    std::vector<uint8_t> buf(2048);
+    std::vector<uint8_t> buf(8192);  // 0x2000, 8 KB
     while (read < size) {
-      auto data_size_to_read = std::min(int(size - read), 2048);
+      auto data_size_to_read = std::min(int(size - read), 8192);
       buf.resize(data_size_to_read);
 
-      ESP_ERROR_CHECK(httpd_req_recv(req, reinterpret_cast<char *>(buf.data()),
-                                     data_size_to_read));
+      auto ret = httpd_req_recv(req, reinterpret_cast<char *>(buf.data()),
+                                data_size_to_read);
 
+      if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+        continue;
+      }
+      if (ret == HTTPD_SOCK_ERR_FAIL) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+                            "Failed to receive data");
+        return ESP_FAIL;
+      }
+
+      // ESP_LOGI(TAG, "Writing %d bytes", ret);
+      buf.resize(ret);
       bl.WriteMemory(0x0800'0000 + read, buf);
+      read += ret;
     }
+
+    httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
   static esp_err_t BL_Go(httpd_req_t *req) {
-    auto &obj = *static_cast<DebuggerHTTPServer *>(req->user_ctx);
+    auto &obj = *static_cast<STM32State *>(req->user_ctx);
     if (!obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
                           "No Bootloader is launched");
@@ -69,42 +97,52 @@ class DebuggerHTTPServer {
     auto bl = *obj.stm32_bl;
 
     bl.Go(0x0800'0000);
+
     obj.stm32_bl.reset();
+    obj.stm32_bl = std::nullopt;
+
+    httpd_resp_sendstr(req, "OK");
+    return ESP_OK;
+  }
+
+  static esp_err_t STM32_Reset(httpd_req_t *req) {
+    auto &obj = *static_cast<STM32State *>(req->user_ctx);
+
+    obj.stm32->Reset();
+    obj.stm32_bl = std::nullopt;
+
+    httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
 
  public:
-  explicit DebuggerHTTPServer(std::shared_ptr<stm32::STM32> stm32)
-      : stm32(stm32) {
-    if (!stm32) {
-      throw std::runtime_error("STM32 is nullptr");
-    }
-  }
-
-  DebuggerHTTPServer() = delete;
+  DebuggerHTTPServer() = default;
 
   void Listen(int port = 80) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = 80;
-    config.global_user_ctx = this;
 
     ESP_ERROR_CHECK(httpd_start(&httpd, &config));
 
-    const httpd_uri_t handlers[] = {{.uri = "/api/bootloader/boot",
-                                     .method = HTTP_POST,
-                                     .handler = DebuggerHTTPServer::BL_Boot,
-                                     .user_ctx = static_cast<void *>(this)},
-                                    {.uri = "/api/bootloader/go",
-                                     .method = HTTP_POST,
-                                     .handler = DebuggerHTTPServer::BL_Boot,
-                                     .user_ctx = static_cast<void *>(this)},
-                                    {
-                                        .uri = "/api/bootloader/upload",
-                                        .method = HTTP_POST,
-                                        .handler = DebuggerHTTPServer::BL_Boot,
-                                        .user_ctx = static_cast<void *>(this)
-                                        // upload : erase + write
-                                    }};
+    auto primary_stm32 = new STM32State();
+
+    const httpd_uri_t handlers[] = {
+        {.uri = "/api/stm32/bootloader/boot",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::BL_Boot,
+         .user_ctx = static_cast<void *>(primary_stm32)},
+        {.uri = "/api/stm32/bootloader/go",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::BL_Go,
+         .user_ctx = static_cast<void *>(primary_stm32)},
+        {.uri = "/api/stm32/bootloader/upload",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::BL_Upload,
+         .user_ctx = static_cast<void *>(primary_stm32)},
+        {.uri = "/api/stm32/reset",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::STM32_Reset,
+         .user_ctx = static_cast<void *>(primary_stm32)}};
 
     for (auto &&handler : handlers) {
       ESP_LOGI(TAG, "Registering Endpoint: %s", handler.uri);
@@ -112,3 +150,4 @@ class DebuggerHTTPServer {
     }
   }
 };
+}  // namespace debug_httpd
