@@ -14,19 +14,9 @@ void init::init_wifi() {
   ESP_LOGI(TAG, "Initializing WiFi");
   ESP_LOGI(TAG, "SSID: %s, password: %s", profile->GetSSID().c_str(),
            profile->GetPassword().c_str());
-  if (profile->GetIPMode() == types::IPMode::STATIC) {
-    esp_netif_ip_info_t ip_info{
-        .ip = types::ToEspIp4Addr((types::Ipv4)profile->ip),
-        .netmask = types::ToEspIp4Addr((types::Ipv4)profile->subnet),
-        .gw = types::ToEspIp4Addr((types::Ipv4)profile->gateway),
-    };
-    config::network.SetIP(ip_info);
-  }
 
   if (profile->GetMode() == types::NetworkMode::AP) {
     config::network.InitAp(profile->GetSSID(), profile->GetPassword());
-
-    config::network.WaitUntilConnected();
   } else {
     wifi::WifiConnectionProfile prof{
         .auth_mode = WIFI_AUTH_WPA2_PSK,
@@ -39,6 +29,16 @@ void init::init_wifi() {
     config::network.ConnectToAP(&prof);
 
     config::network.WaitUntilConnected();
-    config::network.WaitForIP();
+
+    if (profile->GetIPMode() == types::IPMode::STATIC) {
+      esp_netif_ip_info_t ip_info{
+          .ip = types::ToEspIp4Addr((types::Ipv4)profile->ip),
+          .netmask = types::ToEspIp4Addr((types::Ipv4)profile->subnet),
+          .gw = types::ToEspIp4Addr((types::Ipv4)profile->gateway),
+      };
+      config::network.SetIP(ip_info);
+    } else {
+      config::network.WaitForIP();
+    }
   }
 }
