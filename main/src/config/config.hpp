@@ -228,9 +228,19 @@ class Config {
     return nullptr;
   }
 
+  static std::shared_ptr<NetworkProfile> GetNetworkProfile(uint8_t id) {
+    for (auto& nw_prof : instance->network_profiles) {
+      if (nw_prof.GetID() == id) {
+        return std::make_shared<NetworkProfile>(nw_prof);
+      }
+    }
+    return nullptr;
+  }
   static std::shared_ptr<NetworkProfile> GetActiveNetworkProfile() {
-    return std::make_shared<NetworkProfile>(
-        instance->network_profiles[(uint8_t)instance->master.active_net]);
+    return GetNetworkProfile(instance->master.active_net);
+  }
+  static void SetActiveNetworkProfile(uint8_t id) {
+    instance->master.active_net = id;
   }
 
   static std::shared_ptr<stm32::STM32> GetSTM32(uint8_t id) {
@@ -248,9 +258,7 @@ class Config {
 
   //* Set
 
-  static void SetActiveSTM32(uint8_t id) {
-    instance->master.primary_s32 = id;
-  }
+  static void SetActiveSTM32(uint8_t id) { instance->master.primary_s32 = id; }
 
   //* New
 

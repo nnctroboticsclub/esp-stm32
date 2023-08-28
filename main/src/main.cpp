@@ -60,7 +60,19 @@ void BootStrap() {
         .SetRC_ID(0)
         .Commit();
 
+    Config::NewNetworkProfile()
+        .SetID(3)
+        .SetMode(types::NetworkMode::AP)
+        .SetIPMode(types::IPMode::STATIC)
+        .SetSSID("ESP32")
+        .SetPassword("esp32-network")
+        .SetHostname("esp32")
+        .SetIP((types::Ipv4)0xc0a80001)
+        .SetSubnet((types::Ipv4)0xffffff00)
+        .SetGateway((types::Ipv4)0xc0a80001);
+
     Config::SetActiveSTM32(2);
+    Config::SetActiveNetworkProfile(3);
 
     Config::GetInstance().master.Commit();
   }
@@ -83,32 +95,15 @@ void Init() {
 }
 
 debug_httpd::DebuggerHTTPServer server;
-debug_httpd::LogRedirectWSS lr_wss;
 
 void Main() {
   ESP_LOGI(TAG, "Starting Debugger HTTP Server");
   server.Listen(80);
-
-  ESP_LOGI(TAG, "Starting Log Redirect Websocket based Server");
-  lr_wss.Listen(8080);
 }
 
 extern "C" int app_main() {
   nvs::DumpNVS();
   BootStrap();
-
-  wifi::WifiConnectionProfile profile{
-      .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
-      .ssid = "3-303-Abe 2.4Ghz",
-      .password = "syochnetwork",
-      .user = "",
-      .id = "",
-  };
-  config::network.InitSta();
-  config::network.Start();
-  config::network.ConnectToAP(&profile);
-  config::network.WaitUntilConnected();
-  config::network.WaitForIP();
 
   Init();
 

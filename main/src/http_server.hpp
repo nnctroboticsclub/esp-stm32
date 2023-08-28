@@ -130,6 +130,8 @@ class DebuggerHTTPServer {
   DebuggerHTTPServer() = default;
 
   void Listen(uint16_t port = 80) {
+    init::init_wifi();
+
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
     config.ctrl_port = port;

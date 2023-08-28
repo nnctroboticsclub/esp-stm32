@@ -4,9 +4,9 @@ namespace profile {
 using nvs::Namespace;
 NetworkProfile::NetworkProfile(std::string const& ns)
     : Namespace(ns),
+      id(this, "id"),
       mode(this, "mode"),
       ip_mode(this, "ip_mode"),
-      name(this, "name"),
       ssid(this, "ssid"),
       password(this, "password"),
       hostname(this, "hostname"),
