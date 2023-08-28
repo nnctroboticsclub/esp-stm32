@@ -127,6 +127,20 @@ class DebuggerHTTPServer {
     return ESP_OK;
   }
 
+  static esp_err_t Reset(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_sendstr(req, "OK");
+
+    xTaskCreate((TaskFunction_t)([](void *args) {
+                  vTaskDelay(200 / portTICK_PERIOD_MS);
+                  esp_restart();
+                  return;
+                }),
+                "Reset Thread", 0x1000, nullptr, 1, nullptr);
+
+    return ESP_OK;
+  }
+
  public:
   DebuggerHTTPServer() = default;
 
@@ -169,6 +183,13 @@ class DebuggerHTTPServer {
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::STM32_Reset,
          .user_ctx = static_cast<void *>(primary_stm32),
+         .is_websocket = false,
+         .handle_ws_control_frames = false,
+         .supported_subprotocol = nullptr},
+        {.uri = "/api/reset",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::Reset,
+         .user_ctx = nullptr,
          .is_websocket = false,
          .handle_ws_control_frames = false,
          .supported_subprotocol = nullptr},

@@ -11,8 +11,6 @@
 #include <stm32/raw_driver/impl/uart.hpp>
 #include <spi_host_cxx.hpp>
 
-#include "./bin.h"
-
 #include "./http_server.hpp"
 #include "config/config.hpp"
 #include "init/init.hpp"
