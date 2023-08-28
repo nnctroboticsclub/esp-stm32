@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "config/config.hpp"
+#include "init/init.hpp"
 
 namespace debug_httpd {
 struct STM32State {
