@@ -23,27 +23,8 @@ struct STM32State {
 
 class DebuggerHTTPServer {
   static constexpr const char *TAG = "Debug HTTPd";
-  static std::vector<httpd_req_t *> listeners;
 
   httpd_handle_t httpd = nullptr;
-
-  // ESP LOG Patch
-  static int EspLogImpl(const char *fmt, va_list args) {
-    char buf[2048];
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    printf("%s", buf);
-
-    for (auto &&listener : listeners) {
-      httpd_resp_sendstr_chunk(listener, buf);
-    }
-  }
-  static void PatchEspLog() {
-    static bool is_patched = false;
-    if (is_patched) return;
-    is_patched = true;
-
-    esp_log_set_vprintf(EspLogImpl);
-  }
 
   // URI Handlers
   static esp_err_t BL_Boot(httpd_req_t *req) {
@@ -145,20 +126,17 @@ class DebuggerHTTPServer {
     return ESP_OK;
   }
 
-  static esp_err_t MISC_Log(httpd_req_t *req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-
-    return ESP_OK;
-  }
-
  public:
   DebuggerHTTPServer() = default;
 
-  void Listen(int port = 80) {
+  void Listen(uint16_t port = 80) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.server_port = 80;
+    config.server_port = port;
+    config.ctrl_port = port;
 
     ESP_ERROR_CHECK(httpd_start(&httpd, &config));
+
+    ESP_LOGI(TAG, "HTTPD Started on port %d", port);
 
     auto primary_stm32 = new STM32State();
 
@@ -166,19 +144,33 @@ class DebuggerHTTPServer {
         {.uri = "/api/stm32/bootloader/boot",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::BL_Boot,
-         .user_ctx = static_cast<void *>(primary_stm32)},
+         .user_ctx = static_cast<void *>(primary_stm32),
+         .is_websocket = false,
+         .handle_ws_control_frames = false,
+         .supported_subprotocol = nullptr},
         {.uri = "/api/stm32/bootloader/go",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::BL_Go,
-         .user_ctx = static_cast<void *>(primary_stm32)},
+         .user_ctx = static_cast<void *>(primary_stm32),
+         .is_websocket = false,
+         .handle_ws_control_frames = false,
+         .supported_subprotocol = nullptr},
         {.uri = "/api/stm32/bootloader/upload",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::BL_Upload,
-         .user_ctx = static_cast<void *>(primary_stm32)},
+         .user_ctx = static_cast<void *>(primary_stm32),
+         .is_websocket = false,
+         .handle_ws_control_frames = false,
+         .supported_subprotocol = nullptr},
         {.uri = "/api/stm32/reset",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::STM32_Reset,
-         .user_ctx = static_cast<void *>(primary_stm32)}};
+         .user_ctx = static_cast<void *>(primary_stm32),
+         .is_websocket = false,
+         .handle_ws_control_frames = false,
+         .supported_subprotocol = nullptr},
+
+    };
 
     for (auto &&handler : handlers) {
       ESP_LOGI(TAG, "Registering Endpoint: %s", handler.uri);

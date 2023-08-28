@@ -61,11 +61,12 @@ void BootStrap() {
         .Commit();
 
     Config::SetActiveSTM32(2);
+
+    Config::GetInstance().master.Commit();
   }
 }
 
 void Init() {
-  // init::init_data_server();
   return;
 
   // auto config = config::Config::GetInstance();
@@ -81,16 +82,21 @@ void Init() {
   //             nullptr);
 }
 
+debug_httpd::DebuggerHTTPServer server;
+debug_httpd::LogRedirectWSS lr_wss;
+
 void Main() {
   ESP_LOGI(TAG, "Starting Debugger HTTP Server");
-  DebuggerHTTPServer server(config::Config::GetPrimarySTM32());
-  server.Listen();
+  server.Listen(80);
 
-  // ESP_LOGI(TAG, "Entering the Server's ClientLoop");
-  // config::server.StartClientLoopAtForeground();
+  ESP_LOGI(TAG, "Starting Log Redirect Websocket based Server");
+  lr_wss.Listen(8080);
 }
 
 extern "C" int app_main() {
+  nvs::DumpNVS();
+  BootStrap();
+
   wifi::WifiConnectionProfile profile{
       .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
       .ssid = "3-303-Abe 2.4Ghz",
@@ -106,27 +112,26 @@ extern "C" int app_main() {
 
   Init();
 
-  std::jthread t([]() {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  // std::jthread t([]() {
+  //   vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    esp_console_repl_t* repl = nullptr;
-    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-    repl_config.prompt = "esp32-ru> ";
+  //  //   esp_console_repl_t* repl = nullptr;
+  //   esp_console_repl_config_t repl_config =
+  //   ESP_CONSOLE_REPL_CONFIG_DEFAULT(); repl_config.prompt = "esp32-ru> ";
 
-    esp_console_register_help_command();
+  //  //   esp_console_register_help_command();
 
-    cmd::wifi::RegisterCommands();
+  //  //   cmd::wifi::RegisterCommands();
 
-    esp_console_dev_uart_config_t uart_config =
-        ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(
-        esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
-    ESP_ERROR_CHECK(esp_console_start_repl(repl));
-  });
-
-  // t.join();
+  //  //   esp_console_dev_uart_config_t uart_config =
+  //       ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+  //   ESP_ERROR_CHECK(
+  //       esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
+  //   ESP_ERROR_CHECK(esp_console_start_repl(repl));
+  // });
 
   Main();
+
   printf("Entering the idle loop\n");
   while (true) {
     vTaskDelay(100 / portTICK_PERIOD_MS);

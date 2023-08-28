@@ -38,6 +38,5 @@ namespace config {
 
 Config *Config::instance;
 
-// Server server;
 wifi::Wifi network;
 }  // namespace config

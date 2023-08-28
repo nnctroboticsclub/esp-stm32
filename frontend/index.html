@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STM32 Remote Writer</title>
+  </head>
+  <body>
+    <div id="app">
+      <textarea id="ip_addr" rows="1" placeholder="Server IP Address">
+192.168.3.28</textarea
+      >
+      <div id="file_chooser">
+        <input type="file" name="" id="file_selector" />
+        <span>Flash Upload</span>
+      </div>
+      <div class="file_name">
+        File:<br />
+        <span class="name"></span>
+      </div>
+      <div id="log"></div>
+    </div>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-size: medium;
+        font-weight: lighter;
+
+        background-color: #445;
+        overflow-y: hidden;
+      }
+      #app {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 90vw;
+        height: 90vh;
+        margin: 5vh 5vw;
+        padding: 20px;
+        box-sizing: border-box;
+        box-shadow: 0 0 10px #888;
+        border-radius: 10px;
+      }
+      #app > #ip_addr {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        resize: none;
+      }
+      #app > #file_chooser {
+        position: relative;
+        display: block;
+        width: 200px;
+        height: 200px;
+        margin: 30px calc(50% - 100px);
+        z-index: 0;
+        padding: 1%;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #888;
+      }
+      #app > #file_chooser > input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        z-index: 500;
+        opacity: 0;
+        cursor: pointer;
+      }
+      #app > #file_chooser > span {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        height: 100%;
+        width: 100%;
+        z-index: 0;
+        text-align: center;
+        line-height: 200px;
+        font-size: 2em;
+        color: white;
+      }
+      #app > .file_name {
+        display: block;
+        width: 100%;
+        height: 50px;
+        color: white;
+        font-size: 1.2em;
+      }
+      #app > #log {
+        position: absolute;
+        top: 400px;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background-color: #333;
+        padding: 10px;
+        border-radius: 10px;
+        box-sizing: border-box;
+        overflow-y: scroll;
+      }
+    </style>
+
+    <script>
+      const ip_addr = document.getElementById("ip_addr");
+      const file_input = document.getElementById("file_selector");
+      const file_name = document.querySelector("#app > .file_name > .name");
+      const log = document.getElementById("log");
+
+      /**
+       * #log にテキストを追加します
+       * @param {string} ログに追記する文字列
+       * @returns {void}
+       */
+      function log_write(text) {
+        log.innerHTML += text + "<br />";
+        log.scrollTop = log.scrollHeight;
+      }
+
+      /**
+       * fetch 関数のラッパーです
+       * ログにトランザクションを追加するプロキシです。
+       * @param {string} url
+       * @param {string?|ArrayBuffer?} data
+       * @returns {Promise<Response>}
+       */
+      function fetch_wrapper(url, data) {
+        const data_size =
+          !isNaN(data) && (!isNaN(data.byteLength) || !isNaN(data.length))
+            ? data.byteLength || data.length
+            : -1;
+        const data_size_str = data_size != -1 ? `(${data_size} bytes)` : "";
+
+        log_write(`[ Fetch] ${url} ${data_size_str} [${data_size}]`);
+
+        return fetch(url, {
+          method: "POST",
+          body: data,
+        });
+      }
+
+      /**
+       * @class Client
+       * @property {string} ip_addr
+       * @method {void} reset
+       * @method {void} bl_enter
+       * @method {void} bl_upload
+       *
+       * @constructor
+       * @param {string} ip_addr
+       * @returns {Client}
+       */
+      class Client {
+        constructor(ip_addr) {
+          this.ip_addr = ip_addr;
+        }
+
+        async reset() {
+          const res = await fetch_wrapper(
+            `http://${this.ip_addr}/api/stm32/reset`
+          );
+          if (res.ok) {
+            log_write("[Client] Reset Success");
+          } else {
+            log_write("[Client] Reset Failed");
+          }
+        }
+
+        async bl_enter() {
+          const res = await fetch_wrapper(
+            `http://${this.ip_addr}/api/stm32/bootloader/boot`
+          );
+          if (res.ok) {
+            log_write("[Client] Boot Success");
+          } else {
+            log_write("[Client] Boot Failed");
+          }
+        }
+
+        async bl_upload(data) {
+          const res = await fetch_wrapper(
+            `http://${this.ip_addr}/api/stm32/bootloader/upload`,
+            data
+          );
+          if (res.ok) {
+            log_write("[Client] Upload Success");
+          } else {
+            log_write("[Client] Upload Failed");
+          }
+        }
+      }
+
+      file_input.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        file_name.innerHTML = file.name;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const data = e.target.result;
+          const client = new Client(ip_addr.value);
+
+          await client.bl_enter();
+          await client.bl_upload(data);
+          await client.reset();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    </script>
+  </body>
+</html>

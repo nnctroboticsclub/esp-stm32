@@ -30,7 +30,7 @@ void BootLoaderSession::Reset() const {
 }
 BootLoaderSession::BootLoaderSession(
     std::shared_ptr<driver::BLDriver> bl_driver, std::shared_ptr<STM32> session)
-    : bl_driver_(bl_driver), session_(session) {
+    : bl_driver_(bl_driver), session_(session), failed_attempts_(0) {
   this->Reset();  // This function must be called at least once
 }
 

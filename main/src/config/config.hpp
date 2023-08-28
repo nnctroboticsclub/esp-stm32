@@ -275,7 +275,6 @@ class Config {
   }
 };
 
-// extern Server server;
 extern wifi::Wifi network;
 }  // namespace config
 
