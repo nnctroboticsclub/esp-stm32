@@ -1,6 +1,8 @@
 #pragma once
 
+#include <stdarg.h>
 #include <esp_http_server.h>
+
 #include <memory>
 #include <vector>
 
@@ -21,9 +23,32 @@ struct STM32State {
 
 class DebuggerHTTPServer {
   static constexpr const char *TAG = "Debug HTTPd";
+  static std::vector<httpd_req_t *> listeners;
+
   httpd_handle_t httpd = nullptr;
 
+  // ESP LOG Patch
+  static int EspLogImpl(const char *fmt, va_list args) {
+    char buf[2048];
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    printf("%s", buf);
+
+    for (auto &&listener : listeners) {
+      httpd_resp_sendstr_chunk(listener, buf);
+    }
+  }
+  static void PatchEspLog() {
+    static bool is_patched = false;
+    if (is_patched) return;
+    is_patched = true;
+
+    esp_log_set_vprintf(EspLogImpl);
+  }
+
+  // URI Handlers
   static esp_err_t BL_Boot(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
     auto &obj = *static_cast<STM32State *>(req->user_ctx);
     if (obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
@@ -39,13 +64,13 @@ class DebuggerHTTPServer {
     }
 
     obj.stm32_bl = bl;
-
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
 
     return ESP_OK;
   }
   static esp_err_t BL_Upload(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
     auto &obj = *static_cast<STM32State *>(req->user_ctx);
     if (!obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
@@ -85,11 +110,12 @@ class DebuggerHTTPServer {
       read += ret;
     }
 
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
   static esp_err_t BL_Go(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
     auto &obj = *static_cast<STM32State *>(req->user_ctx);
     if (!obj.stm32_bl.has_value()) {
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
@@ -103,19 +129,25 @@ class DebuggerHTTPServer {
     obj.stm32_bl.reset();
     obj.stm32_bl = std::nullopt;
 
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
 
   static esp_err_t STM32_Reset(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
     auto &obj = *static_cast<STM32State *>(req->user_ctx);
 
     obj.stm32->Reset();
     obj.stm32_bl = std::nullopt;
 
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_sendstr(req, "OK");
+    return ESP_OK;
+  }
+
+  static esp_err_t MISC_Log(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
     return ESP_OK;
   }
 
