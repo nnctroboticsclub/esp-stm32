@@ -100,8 +100,10 @@ void Wifi::InitAp(std::string const& ssid, std::string const& password) {
           sizeof(wifi_config.ap.password));
   wifi_config.ap.ssid_len = ssid.length();
   wifi_config.ap.channel = 11;
-  wifi_config.ap.authmode = WIFI_AUTH_WPA2_WPA3_PSK;
+  wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
   wifi_config.ap.max_connection = 11;
+  wifi_config.ap.pmf_cfg.capable = true;
+  wifi_config.ap.pmf_cfg.required = false;
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
