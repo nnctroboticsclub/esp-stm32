@@ -2,6 +2,19 @@
 
 void nvs::DumpNVS() {
   static constexpr const char* TAG = "nvs";
+
+  nvs_flash_init();
+
+  nvs_stats_t stats;
+  if (auto err = nvs_get_stats("nvs", &stats); err != ESP_OK) {
+    printf("failed to nvs_get_stats(): %s\n", esp_err_to_name(err));
+    return;
+  }
+
+  ESP_LOGI(TAG, "NVS Entries: total=%d  used=%d  free=%d (namespaces=%d)\n",
+           stats.total_entries, stats.used_entries, stats.free_entries,
+           stats.namespace_count);
+
   nvs_iterator_t it;
 
   if (auto ret = nvs_entry_find(NVS_DEFAULT_PART_NAME, nullptr,
