@@ -17,6 +17,7 @@ void init::init_wifi() {
 
   if (profile->GetMode() == types::NetworkMode::AP) {
     config::network.InitAp(profile->GetSSID(), profile->GetPassword());
+    config::network.Start();
   } else {
     wifi::WifiConnectionProfile prof{
         .auth_mode = WIFI_AUTH_WPA2_PSK,
@@ -27,6 +28,7 @@ void init::init_wifi() {
     };
     config::network.InitSta();
     config::network.ConnectToAP(&prof);
+    config::network.Start();
 
     config::network.WaitUntilConnected();
 
