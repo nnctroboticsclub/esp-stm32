@@ -141,6 +141,134 @@ class DebuggerHTTPServer {
     return ESP_OK;
   }
 
+  static esp_err_t NVS_Dump(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Content-Type", "application/octet-stream");
+
+    nvs_flash_init();
+
+    nvs_iterator_t it;
+    ESP_ERROR_CHECK(nvs_entry_find(NVS_DEFAULT_PART_NAME, nullptr,
+                                   nvs_type_t::NVS_TYPE_ANY, &it));
+
+    char null_buf[8] = {0};
+
+    std::vector<uint8_t> buf;
+    while (true) {
+      nvs_entry_info_t info;
+      ESP_ERROR_CHECK(nvs_entry_info(it, &info));
+      ESP_LOGI(TAG, "Dumping %s/%s", info.namespace_name, info.key);
+
+      buf.emplace_back((char)strlen(info.namespace_name));
+      buf.emplace_back((char)strlen(info.key));
+      buf.emplace_back(info.type);
+
+      buf.insert(buf.end(), info.namespace_name,
+                 info.namespace_name + strlen(info.namespace_name));
+
+      buf.insert(buf.end(), info.key, info.key + strlen(info.key));
+
+      nvs_handle_t handle;
+      nvs_open(info.namespace_name, NVS_READONLY, &handle);
+      if (info.type == NVS_TYPE_U8 || info.type == NVS_TYPE_I8) {
+        uint8_t value;
+        if (info.type == NVS_TYPE_U8) {
+          nvs_get_u8(handle, info.key, &value);
+        } else {
+          nvs_get_i8(handle, info.key, reinterpret_cast<int8_t *>(&value));
+        }
+
+        buf.emplace_back(value);
+      } else if (info.type == NVS_TYPE_U16 || info.type == NVS_TYPE_I16) {
+        uint16_t value;
+        if (info.type == NVS_TYPE_U16) {
+          nvs_get_u16(handle, info.key, &value);
+        } else {
+          nvs_get_i16(handle, info.key, reinterpret_cast<int16_t *>(&value));
+        }
+
+        buf.emplace_back(static_cast<char>((value >> 8) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 0) & 0xff));
+      } else if (info.type == NVS_TYPE_U32 || info.type == NVS_TYPE_I32) {
+        uint32_t value;
+        if (info.type == NVS_TYPE_U32) {
+          nvs_get_u32(handle, info.key, &value);
+        } else {
+          nvs_get_i32(handle, info.key, reinterpret_cast<int32_t *>(&value));
+        }
+
+        buf.emplace_back(static_cast<char>((value >> 24) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 16) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 8) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 0) & 0xff));
+      } else if (info.type == NVS_TYPE_U64 || info.type == NVS_TYPE_I64) {
+        uint64_t value;
+        if (info.type == NVS_TYPE_U64) {
+          nvs_get_u64(handle, info.key, &value);
+        } else {
+          nvs_get_i64(handle, info.key, reinterpret_cast<int64_t *>(&value));
+        }
+
+        buf.emplace_back(static_cast<char>((value >> 56) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 48) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 40) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 32) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 24) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 16) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 8) & 0xff));
+        buf.emplace_back(static_cast<char>((value >> 0) & 0xff));
+      } else if (info.type == NVS_TYPE_STR || info.type == NVS_TYPE_BLOB) {
+        size_t length = 0;
+        uint8_t *value;
+        if (info.type == NVS_TYPE_STR) {
+          nvs_get_str(handle, info.key, nullptr, &length);
+          value = new uint8_t[length];
+          nvs_get_str(handle, info.key, reinterpret_cast<char *>(value),
+                      &length);
+        } else {
+          nvs_get_blob(handle, info.key, nullptr, &length);
+          value = new uint8_t[length];
+          nvs_get_blob(handle, info.key, static_cast<void *>(value), &length);
+        }
+
+        buf.emplace_back(static_cast<char>((length >> 24) & 0xff));
+        buf.emplace_back(static_cast<char>((length >> 16) & 0xff));
+        buf.emplace_back(static_cast<char>((length >> 8) & 0xff));
+        buf.emplace_back(static_cast<char>(length & 0xff));
+
+        buf.insert(buf.end(), value, value + length);
+
+        delete[] value;
+      } else {
+        buf.insert(buf.end(), null_buf, null_buf + 4);
+      }
+
+      nvs_close(handle);
+
+      if (nvs_entry_next(&it) != ESP_OK) {
+        break;
+      }
+    }
+    std::vector<uint8_t> buf2;
+    for (auto c : buf) {
+      if (c == '@') {
+        buf2.emplace_back('@');
+        buf2.emplace_back('@');
+      } else if (c == '\r') {
+        buf2.emplace_back('@');
+        buf2.emplace_back('1');
+      } else if (c == '\n') {
+        buf2.emplace_back('@');
+        buf2.emplace_back('2');
+      } else {
+        buf2.emplace_back(c);
+      }
+    }
+    httpd_resp_send(req, (const char *)buf2.data(), buf2.size());
+    ESP_LOGI(TAG, "Done Dumping");
+    return ESP_OK;
+  }
+
  public:
   DebuggerHTTPServer() = default;
 
@@ -177,6 +305,10 @@ class DebuggerHTTPServer {
         {.uri = "/api/reset",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::Reset,
+         .user_ctx = nullptr},
+        {.uri = "/api/nvs/dump",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::NVS_Dump,
          .user_ctx = nullptr},
 
     };
