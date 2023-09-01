@@ -3,7 +3,7 @@
 
 	export let ns: Table;
 
-	setNs(ns);
+	$: setNs(ns);
 </script>
 
 <slot />

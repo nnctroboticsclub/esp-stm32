@@ -2,7 +2,7 @@
 	import { getActiveTab, getTabs } from './context';
 
 	export let name: string;
-	export let getSecondaryBarTitles: () => string[];
+	export let secondaryBarTitles: string[];
 
 	const active_tab = getActiveTab();
 	const tabs = getTabs();
@@ -13,7 +13,7 @@
 		}
 		tabs.push({
 			title: name,
-			getSecondaryBarTitles
+			secondaryBarTitles
 		});
 		return tabs;
 	});

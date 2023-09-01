@@ -97,7 +97,7 @@
 	<TabLayout>
 		<AsTab ns_list={config.network_list} name="network">
 			<EntryNum key="id" name="ID" type="int" />
-			<EntrySelect key="mode" name="Mode" labels={['STA', 'AP']} />
+			<EntrySelect key="mode" name="Mode" labels={['None', 'STA', 'AP']} />
 			<EntryText key="ssid" name="SSID" />
 			<EntryText key="password" name="Password" />
 			<EntryText key="hostname" name="Hostname" />
@@ -133,6 +133,11 @@
 			<EntrySelect key="parity" name="Parity" labels={['None', 'Even', 'Odd']} />
 		</AsTab>
 	</TabLayout>
+	<div class="bottom">
+		<Button on:click={popUI}>Close</Button>
+		<Button on:click={() => (config = default_config.clone())}>Reset</Button>
+		<Button on:click={() => (config = config.clone())}>Apply</Button>
+	</div>
 </Modal>
 
 <style>

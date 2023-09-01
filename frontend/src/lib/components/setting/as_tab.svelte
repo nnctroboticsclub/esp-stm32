@@ -8,14 +8,15 @@
 
 	const secondary_tab = getActiveSecondaryTab();
 
-	const ns = ns_list.find((x) => x.entryNum('id').get() === parseInt($secondary_tab)) || ns_list[0];
+	let ns: Table;
+	$: ns = ns_list.find((x) => x.entryNum('id').get() === parseInt($secondary_tab)) || ns_list[0];
 
 	const secondary_tabs = ns_list.map((x) => x.entryNum('id').get()?.toString() ?? '--');
 
-	$: console.log('[AsLog] Using ns=', ns);
+	$: if (ns) console.log('[AsLog] Using ns=', ns.dump());
 </script>
 
-<TabContent getSecondaryBarTitles={() => secondary_tabs} {name}>
+<TabContent secondaryBarTitles={secondary_tabs} {name}>
 	{#if ns}
 		<Setting {ns}>
 			<slot />

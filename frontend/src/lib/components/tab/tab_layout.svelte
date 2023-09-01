@@ -9,7 +9,7 @@
 
 	const secondary_bar_titles = derived(
 		active_tab,
-		(a) => $tabs.find((x) => x.title == a)?.getSecondaryBarTitles() || []
+		(a) => $tabs.find((x) => x.title == a)?.secondaryBarTitles || []
 	);
 
 	const tab_titles = derived(tabs, (a) => a.map((x) => x.title));

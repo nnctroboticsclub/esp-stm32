@@ -7,7 +7,7 @@
 	export let key: string;
 
 	const table = getNs();
-	const entry = table.entryStr(key);
+	const entry = $table.entryStr(key);
 </script>
 
 <InputText {name} {placeholder} bind:value={$entry} />

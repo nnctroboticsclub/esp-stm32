@@ -3,11 +3,11 @@ import { writable, type Writable } from "svelte/store";
 
 class Tab {
   title: string;
-  getSecondaryBarTitles: () => string[];
+  secondaryBarTitles: string[];
 
-  constructor(title: string, getSecondaryBarTitles: () => string[]) {
+  constructor(title: string, secondaryBarTitles: string[]) {
     this.title = title;
-    this.getSecondaryBarTitles = getSecondaryBarTitles;
+    this.secondaryBarTitles = secondaryBarTitles;
   }
 }
 
