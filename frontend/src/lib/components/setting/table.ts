@@ -6,7 +6,13 @@ import { writable, type Writable } from "svelte/store";
 export type Table = NVSNamespace;
 
 export function setNs(ns: Table) {
-  setContext("setting-namespace", writable(ns));
+  if (hasContext("setting-namespace")) {
+    const store = getContext<Writable<Table>>("setting-namespace");
+    store.set(ns);
+  } else {
+    setContext("setting-namespace", writable(ns));
+  }
+
 }
 
 export function getNs(): Writable<Table> {
