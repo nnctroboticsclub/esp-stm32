@@ -133,7 +133,7 @@
 			<EntrySelect key="parity" name="Parity" labels={['None', 'Even', 'Odd']} />
 		</AsTab>
 	</TabLayout>
-	<div class="bottom">
+	<div style="position: absolute; bottom: 10px; right: 10px">
 		<Button on:click={popUI}>Close</Button>
 		<Button on:click={() => (config = default_config.clone())}>Reset</Button>
 		<Button on:click={() => (config = config.clone())}>Apply</Button>
