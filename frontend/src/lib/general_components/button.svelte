@@ -20,7 +20,7 @@
 		dispatch('click');
 	}}
 	on:keydown={(e) => {
-		if (e.keyCode === 32 || e.key === 'Enter') {
+		if (e.key === ' ' || e.key === 'Enter') {
 			dispatch('click');
 		}
 	}}

@@ -22,6 +22,7 @@ export function getActiveTab(): Writable<string> {
 
   return store;
 }
+
 export function getActiveSecondaryTab(): Writable<string> {
   const has_context = hasContext("tab-secondary-active")
   if (has_context) {
@@ -32,6 +33,7 @@ export function getActiveSecondaryTab(): Writable<string> {
 
   return store;
 }
+
 export function getTabs(): Writable<Tab[]> {
   const has_context = hasContext("tab-tabs")
   if (has_context) {

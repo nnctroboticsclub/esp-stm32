@@ -249,7 +249,7 @@ class DebuggerHTTPServer {
         break;
       }
     }
-    std::vector<uint8_t> buf2;
+    /* std::vector<uint8_t> buf2;
     for (auto c : buf) {
       if (c == '@') {
         buf2.emplace_back('@');
@@ -263,8 +263,8 @@ class DebuggerHTTPServer {
       } else {
         buf2.emplace_back(c);
       }
-    }
-    httpd_resp_send(req, (const char *)buf2.data(), buf2.size());
+    } */
+    httpd_resp_send(req, (const char *)buf.data(), buf.size());
     ESP_LOGI(TAG, "Done Dumping");
     return ESP_OK;
   }

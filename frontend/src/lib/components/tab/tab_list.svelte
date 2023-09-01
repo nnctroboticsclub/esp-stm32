@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from './button.svelte';
+	import Button from '$lib/general_components/button.svelte';
 
 	export let tabs: string[];
 	export let active_tab: string;
