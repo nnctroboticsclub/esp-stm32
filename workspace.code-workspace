@@ -4,10 +4,8 @@
 			"path": "."
 		},
 		{
-			"path": "../NW-R"
-		},
-		{
-			"path": "../../../../work/Robocon"
+			"name": "NW-W Frontend",
+			"path": "frontend"
 		}
 	],
 	"settings": {
