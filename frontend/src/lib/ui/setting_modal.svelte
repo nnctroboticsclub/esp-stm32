@@ -93,7 +93,7 @@
 			<EntryNum key="port" name="Port" type="int" />
 			<EntryNum key="tx" name="TX" type="pin" />
 			<EntryNum key="rx" name="RX" type="pin" />
-			<EntryNum key="baudrate" name="baudrate" type="int" />
+			<EntryNum key="baudrate" name="Baud Rate" type="int" />
 
 			<EntrySelect key="parity" name="Parity" labels={['None', 'Even', 'Odd']} />
 		</AsTab>
