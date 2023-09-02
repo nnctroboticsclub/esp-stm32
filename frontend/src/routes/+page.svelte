@@ -36,29 +36,31 @@
 	const default_config = new Config(nvs);
 	let config = default_config.clone();
 
-	console.log(nvs);
+	config.network_list[0].ssid.set('Hello World');
+	config.network_list[0].password.set('Hello World');
+	config.network_list[0].hostname.set('Hello World');
+	config.network_list[0].ip.set(0x01020304);
+	config.network_list[0].subnet.set(0x01020304);
+	config.network_list[0].gateway.set(0x01020304);
+
 	console.log(config);
 
-	// config.network_list[0].ssid.set('Hello World');
-	// config.network_list[0].password.set('Hello World');
-	// config.network_list[0].hostname.set('Hello World');
-	// config.network_list[0].ip.set(0x01020304);
-	// config.network_list[0].subnet.set(0x01020304);
-	// config.network_list[0].gateway.set(0x01020304);
+	function applyConfig() {
+		console.log('[Config] Applying config');
 
-	function calculateScript(base: Config, update: Config): string[] {
-		const updated_script = update.nvs.dumpScript();
-		const base_script = base.nvs.dumpScript();
+		const updated_script = config.nvs.dumpScript();
+		const base_script = default_config.nvs.dumpScript();
 
-		return updated_script.filter((line) => !base_script.includes(line));
+		const script = updated_script.filter((line) => !base_script.includes(line));
+
+		script.map((x) => console.log(x));
 	}
-
-	const diff = calculateScript(default_config, config);
+	setTimeout(applyConfig, 100);
 
 	//
 
 	type UIName = 'main' | 'setting_modal';
-	let ui_stack: UIName[] = ['main', 'setting_modal'];
+	let ui_stack: UIName[] = ['main'];
 	let ui: UIName;
 	$: ui = ui_stack[ui_stack.length - 1];
 
@@ -84,18 +86,12 @@
 		File:<br />
 		<span>{filename}</span>
 	</div>
-
-	<div style="overflow-y: scroll; height: 300px;">
-		{#each diff as line}
-			{line}<br />
-		{/each}
-	</div>
 	<Log patch_console={true} />
 </div>
 
 <Modal showed={ui === 'setting_modal'} on:close={popUI}>
 	<TabLayout>
-		<AsTab ns_list={config.network_list} name="network">
+		<AsTab ns_list={config.network_list.map((x) => ({ ...x }))} name="network">
 			<EntryNum key="id" name="ID" type="int" />
 			<EntrySelect key="mode" name="Mode" labels={['None', 'STA', 'AP']} />
 			<EntryText key="ssid" name="SSID" />
@@ -105,26 +101,26 @@
 			<EntryNum key="subnet" name="Subnet Mask" type="ip_address" />
 			<EntryNum key="gateway" name="Gateway" type="ip_address" />
 		</AsTab>
-		<AsTab ns_list={config.stm32_list} name="stm32">
+		<AsTab ns_list={config.stm32_list.map((x) => ({ ...x }))} name="stm32">
 			<EntryNum key="id" name="ID" type="int" />
 			<EntryNum key="reset" name="Reset" type="pin" />
 			<EntryNum key="boot0" name="Boot0" type="pin" />
 			<EntryNum key="bid" name="BL" type="int" />
 			<EntryNum key="rid" name="RC" type="int" />
 		</AsTab>
-		<AsTab ns_list={config.bootloaders} name="stm32bl">
+		<AsTab ns_list={config.bootloaders.map((x) => ({ ...x }))} name="stm32bl">
 			<EntryNum key="id" name="ID" type="int" />
 			<EntrySelect key="bus_type" name="Type" labels={['SPI', 'UART']} />
 			<EntryNum key="bus_port" name="Port" type="int" />
 			<EntryNum key="cs" name="CS" type="pin" />
 		</AsTab>
-		<AsTab ns_list={config.spi_buses} name="spi">
-			<EntryNum key="port" name="ID" type="int" />
+		<AsTab ns_list={config.spi_buses.map((x) => ({ ...x }))} name="spi">
+			<EntryNum key="id" name="ID" type="int" />
 			<EntryNum key="miso" name="MISO" type="pin" />
 			<EntryNum key="mosi" name="MOSI" type="pin" />
 			<EntryNum key="sclk" name="SCLK" type="pin" />
 		</AsTab>
-		<AsTab ns_list={config.uart_ports} name="uart">
+		<AsTab ns_list={config.uart_ports.map((x) => ({ ...x }))} name="uart">
 			<EntryNum key="port" name="Port" type="int" />
 			<EntryNum key="tx" name="TX" type="pin" />
 			<EntryNum key="rx" name="RX" type="pin" />
@@ -136,7 +132,7 @@
 	<div style="position: absolute; bottom: 10px; right: 10px">
 		<Button on:click={popUI}>Close</Button>
 		<Button on:click={() => (config = default_config.clone())}>Reset</Button>
-		<Button on:click={() => (config = config.clone())}>Apply</Button>
+		<Button on:click={applyConfig}>Apply</Button>
 	</div>
 </Modal>
 

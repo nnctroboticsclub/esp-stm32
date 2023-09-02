@@ -10,7 +10,7 @@
 	const table = getNs();
 
 	let entry: NVSEntry<number>;
-	$: entry = $table.entryNum(key);
+	$: entry = $table[key] as NVSEntry<number>;
 </script>
 
-<InputSelect {name} bind:value={$entry} {labels}><slot /></InputSelect>
+<InputSelect {name} bind:value={$entry} {labels} />

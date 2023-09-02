@@ -32,17 +32,17 @@
 
 			return function () {
 				const args = Array.from(arguments);
-				const buf = '[' + name + '] ' + args.map(my_stringify).join(' ');
+				const buf = name + args.map(my_stringify).join(' ');
 				buffer += buf + '\n';
 				orig.apply(console, args);
 			};
 		}
 
-		console.log = factory(console.log, 'Console::log');
-		console.error = factory(console.error, 'Console::error');
-		console.warn = factory(console.warn, 'Console::warn');
-		console.info = factory(console.info, 'Console::info');
-		console.debug = factory(console.debug, 'Console::debug');
+		console.log = factory(console.log, 'C L: ');
+		console.error = factory(console.error, 'C E: ');
+		console.warn = factory(console.warn, 'C W: ');
+		console.info = factory(console.info, 'C I: ');
+		console.debug = factory(console.debug, 'C D: ');
 
 		console.log('Patched console logging functions.');
 	}
@@ -65,5 +65,7 @@
 		border-radius: 10px;
 		box-sizing: border-box;
 		overflow-y: scroll;
+		font-family: 'Fira Code Light', 'Fira Code', monospace;
+		font-size: small;
 	}
 </style>

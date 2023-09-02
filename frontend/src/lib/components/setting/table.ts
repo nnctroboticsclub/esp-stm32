@@ -1,9 +1,12 @@
-import type { NVSEntry, NVSNamespace } from "$lib/nvs_dump_reader/namespace";
+import type { NVSEntry } from "$lib/nvs_dump_reader/namespace";
 import { getContext, hasContext, setContext } from "svelte";
 import { writable, type Writable } from "svelte/store";
 
 
-export type Table = NVSNamespace;
+export type Table =
+  {
+    id: NVSEntry<number>
+  } & object;
 
 export function setNs(ns: Table) {
   if (hasContext("setting-namespace")) {
@@ -12,7 +15,6 @@ export function setNs(ns: Table) {
   } else {
     setContext("setting-namespace", writable(ns));
   }
-
 }
 
 export function getNs(): Writable<Table> {

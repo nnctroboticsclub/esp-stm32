@@ -1,15 +1,13 @@
-import { NVSNamespace, type NVSEntry } from "./namespace";
+import type { NVSNamespace, NVSEntry } from "./namespace";
 import { NVS } from "./nvs";
 
-class SPI extends NVSNamespace {
+class SPI {
   id: NVSEntry<number>;
   miso: NVSEntry<number>;
   mosi: NVSEntry<number>;
   sclk: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
     this.id = ns.entry<number>("port", 0);
     this.miso = ns.entry<number>("miso", 0);
     this.mosi = ns.entry<number>("mosi", 0);
@@ -21,7 +19,7 @@ class SPI extends NVSNamespace {
   }
 }
 
-class UART extends NVSNamespace {
+class UART {
   id: NVSEntry<number>;
   tx: NVSEntry<number>;
   rx: NVSEntry<number>;
@@ -29,8 +27,6 @@ class UART extends NVSNamespace {
   parity: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
     this.id = ns.entry<number>("port", 0);
     this.tx = ns.entry<number>("tx", 0);
     this.rx = ns.entry<number>("rx", 0);
@@ -43,14 +39,12 @@ class UART extends NVSNamespace {
   }
 }
 
-class Bus extends NVSNamespace {
+class Bus {
   bus_type: NVSEntry<number>;
   bus_port: NVSEntry<number>;
   cs: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
     this.bus_type = ns.entry<number>("bus_type", 0);
     this.bus_port = ns.entry<number>("bus_port", 0);
     this.cs = ns.entry<number>("cs", 0);
@@ -75,7 +69,7 @@ class STM32Bootloader extends Bus {
   }
 }
 
-class STM32 extends NVSNamespace {
+class STM32 {
   id: NVSEntry<number>;
   reset: NVSEntry<number>;
   boot0: NVSEntry<number>;
@@ -83,8 +77,6 @@ class STM32 extends NVSNamespace {
   rid: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
     this.id = ns.entry<number>("id", 0);
     this.reset = ns.entry<number>("reset", 0);
     this.boot0 = ns.entry<number>("boot0", 0);
@@ -97,7 +89,7 @@ class STM32 extends NVSNamespace {
   }
 }
 
-class Network extends NVSNamespace {
+class Network {
   id: NVSEntry<number>;
   mode: NVSEntry<number>;
   ip_mode: NVSEntry<number>;
@@ -109,17 +101,15 @@ class Network extends NVSNamespace {
   gateway: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
-    this.id = this.entry<number>("id", 0);
-    this.mode = this.entry<number>("mode", 0);
-    this.ip_mode = this.entry<number>("ip_mode", 0);
-    this.ssid = this.entry<string>("ssid", "");
-    this.password = this.entry<string>("password", "");
-    this.hostname = this.entry<string>("hostname", "");
-    this.ip = this.entry<number>("ip", 0);
-    this.subnet = this.entry<number>("subnet", 0);
-    this.gateway = this.entry<number>("gateway", 0);
+    this.id = ns.entry<number>("id", 0);
+    this.mode = ns.entry<number>("mode", 0);
+    this.ip_mode = ns.entry<number>("ip_mode", 0);
+    this.ssid = ns.entry<string>("ssid", "");
+    this.password = ns.entry<string>("password", "");
+    this.hostname = ns.entry<string>("hostname", "");
+    this.ip = ns.entry<number>("ip", 0);
+    this.subnet = ns.entry<number>("subnet", 0);
+    this.gateway = ns.entry<number>("gateway", 0);
   }
 
   toString(): string {
@@ -127,7 +117,7 @@ class Network extends NVSNamespace {
   }
 }
 
-class Master extends NVSNamespace {
+class Master {
   cds: NVSEntry<number>;
   cdu: NVSEntry<number>;
   csb: NVSEntry<number>;
@@ -135,8 +125,6 @@ class Master extends NVSNamespace {
   cn: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    super(ns);
-
     this.cds = ns.entry<number>("cds", 0);
     this.cdu = ns.entry<number>("cdu", 0);
     this.csb = ns.entry<number>("csb", 0);
@@ -170,11 +158,21 @@ export class Config {
 
     this.master = new Master(this.nvs.GetNS("mas"));
 
-    this.spi_buses = [...Array(this.master.cds.get() ?? 0).keys()].map((i) => new SPI(this.nvs.GetNS(`a_cs${i + 1}`)));
-    this.uart_ports = [...Array(this.master.cdu.get() ?? 0).keys()].map((i) => new UART(this.nvs.GetNS(`a_cu${i + 1}`)));
-    this.bootloaders = [...Array(this.master.csb.get() ?? 0).keys()].map((i) => new STM32Bootloader(this.nvs.GetNS(`a_sb${i + 1}`)));
-    this.stm32_list = [...Array(this.master.cs3.get() ?? 0).keys()].map((i) => new STM32(this.nvs.GetNS(`a_s3${i + 1}`)));
-    this.network_list = [...Array(this.master.cn.get() ?? 0).keys()].map((i) => new Network(this.nvs.GetNS(`a_nw${i + 1}`)));
+    this.spi_buses = [...Array(this.master.cds.get() ?? 0).keys()]
+      .map((i) => new SPI(this.nvs.GetNS(`a_cs${i + 1}`)));
+
+    this.uart_ports = [...Array(this.master.cdu.get() ?? 0).keys()]
+      .map((i) => new UART(this.nvs.GetNS(`a_cu${i + 1}`)));
+
+    this.bootloaders = [...Array(this.master.csb.get() ?? 0).keys()]
+      .map((i) => new STM32Bootloader(this.nvs.GetNS(`a_sb${i + 1}`)));
+
+    this.stm32_list = [...Array(this.master.cs3.get() ?? 0).keys()]
+      .map((i) => new STM32(this.nvs.GetNS(`a_s3${i + 1}`)));
+
+    this.network_list = [...Array(this.master.cn.get() ?? 0).keys()]
+      .map((i) => new Network(this.nvs.GetNS(`a_nw${i + 1}`)));
+
   }
 
   clone(): Config {
