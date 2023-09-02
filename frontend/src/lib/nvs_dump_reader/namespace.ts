@@ -1,83 +1,67 @@
+import { NVSType, type NVSTypeInstance } from "./nvs_entry_type";
+
 export class NVSNamespace {
   namespace_name: string;
-  str_entries: { [key: string]: NVSEntry<string> }
-  num_entries: { [key: string]: NVSEntry<number> }
-  num_array_entries: { [key: string]: NVSEntry<number[]> }
+  entries: {
+    [key in NVSType]: { [key: string]: NVSEntry<NVSTypeInstance<key>> }
+  }
 
   constructor(ns: NVSNamespace | string) {
-    this.str_entries = {};
-    this.num_entries = {};
-    this.num_array_entries = {};
+    this.entries = {
+      [NVSType.U8]: {},
+      [NVSType.I8]: {},
+      [NVSType.U16]: {},
+      [NVSType.I16]: {},
+      [NVSType.U32]: {},
+      [NVSType.I32]: {},
+      [NVSType.U64]: {},
+      [NVSType.I64]: {},
+      [NVSType.STR]: {},
+      [NVSType.BLOB]: {},
+    };
 
     if (typeof ns === 'string') {
       this.namespace_name = ns;
     } else {
       this.namespace_name = ns.namespace_name;
 
-      for (const key in ns.str_entries) {
-        this.str_entries[key] = ns.str_entries[key].clone(this);
-      }
+      const types = Object.keys(NVSType)
+        .map(x => NVSType[x as any] as unknown as NVSType)
+        .filter(x => Number.isInteger(x));
 
-      for (const key in ns.num_entries) {
-        this.num_entries[key] = ns.num_entries[key].clone(this);
-      }
-
-      for (const key in ns.num_array_entries) {
-        this.num_array_entries[key] = ns.num_array_entries[key].clone(this);
+      for (const t of types) {
+        for (const key in ns.entries[t]) {
+          this.entries[t][key] = ns.entries[t][key].clone(this);
+        }
       }
     }
   }
 
-  entryStr(key: string): NVSEntry<string> {
-    if (key in this.str_entries) {
-      return this.str_entries[key];
+  entry<T extends NVSType>(key: string, type: T) {
+    type Type = NVSTypeInstance<T>;
+
+    const store: { [key: string]: NVSEntry<NVSTypeInstance<T>> } = this.entries[type];
+
+    if (typeof store[key] === 'undefined') {
+      store[key] = new NVSEntry<Type>(this, key);
     }
 
-    this.str_entries[key] = new NVSEntry<string>(this, key);
-    return this.str_entries[key];
-  }
-  entryNum(key: string): NVSEntry<number> {
-    if (key in this.num_entries) {
-      return this.num_entries[key];
-    }
-    this.num_entries[key] = new NVSEntry<number>(this, key);
-    return this.num_entries[key];
-  }
-  entryNumArray(key: string): NVSEntry<number[]> {
-    if (key in this.num_array_entries) {
-      return this.num_array_entries[key];
-    }
-    this.num_array_entries[key] = new NVSEntry<number[]>(this, key);
-    return this.num_array_entries[key];
-  }
-
-  entry<T extends string | number | number[]>(key: string, instance: T): NVSEntry<T> {
-    if (typeof instance === 'string') {
-      // @ts-ignore
-      return this.entryStr(key);
-    } else if (typeof instance === 'number') {
-      // @ts-ignore
-      return this.entryNum(key);
-    } else if (Array.isArray(instance) && typeof instance[0] === 'number') {
-      // @ts-ignore
-      return this.entryNumArray(key);
-    }
-
-    throw new Error(`Invalid instance ${instance} ${typeof instance}=T`);
+    return store[key];
   }
 
   dump(): string[] {
-    return [
-      ...Object.keys(this.str_entries).map((key) => {
-        return `${this.namespace_name}.${key} = ${this.str_entries[key].get()}`;
-      }),
-      ...Object.keys(this.num_entries).map((key) => {
-        return `${this.namespace_name}.${key} = ${this.num_entries[key].get()}`;
-      }),
-      ...Object.keys(this.num_array_entries).map((key) => {
-        return `${this.namespace_name}.${key} = ${this.num_array_entries[key].get()?.join(',')}`;
-      })
-    ]
+    const types = Object.keys(NVSType)
+      .map(x => NVSType[x as any] as unknown as NVSType)
+      .filter(x => Number.isInteger(x));
+
+    const ns_name = this.namespace_name;
+
+    return types.map(t =>
+      Object.keys(this.entries[t])
+        .map((key) => {
+          return `${ns_name}.${key} = ${this.entries[t][key].get()}`;
+        })
+    ).flat();
   }
 }
 

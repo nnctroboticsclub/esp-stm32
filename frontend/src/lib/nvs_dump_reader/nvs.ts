@@ -1,6 +1,6 @@
 import { RawConfigParser } from './raw_config_parser';
 import { NVSNamespace } from './namespace';
-
+import type { NVSType, NVSTypeInstance } from './nvs_entry_type';
 
 
 export class NVS {
@@ -10,26 +10,17 @@ export class NVS {
     this.table = {}
   }
 
-  Set<T extends string | number | number[]>(namespace: string, key: string, value: T): T {
+  Set<T extends NVSType>(namespace: string, key: string, value: NVSTypeInstance<T>, type: T): NVSTypeInstance<T> {
     if (!(namespace in this.table)) {
       this.table[namespace] = new NVSNamespace(namespace);
     }
     const ns = this.table[namespace];
 
-    if (typeof value === 'string') {
-      return ns.entryStr(key).set(value) as T;
-    } else if (typeof value === 'number') {
-      return ns.entryNum(key).set(value) as T;
-    } else if (Array.isArray(value) && typeof value[0] === 'number') {
-      return ns.entryNumArray(key).set(value) as T;
-    }
-
-
-    return value;
+    return ns.entry(key, type).set(value);
   }
 
-  Get<T extends string | number | number[]>(namespace: string, key: string, instance: T): T | undefined {
-    return this.table[namespace].entry(key, instance).get();
+  Get<T extends NVSType>(namespace: string, key: string, type: T): NVSTypeInstance<T> | undefined {
+    return this.table[namespace].entry(key, type).get();
   }
 
   GetNS(namespace: string): NVSNamespace {
@@ -61,6 +52,8 @@ export class NVS {
       const namespace = reader.ReadString(namespace_len);
       const key = reader.ReadString(key_len);
 
+      const entry_type = type as NVSType;
+
       if ((type >> 4) == 0x0 || (type >> 4) == 0x1) {
         const bits = 8 * (type & 0x0f);
         let value = 0;
@@ -81,15 +74,16 @@ export class NVS {
             console.log(bits, type);
             throw new Error("Invalid type");
         }
-        nvs.Set(namespace, key, value);
+
+        nvs.Set(namespace, key, value, entry_type);
       } else if (type == 0x21) {
         const length = reader.ReadUint32();
         const str = reader.ReadString(length);
-        nvs.Set(namespace, key, str);
+        nvs.Set(namespace, key, str, entry_type);
       } else if (type == 0x42) {
         const length = reader.ReadUint32();
         const buffer = reader.ReadData(length);
-        nvs.Set(namespace, key, buffer);
+        nvs.Set(namespace, key, buffer, entry_type);
       } else {
         console.log(type);
         throw new Error('Unknown type');
@@ -99,8 +93,16 @@ export class NVS {
 
   }
 
-  dumpScript(): string[] {
-    return Object.keys(this.table).map((key) => this.table[key].
-      dump()).flat();
+  dump() {
+    return Object.keys(this.table).map(ns =>
+      Object.keys(this.table[ns].entries).map(t =>
+        Object.keys(this.table[ns].entries[t as unknown as NVSType]).map(key => ({
+          ns,
+          key,
+          type: parseInt(t) as NVSType,
+          value: this.table[ns].entries[t as unknown as NVSType][key].get()
+        }))
+      ).flat()
+    ).flat();
   }
 }

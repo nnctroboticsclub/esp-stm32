@@ -12,6 +12,7 @@
 		on:click|self={() => {
 			dispatch('close');
 		}}
+		role="dialog"
 	>
 		<div class="container">
 			<slot />

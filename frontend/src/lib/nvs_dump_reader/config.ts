@@ -1,5 +1,6 @@
 import type { NVSNamespace, NVSEntry } from "./namespace";
 import { NVS } from "./nvs";
+import { NVSType } from "./nvs_entry_type";
 
 class SPI {
   id: NVSEntry<number>;
@@ -8,10 +9,10 @@ class SPI {
   sclk: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.id = ns.entry<number>("port", 0);
-    this.miso = ns.entry<number>("miso", 0);
-    this.mosi = ns.entry<number>("mosi", 0);
-    this.sclk = ns.entry<number>("sclk", 0);
+    this.id = ns.entry("port", NVSType.U8);
+    this.miso = ns.entry("miso", NVSType.U8);
+    this.mosi = ns.entry("mosi", NVSType.U8);
+    this.sclk = ns.entry("sclk", NVSType.U8);
   }
 
   toString(): string {
@@ -27,11 +28,11 @@ class UART {
   parity: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.id = ns.entry<number>("port", 0);
-    this.tx = ns.entry<number>("tx", 0);
-    this.rx = ns.entry<number>("rx", 0);
-    this.baud_rate = ns.entry<number>("rate", 0);
-    this.parity = ns.entry<number>("prt", 0);
+    this.id = ns.entry("port", NVSType.U8);
+    this.tx = ns.entry("tx", NVSType.U8);
+    this.rx = ns.entry("rx", NVSType.U8);
+    this.baud_rate = ns.entry("rate", NVSType.U32);
+    this.parity = ns.entry("prt", NVSType.U8);
   }
 
   toString(): string {
@@ -45,9 +46,9 @@ class Bus {
   cs: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.bus_type = ns.entry<number>("bus_type", 0);
-    this.bus_port = ns.entry<number>("bus_port", 0);
-    this.cs = ns.entry<number>("cs", 0);
+    this.bus_type = ns.entry("bus_type", NVSType.U8);
+    this.bus_port = ns.entry("bus_port", NVSType.U8);
+    this.cs = ns.entry("cs", NVSType.U8);
   }
 
   toString(): string {
@@ -61,7 +62,7 @@ class STM32Bootloader extends Bus {
   constructor(ns: NVSNamespace) {
     super(ns)
 
-    this.id = ns.entry<number>("id", 0);
+    this.id = ns.entry("id", NVSType.U8);
   }
 
   toString(): string {
@@ -77,11 +78,11 @@ class STM32 {
   rid: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.id = ns.entry<number>("id", 0);
-    this.reset = ns.entry<number>("reset", 0);
-    this.boot0 = ns.entry<number>("boot0", 0);
-    this.bid = ns.entry<number>("bid", 0);
-    this.rid = ns.entry<number>("rid", 0);
+    this.id = ns.entry("id", NVSType.U8);
+    this.reset = ns.entry("reset", NVSType.U8);
+    this.boot0 = ns.entry("boot0", NVSType.U8);
+    this.bid = ns.entry("bid", NVSType.U8);
+    this.rid = ns.entry("rid", NVSType.U8);
   }
 
   toString(): string {
@@ -101,15 +102,15 @@ class Network {
   gateway: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.id = ns.entry<number>("id", 0);
-    this.mode = ns.entry<number>("mode", 0);
-    this.ip_mode = ns.entry<number>("ip_mode", 0);
-    this.ssid = ns.entry<string>("ssid", "");
-    this.password = ns.entry<string>("password", "");
-    this.hostname = ns.entry<string>("hostname", "");
-    this.ip = ns.entry<number>("ip", 0);
-    this.subnet = ns.entry<number>("subnet", 0);
-    this.gateway = ns.entry<number>("gateway", 0);
+    this.id = ns.entry("id", NVSType.U8);
+    this.mode = ns.entry("mode", NVSType.U8);
+    this.ip_mode = ns.entry("ip_mode", NVSType.U8);
+    this.ssid = ns.entry("ssid", NVSType.STR);
+    this.password = ns.entry("password", NVSType.STR);
+    this.hostname = ns.entry("hostname", NVSType.STR);
+    this.ip = ns.entry("ip", NVSType.U8);
+    this.subnet = ns.entry("subnet", NVSType.U8);
+    this.gateway = ns.entry("gateway", NVSType.U8);
   }
 
   toString(): string {
@@ -125,11 +126,11 @@ class Master {
   cn: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
-    this.cds = ns.entry<number>("cds", 0);
-    this.cdu = ns.entry<number>("cdu", 0);
-    this.csb = ns.entry<number>("csb", 0);
-    this.cs3 = ns.entry<number>("cs3", 0);
-    this.cn = ns.entry<number>("cn", 0);
+    this.cds = ns.entry("cds", NVSType.U8);
+    this.cdu = ns.entry("cdu", NVSType.U8);
+    this.csb = ns.entry("csb", NVSType.U8);
+    this.cs3 = ns.entry("cs3", NVSType.U8);
+    this.cn = ns.entry("cn", NVSType.U8);
   }
 
   toString(): string {

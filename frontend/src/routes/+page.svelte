@@ -7,7 +7,7 @@
 	import { TabLayout } from '$lib/components/tab';
 	import Button from '$lib/general_components/button.svelte';
 	import InputText from '$lib/general_components/input/input_text.svelte';
-	import { Config, NVS, TestNVS } from '$lib/nvs_dump_reader';
+	import { Config, NVS } from '$lib/nvs_dump_reader';
 
 	import Client from '$lib/nw_w_client';
 
@@ -17,45 +17,51 @@
 
 	$: filename = files ? files[0]?.name ?? 'Unspecified' : 'Unspecified';
 
+	let client: Client;
+
 	$: if (files) {
 		console.log(`Uploading file ${filename}`);
 		const reader = new FileReader();
 		reader.onload = async (e) => {
 			const data = e.target?.result;
-			const client = new Client(ip_addr);
+			if (!data) return;
 
 			await client.BLEnter();
 			await client.BLUpload(data);
-			await client.reset();
+			await client.S3reset();
 		};
 		reader.readAsArrayBuffer(files[0]);
 	}
 
-	const nvs = NVS.fromDump(TestNVS);
+	let nvs: NVS;
+	$: if (client) {
+		console.log('[Config] Reading config');
+		client.DumpNVS().then((x) => (nvs = NVS.fromDump([...new Uint8Array(x)])));
+	}
 
-	const default_config = new Config(nvs);
-	let config = default_config.clone();
+	let default_config: Config;
+	let config: Config;
 
-	config.network_list[0].ssid.set('Hello World');
-	config.network_list[0].password.set('Hello World');
-	config.network_list[0].hostname.set('Hello World');
-	config.network_list[0].ip.set(0x01020304);
-	config.network_list[0].subnet.set(0x01020304);
-	config.network_list[0].gateway.set(0x01020304);
-
-	console.log(config);
+	$: if (nvs) {
+		default_config = new Config(nvs);
+		config = default_config.clone();
+	}
 
 	function applyConfig() {
 		console.log('[Config] Applying config');
 
-		const updated_script = config.nvs.dumpScript();
-		const base_script = default_config.nvs.dumpScript();
+		const updated_script = config.nvs.dump();
+		const base_script = default_config.nvs.dump();
 
-		const script = updated_script.filter((line) => !base_script.includes(line));
+		const script = updated_script.filter(
+			(u_s) =>
+				!base_script.some(
+					(b_s) => b_s.ns === u_s.ns && b_s.key === u_s.key && b_s.value === u_s.value
+				)
+		);
 
 		script.map((x) => console.log(x));
 	}
-	setTimeout(applyConfig, 100);
 
 	//
 
@@ -77,6 +83,7 @@
 
 <div id="app" class:shadowed={ui !== 'main'}>
 	<Button on:click={() => pushUI('setting_modal')}>Settings</Button>
+	<Button on:click={() => (client = new Client(ip_addr))}>Connect</Button>
 	<InputText name="IP Address" bind:value={ip_addr} placeholder="Server IP Address" />
 	<div id="file_chooser">
 		<input type="file" name="" id="file_selector" bind:files />
