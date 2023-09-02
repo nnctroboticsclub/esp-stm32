@@ -5,7 +5,7 @@ function fetch_wrapper(url: string, data: string | ArrayBuffer | undefined = und
         -1;
   const data_size_str = data_size != -1 ? `(${data_size} bytes)` : "";
 
-  console.log(`[Fetch] ${method} ${url} siz${data_size_str}`);
+  console.log(`[Fetch] ${method} ${url} ${data_size_str}`);
 
   return fetch(url, {
     method: method,
@@ -97,9 +97,9 @@ export default class Client {
       buf
     );
     if (res.ok) {
-      console.log("[Client] NVS Set Success");
+      console.log(`[Client] NVS Set Success ${ns}/${key} [${type}]`);
     } else {
-      console.error("[Client] NVS Set Failed");
+      console.error(`[Client] NVS Set Failed ${ns}/${key} [${type}]`);
     }
   }
 }
