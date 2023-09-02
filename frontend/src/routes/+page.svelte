@@ -65,12 +65,12 @@
 	$: ui = ui_stack[ui_stack.length - 1];
 
 	function popUI() {
-		console.log('[UI] pop UI');
+		// console.log('[UI] pop UI');
 		ui_stack = ui_stack.slice(0, ui_stack.length - 1);
 	}
 
 	function pushUI(name: UIName) {
-		console.log(`[UI] Push UI ${name}`);
+		// console.log(`[UI] Push UI ${name}`);
 		ui_stack = [...ui_stack, name];
 	}
 </script>

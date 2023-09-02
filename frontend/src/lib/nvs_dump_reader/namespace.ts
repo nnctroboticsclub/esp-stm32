@@ -13,7 +13,6 @@ export class NVSNamespace {
       this.namespace_name = ns;
     } else {
       this.namespace_name = ns.namespace_name;
-      console.log('[NVSNamespace] Cloning namespace', this.namespace_name);
 
       for (const key in ns.str_entries) {
         this.str_entries[key] = ns.str_entries[key].clone(this);
