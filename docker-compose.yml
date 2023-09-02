@@ -1,0 +1,19 @@
+version: '3.1'
+services:
+  frontend-dev:
+    build: ./frontend
+    command: pnpm run dev --host 0.0.0.0
+    volumes:
+      - ./frontend:/usr/src/app
+    ports:
+      - "5173:5173"
+    profiles:
+      - dev
+
+  frontend-build:
+    build: ./frontend
+    command: pnpm run build
+    volumes:
+      - ./frontend:/usr/src/app
+    profiles:
+      - build
