@@ -53,14 +53,37 @@
 		const updated_script = config.nvs.dump();
 		const base_script = default_config.nvs.dump();
 
-		const script = updated_script.filter(
-			(u_s) =>
-				!base_script.some(
-					(b_s) => b_s.ns === u_s.ns && b_s.key === u_s.key && b_s.value === u_s.value
-				)
-		);
+		const script = updated_script
+			.filter(
+				(u_s) =>
+					typeof u_s.value !== 'undefined' &&
+					!base_script.some(
+						(b_s) => b_s.ns === u_s.ns && b_s.key === u_s.key && b_s.value === u_s.value
+					)
+			)
+			.map((x) => ({
+				...x,
+				value:
+					typeof x.value === 'string'
+						? [...x.value].map((x) => x.charCodeAt(0))
+						: typeof x.value === 'number'
+						? [
+								(x.value >>> 24) & 0xff,
+								(x.value >>> 16) & 0xff,
+								(x.value >>> 8) & 0xff,
+								x.value & 0xff
+						  ]
+						: (x.value as number[])
+			}));
 
-		script.map((x) => console.log(x));
+		script.forEach((opt) => {
+			client.UploadNVS(opt.ns, opt.key, opt.type, opt.value);
+		});
+
+		client.reset();
+
+		client = undefined as unknown as Client;
+		config = undefined as unknown as Config;
 	}
 
 	//
@@ -82,8 +105,12 @@
 </script>
 
 <div id="app" class:shadowed={ui !== 'main'}>
-	<Button on:click={() => pushUI('setting_modal')}>Settings</Button>
-	<Button on:click={() => (client = new Client(ip_addr))}>Connect</Button>
+	<div class="app-bar">
+		<Button on:click={() => (client = new Client(ip_addr))}>Connect</Button>
+		{#if config}
+			<Button on:click={() => pushUI('setting_modal')}>Edit ESP32 config</Button>
+		{/if}
+	</div>
 	<InputText name="IP Address" bind:value={ip_addr} placeholder="Server IP Address" />
 	<div id="file_chooser">
 		<input type="file" name="" id="file_selector" bind:files />
@@ -156,6 +183,14 @@
 		box-sizing: border-box;
 		box-shadow: 0 0 10px #888;
 		border-radius: 10px;
+	}
+	#app > .app-bar {
+		width: 100%;
+		height: 60px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-start;
 	}
 	#app > #file_chooser {
 		position: relative;
