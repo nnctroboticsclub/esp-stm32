@@ -90,7 +90,7 @@
 			<EntryNum key="sclk" name="SCLK" type="pin" />
 		</AsTab>
 		<AsTab ns_list={config.uart_ports.map((x) => ({ ...x }))} name="uart">
-			<EntryNum key="port" name="Port" type="int" />
+			<EntryNum key="id" name="ID" type="int" />
 			<EntryNum key="tx" name="TX" type="pin" />
 			<EntryNum key="rx" name="RX" type="pin" />
 			<EntryNum key="baudrate" name="Baud Rate" type="int" />
