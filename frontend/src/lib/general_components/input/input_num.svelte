@@ -38,7 +38,7 @@
 		{name}
 	</span>
 	{#if type === 'ip_address'}
-		<Ip bind:value={$value_as_str} />
+		<Ip initial_value={value} bind:value />
 	{:else if type === 'pin'}
 		<InputImpl {placeholder} type="number" bind:value={$value_as_str} />
 	{:else if type === 'int'}
