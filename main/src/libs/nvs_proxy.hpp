@@ -154,6 +154,58 @@ inline void Set<uint32_t>(nvs_handle_t handle, std::string const& key,
     throw NVSError();
   }
 }
+template <>
+inline void Set<int8_t>(nvs_handle_t handle, std::string const& key,
+                        int8_t const& value) {
+  auto ret = nvs_set_i8(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
+}
+
+template <>
+inline void Set<int16_t>(nvs_handle_t handle, std::string const& key,
+                         int16_t const& value) {
+  auto ret = nvs_set_i16(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
+}
+
+template <>
+inline void Set<int32_t>(nvs_handle_t handle, std::string const& key,
+                         int32_t const& value) {
+  auto ret = nvs_set_i32(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
+}
+template <>
+inline void Set<uint64_t>(nvs_handle_t handle, std::string const& key,
+                          uint64_t const& value) {
+  auto ret = nvs_set_u64(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
+}
+template <>
+inline void Set<int64_t>(nvs_handle_t handle, std::string const& key,
+                         int64_t const& value) {
+  auto ret = nvs_set_i64(handle, key.c_str(), value);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
+}
 
 template <>
 inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
@@ -169,6 +221,18 @@ inline void Set<std::string>(nvs_handle_t handle, std::string const& key,
   }
 
   delete[] zero_terminated;
+}
+
+template <>
+inline void Set<std::vector<uint8_t>>(nvs_handle_t handle,
+                                      std::string const& key,
+                                      std::vector<uint8_t> const& value) {
+  if (auto ret = nvs_set_blob(handle, key.c_str(), value.data(), value.size());
+      ret != ESP_OK) {
+    ESP_LOGE(TAG, "NVS set failed: %s[%d] %s on %ld", esp_err_to_name(ret), ret,
+             key.c_str(), handle);
+    throw NVSError();
+  }
 }
 
 template <typename T>
@@ -223,6 +287,8 @@ class Namespace {
   const std::string ns;
   bool dirty = false;
 
+  friend class SharedNamespace;
+
  public:
   Namespace() = delete;
 
@@ -255,18 +321,29 @@ class Namespace {
 
 class SharedNamespace {
  private:
+  static std::vector<std::shared_ptr<Namespace>> namespaces;
   std::shared_ptr<Namespace> ns;
 
+  static std::shared_ptr<Namespace> GetNS(std::string const& ns) {
+    ESP_LOGI("SharedNamespace", "GetNS: %s", ns.c_str());
+    for (auto& n : namespaces) {
+      if (n->ns == ns) return n;
+    }
+
+    namespaces.push_back(std::make_shared<Namespace>(ns));
+    return namespaces.back();
+  }
+
  public:
-  explicit SharedNamespace(const char* ns)
-      : ns(std::make_shared<Namespace>(ns)) {}
+  explicit SharedNamespace(const char* ns) : ns(SharedNamespace::GetNS(ns)) {}
 
   explicit SharedNamespace(std::string const& ns)
-      : ns(std::make_shared<Namespace>(ns)) {}
+      : ns(SharedNamespace::GetNS(ns)) {}
 
   explicit SharedNamespace(SharedNamespace const* other) : ns(other->ns) {}
 
   void Commit() { this->ns->Commit(); }
+  static void CloseAll() { namespaces.clear(); }
 
   Namespace* operator->() const { return this->ns.get(); }
 };

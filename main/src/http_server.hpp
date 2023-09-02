@@ -5,9 +5,27 @@
 
 #include <memory>
 #include <vector>
+#include <connection/data_link/base.hpp>
 
 #include "config/config.hpp"
 #include "init/init.hpp"
+
+namespace connection::data_link {
+class HTTPdClient : public Receivable {
+  httpd_req_t *req;
+
+ public:
+  HTTPdClient(httpd_req_t *req) : req(req) {}
+
+  size_t Recv(std::vector<uint8_t> &buf,
+              TickType_t timeout = 1000 / portTICK_PERIOD_MS) final {
+    return httpd_req_recv(req, reinterpret_cast<char *>(buf.data()),
+                          buf.size());
+  }
+
+  ~HTTPdClient() { httpd_send(req, NULL, 0); }
+};
+}  // namespace connection::data_link
 
 namespace debug_httpd {
 struct STM32State {
@@ -133,6 +151,7 @@ class DebuggerHTTPServer {
 
     xTaskCreate((TaskFunction_t)([](void *args) {
                   vTaskDelay(200 / portTICK_PERIOD_MS);
+                  nvs::Namespace::CloseAll();
                   esp_restart();
                   return;
                 }),
@@ -249,23 +268,95 @@ class DebuggerHTTPServer {
         break;
       }
     }
-    /* std::vector<uint8_t> buf2;
-    for (auto c : buf) {
-      if (c == '@') {
-        buf2.emplace_back('@');
-        buf2.emplace_back('@');
-      } else if (c == '\r') {
-        buf2.emplace_back('@');
-        buf2.emplace_back('1');
-      } else if (c == '\n') {
-        buf2.emplace_back('@');
-        buf2.emplace_back('2');
-      } else {
-        buf2.emplace_back(c);
-      }
-    } */
+
     httpd_resp_send(req, (const char *)buf.data(), buf.size());
     ESP_LOGI(TAG, "Done Dumping");
+    return ESP_OK;
+  }
+
+  static esp_err_t NVS_Set(httpd_req_t *req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    auto client = new connection::data_link::HTTPdClient(req);
+
+    nvs_flash_init();
+
+    const auto kNsLength = client->RecvU32();
+    std::vector<uint8_t> ns_vec(kNsLength, 0);
+    client->RecvExactly(ns_vec);
+    std::string ns_name(ns_vec.begin(), ns_vec.end());
+
+    const auto kKeyLength = client->RecvU32();
+    std::vector<uint8_t> key_vec(kKeyLength, 0);
+    client->RecvExactly(key_vec);
+    std::string key(key_vec.begin(), key_vec.end());
+
+    nvs::Namespace ns(ns_name);
+
+    auto mode = (nvs_type_t)client->RecvChar();
+    switch (mode) {
+      case NVS_TYPE_U8: {
+        auto value = client->RecvU32();
+        ns->Set<uint8_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_I8: {
+        auto value = client->RecvU32();
+        ns->Set<int8_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_U16: {
+        auto value = client->RecvU32();
+        ns->Set<uint16_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_I16: {
+        auto value = client->RecvU32();
+        ns->Set<int16_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_U32: {
+        auto value = client->RecvU32();
+        ns->Set<uint32_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_I32: {
+        auto value = client->RecvU32();
+        ns->Set<int32_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_U64: {
+        auto value = client->RecvU32();
+        ns->Set<uint64_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_I64: {
+        auto value = client->RecvU32();
+        ns->Set<int64_t>(key, value);
+        break;
+      }
+      case NVS_TYPE_STR: {
+        const auto kValueLength = client->RecvU32();
+        std::vector<uint8_t> value(kValueLength);
+        client->RecvExactly(value);
+        std::string value_str(value.begin(), value.end());
+        ns->Set<std::string>(key, value_str);
+        break;
+      }
+      case NVS_TYPE_BLOB: {
+        const auto kValueLength = client->RecvU32();
+        std::vector<uint8_t> value(kValueLength);
+        client->RecvExactly(value);
+        ns->Set<std::vector<uint8_t>>(key, value);
+        break;
+      }
+      default: {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "Invalid NVS Type: %d", mode);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, buf);
+        return ESP_FAIL;
+      }
+    }
+    httpd_resp_sendstr(req, "OK");
     return ESP_OK;
   }
 
@@ -309,6 +400,10 @@ class DebuggerHTTPServer {
         {.uri = "/api/nvs/dump",
          .method = HTTP_POST,
          .handler = DebuggerHTTPServer::NVS_Dump,
+         .user_ctx = nullptr},
+        {.uri = "/api/nvs/set",
+         .method = HTTP_POST,
+         .handler = DebuggerHTTPServer::NVS_Set,
          .user_ctx = nullptr},
 
     };

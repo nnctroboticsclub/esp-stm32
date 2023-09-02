@@ -1,5 +1,8 @@
 #include "nvs_proxy.hpp"
 
+std::vector<std::shared_ptr<nvs::detail::Namespace>>
+    nvs::detail::SharedNamespace::namespaces;
+
 void nvs::DumpNVS() {
   static constexpr const char* TAG = "nvs";
 
