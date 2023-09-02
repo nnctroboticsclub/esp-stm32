@@ -108,9 +108,9 @@ class Network {
     this.ssid = ns.entry("ssid", NVSType.STR);
     this.password = ns.entry("password", NVSType.STR);
     this.hostname = ns.entry("hostname", NVSType.STR);
-    this.ip = ns.entry("ip", NVSType.U8);
-    this.subnet = ns.entry("subnet", NVSType.U8);
-    this.gateway = ns.entry("gateway", NVSType.U8);
+    this.ip = ns.entry("ip", NVSType.U32);
+    this.subnet = ns.entry("subnet", NVSType.U32);
+    this.gateway = ns.entry("gateway", NVSType.U32);
   }
 
   toString(): string {
