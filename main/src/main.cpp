@@ -17,11 +17,15 @@
 #include "libs/gpio.hpp"
 #include "libs/button.hpp"
 #include "console/wifi.hpp"
+#include "conn_proxy/conn_proxy.hpp"
 
 const char* const TAG = "Main";
 
 void BootStrap() {
   using Config = config::Config;
+
+  ESP_LOGI(TAG, "Booting up (stage1: BootStrap)");
+  nvs::DumpNVS();
 
   idf::GPIOInput flag(idf::GPIONum(22));
   flag.set_pull_mode(idf::GPIOPullMode::PULLDOWN());
@@ -29,6 +33,12 @@ void BootStrap() {
     ESP_LOGI(TAG, "Erasing the NVS (reason: gpio 22 is high)");
     nvs_flash_erase();
   }
+}
+
+void Init() {
+  using Config = config::Config;
+
+  ESP_LOGI(TAG, "Booting up (stage2: Init)");
 
   auto& config = Config::GetInstance();
 
@@ -74,22 +84,7 @@ void BootStrap() {
 
     Config::GetInstance().master.Commit();
   }
-}
-
-void Init() {
   return;
-
-  // auto config = config::Config::GetInstance();
-  // xTaskCreate((TaskFunction_t)([](void* args) {
-  //               while (true) {
-  //                 vTaskDelay(50 / portTICK_PERIOD_MS);
-  //                 ((DebuggerMaster*)args)->Idle();
-  //               }
-  //               return;
-  //             }),
-  //             "Debugger Idling Thread", 0x1000,
-  //             config->stm32_remote_controller_profile.GetDebuggerMaster(), 1,
-  //             nullptr);
 }
 
 debug_httpd::DebuggerHTTPServer server;
@@ -100,28 +95,23 @@ void Main() {
 }
 
 extern "C" int app_main() {
-  nvs::DumpNVS();
   BootStrap();
 
   Init();
 
-  // std::jthread t([]() {
-  //   vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-  //  //   esp_console_repl_t* repl = nullptr;
-  //   esp_console_repl_config_t repl_config =
-  //   ESP_CONSOLE_REPL_CONFIG_DEFAULT(); repl_config.prompt = "esp32-ru> ";
-
-  //  //   esp_console_register_help_command();
-
-  //  //   cmd::wifi::RegisterCommands();
-
-  //  //   esp_console_dev_uart_config_t uart_config =
-  //       ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
-  //   ESP_ERROR_CHECK(
-  //       esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
-  //   ESP_ERROR_CHECK(esp_console_start_repl(repl));
-  // });
+  std::jthread t([]() {
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    esp_console_repl_t* repl = nullptr;
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+    repl_config.prompt = "esp32-ru> ";
+    esp_console_register_help_command();
+    cmd::wifi::RegisterCommands();
+    esp_console_dev_uart_config_t uart_config =
+        ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(
+        esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
+    ESP_ERROR_CHECK(esp_console_start_repl(repl));
+  });
 
   Main();
 
