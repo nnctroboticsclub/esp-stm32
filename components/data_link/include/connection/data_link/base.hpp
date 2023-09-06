@@ -1,9 +1,9 @@
 #pragma once
 
+#include <freertos/FreeRTOS.h>
+
 #include <vector>
 #include <stdexcept>
-
-#include <freertos/FreeRTOS.h>
 
 namespace connection::data_link {
 
@@ -13,16 +13,18 @@ class ConnectionClosedError : public std::runtime_error {
 };
 
 class Receivable {
-  bool trace_enabled = false;
+  bool recv_trace_enabled = false;
 
  public:
-  inline bool IsTraceEnabled() const { return this->trace_enabled; }
-  inline void SetTraceEnabled(bool enabled) { this->trace_enabled = enabled; }
+  virtual ~Receivable();
+
+  inline bool IsRecvTraceEnabled() const { return this->recv_trace_enabled; }
+  inline void SetRecvTraceEnabled(bool enabled) {
+    this->recv_trace_enabled = enabled;
+  }
 
   virtual size_t Recv(std::vector<uint8_t> &buf,
                       TickType_t timeout = 1000 / portTICK_PERIOD_MS) = 0;
-
-  virtual ~Receivable();
 
   char RecvChar(TickType_t timeout = 1000 / portTICK_PERIOD_MS) {
     std::vector<uint8_t> c{0};
@@ -65,15 +67,17 @@ class Receivable {
 };
 
 class Sendable {
-  bool trace_enabled = false;
+  bool send_trace_enabled = false;
 
  public:
-  inline bool IsTraceEnabled() const { return this->trace_enabled; }
-  inline void SetTraceEnabled(bool enabled) { this->trace_enabled = enabled; }
+  virtual ~Sendable();
+
+  inline bool IsSendTraceEnabled() const { return this->send_trace_enabled; }
+  inline void SetSendTraceEnabled(bool enabled) {
+    this->send_trace_enabled = enabled;
+  }
 
   virtual size_t Send(const std::vector<uint8_t> &buf) = 0;
-
-  virtual ~Sendable();
 
   template <int N>
   size_t Send(const char (&buf)[N]) {
@@ -108,13 +112,15 @@ class Sendable {
 
 class RecvAndSend : public Receivable, public Sendable {
  public:
-  ~RecvAndSend();
+  ~RecvAndSend() override;
+
   inline bool IsTraceEnabled() const {
-    return Receivable::IsTraceEnabled() || Sendable::IsTraceEnabled();
+    return this->IsRecvTraceEnabled() || this->IsSendTraceEnabled();
   }
+
   inline void SetTraceEnabled(bool enabled) {
-    Receivable::SetTraceEnabled(enabled);
-    Sendable::SetTraceEnabled(enabled);
+    this->SetRecvTraceEnabled(enabled);
+    this->SetSendTraceEnabled(enabled);
   }
 };
 }  // namespace connection::data_link
