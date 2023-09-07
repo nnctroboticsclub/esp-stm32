@@ -7,7 +7,7 @@
       "command": "python3 ~/.platformio/packages/framework-espidf/tools/idf.py build",
       "options": {
         "env": {
-          "PATH": "${env:HOME}/.espressif/python_env/idf5.0_py3.11_env/bin:${env:HOME}/.platformio/packages/framework-espidf/tools:${env:PATH}",
+          "PATH": "${env:HOME}/.platformio/packages/toolchain-xtensa-esp32/bin:${env:HOME}/.espressif/python_env/idf5.0_py3.11_env/bin:${env:HOME}/.platformio/packages/framework-espidf/tools:${env:PATH}",
           "IDF_PATH": "${env:HOME}/.platformio/packages/framework-espidf",
         }
       },
