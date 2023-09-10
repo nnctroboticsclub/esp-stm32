@@ -155,7 +155,7 @@ class Bus {
 
  public:
   virtual ~Bus() = default;
-  std::shared_ptr<Port> GetPort(PortID port_id);
+  std::shared_ptr<Port> GetPort(PortID port_id, bool auto_generate);
 };
 
 class SPIBus : public Bus {
@@ -176,7 +176,7 @@ class I2CBus : public Bus {
   ~I2CBus() override = default;
   inline explicit I2CBus(idf::I2CNumber bus_id, idf::SDA_GPIO const sda,
                          idf::SCL_GPIO const scl)
-      : master(bus_id, scl, sda, idf::Frequency::KHz(400)) {}
+      : master(bus_id, scl, sda, idf::Frequency::KHz(100)) {}
 
   std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) override;
 };

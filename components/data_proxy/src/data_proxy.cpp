@@ -10,10 +10,7 @@ void check_size() {
 }
 }  // namespace
 
-Link::Link(T link) : link(link) {
-  check_size<Command, 1>();
-  link->SetTraceEnabled(true);  // TODO(syoch): remove
-}
+Link::Link(T link) : link(link) { check_size<Command, 1>(); }
 
 void Link::SendPacket(const Packet& packet) const {
   const Packet* packet_ptr = &packet;
@@ -37,12 +34,15 @@ void Link::SendPacket(const Packet& packet) const {
 
 Packet Link::RecvPacket() const {
   // ACK
-  ESP_LOGI("Link", "Wait ACK");
   do {
-    this->link->SendChar(0xa5);
-
-  } while (this->link->RecvChar() != 0xa5);
-  ESP_LOGI("Link", "Got ACK");
+    auto ch = this->link->RecvChar();
+    if (ch == 0xa5) {
+      this->link->SendChar(0x5A);
+      break;
+    } else {
+      this->link->SendChar(0xFE);
+    }
+  } while (true);
 
   Packet packet{.raw_command = 0,
                 .bus_id = 0,
@@ -64,7 +64,6 @@ Packet Link::RecvPacket() const {
 
   // Recv data
   packet.data_size = this->link->RecvU32();
-  ESP_LOGI("Link", "Data size: %ld", packet.data_size);
   if (packet.data_size) {
     std::vector<uint8_t> buffer(packet.data_size, 0);
     this->link->Recv(buffer);
@@ -79,14 +78,20 @@ Packet Link::RecvPacket() const {
 }
 
 //* Bus
-std::shared_ptr<Port> Bus::GetPort(PortID port_id) {
-  auto it = ports.find(port_id);
-  if (it == ports.end()) {
-    auto port = CreatePortImpl(port_id);
-    ports[port_id] = port;
-    return port;
+std::shared_ptr<Port> Bus::GetPort(PortID port_id, bool auto_generate) {
+  auto it = this->ports.find(port_id);
+
+  if (it != this->ports.end()) {
+    return it->second;
   }
-  return it->second;
+
+  if (!auto_generate) {
+    return nullptr;
+  }
+
+  auto port = CreatePortImpl(port_id);
+  this->ports[port_id] = port;
+  return port;
 }
 
 //* SPIBus
@@ -137,6 +142,18 @@ class Proxy::Impl {
     response.command = Command::kBusNewNotify;
     response.bus_id = bus_id;
     response.port_id = 0;
+    response.optional = 0;
+    response.data_size = 0;
+    response.data = nullptr;
+    this->link.SendPacket(response);
+  }
+
+  void NotifyNewPort(uint8_t bus_id, uint8_t port_id) {
+    ESP_LOGI(TAG, "Notifying new port %d on bus %d", port_id, bus_id);
+    Packet response;
+    response.command = Command::kPortNewNotify;
+    response.bus_id = bus_id;
+    response.port_id = port_id;
     response.optional = 0;
     response.data_size = 0;
     response.data = nullptr;
@@ -205,14 +222,38 @@ class Proxy::Impl {
     this->NotifyNewBus(bus_id);
   }
 
+  void HandlePortNew(Packet const& packet) {
+    using enum CommandKind;
+
+    auto bus_id = packet.bus_id;
+    auto port_id = packet.port_id;
+
+    ESP_LOGI(TAG, "Creating port %d on bus %d", port_id, bus_id);
+
+    if (!this->buses.contains(bus_id)) {
+      ESP_LOGE(TAG, "Unknown bus: %d", bus_id);
+      throw UnknownBus();
+    }
+    auto bus = this->buses[bus_id];
+
+    auto port = bus->GetPort(port_id, true);
+    if (port) {
+      ESP_LOGW(TAG, "Port already exists: %d", port_id);
+    }
+
+    this->NotifyNewPort(bus_id, port_id);
+  }
+
   void HandlePortWrite(Packet const& packet) {
-    if (this->buses.contains(packet.bus_id)) {
+    if (!this->buses.contains(packet.bus_id)) {
+      ESP_LOGE(TAG, "Unknown bus: %d", packet.bus_id);
       throw UnknownBus();
     }
     auto bus = this->buses[packet.bus_id];
 
-    auto port = bus->GetPort(packet.port_id);
+    auto port = bus->GetPort(packet.port_id, false);
     if (!port) {
+      ESP_LOGE(TAG, "Unknown port: %d", packet.port_id);
       throw UnknownPort();
     }
 
@@ -223,13 +264,15 @@ class Proxy::Impl {
   }
 
   void HandlePortRead(Packet const& packet) {
-    if (this->buses.contains(packet.bus_id)) {
+    if (!this->buses.contains(packet.bus_id)) {
+      ESP_LOGE(TAG, "Unknown bus: %d", packet.bus_id);
       throw UnknownBus();
     }
     auto bus = this->buses[packet.bus_id];
 
-    auto port = bus->GetPort(packet.port_id);
+    auto port = bus->GetPort(packet.port_id, false);
     if (!port) {
+      ESP_LOGE(TAG, "Unknown port: %d", packet.port_id);
       throw UnknownPort();
     }
 
@@ -277,19 +320,41 @@ class Proxy::Impl {
     }
     handlers[(uint8_t)kBusNewSPI] = &Impl::HandleNewSPIBus;
     handlers[(uint8_t)kBusNewI2C] = &Impl::HandleNewI2CBus;
+    handlers[(uint8_t)kPortNew] = &Impl::HandlePortNew;
     handlers[(uint8_t)kIoPortWrite] = &Impl::HandlePortWrite;
     handlers[(uint8_t)kIoPortRead] = &Impl::HandlePortRead;
   }
 
   [[noreturn]] void Thread() {
     while (true) {
-      ESP_LOGI(TAG, "Waiting for packet");
       auto packet = this->link.RecvPacket();
       auto handler = handlers[packet.raw_command];
       try {
         (this->*handler)(packet);
       } catch (InvalidBusID&) {
         uint8_t buf[1] = {static_cast<uint8_t>(Errno::kInvalidBusID)};
+
+        Packet response;
+        response.command = Command::kGeneralRecoverableError;
+        response.bus_id = packet.bus_id;
+        response.port_id = packet.port_id;
+        response.optional = packet.optional;
+        response.data_size = 1;
+        response.data = buf;
+        this->link.SendPacket(response);
+      } catch (UnknownBus&) {
+        uint8_t buf[1] = {static_cast<uint8_t>(Errno::kUnknownBus)};
+
+        Packet response;
+        response.command = Command::kGeneralRecoverableError;
+        response.bus_id = packet.bus_id;
+        response.port_id = packet.port_id;
+        response.optional = packet.optional;
+        response.data_size = 1;
+        response.data = buf;
+        this->link.SendPacket(response);
+      } catch (UnknownPort&) {
+        uint8_t buf[1] = {static_cast<uint8_t>(Errno::kUnknownPort)};
 
         Packet response;
         response.command = Command::kGeneralRecoverableError;
