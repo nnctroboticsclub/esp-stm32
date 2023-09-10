@@ -77,6 +77,29 @@ Packet Link::RecvPacket() const {
   return packet;
 }
 
+//* Port
+template <typename DataLink>
+class HWPort : public Port {
+  DataLink device;
+
+  size_t Recv(std::vector<uint8_t>& buf,
+              TickType_t timeout = 1000 / portTICK_PERIOD_MS) override {
+    return device.Recv(buf, timeout);
+  }
+
+  size_t Send(const std::vector<uint8_t>& buf) override {
+    return device.Send(buf);
+  }
+
+ public:
+  template <typename... Args>
+  inline explicit HWPort(PortID id, Args&&... args)
+      : Port(id), device(std::forward<Args>(args)...) {}
+};
+
+using SPIPort = HWPort<stream::datalink::SPIDevice>;
+using I2CPort = HWPort<stream::datalink::I2CDevice>;
+
 //* Bus
 std::shared_ptr<Port> Bus::GetPort(PortID port_id, bool auto_generate) {
   auto it = this->ports.find(port_id);
@@ -94,19 +117,36 @@ std::shared_ptr<Port> Bus::GetPort(PortID port_id, bool auto_generate) {
   return port;
 }
 
-//* SPIBus
-std::shared_ptr<Port> SPIBus::CreatePortImpl(uint8_t port_id) {
-  auto port =
-      std::make_shared<SPIPort>(port_id, this->master, (idf::CS)port_id);
-  return port;
-}
+class SPIBus : public Bus {
+  idf::SPIMaster master;
 
-//* I2CBus
-std::shared_ptr<Port> I2CBus::CreatePortImpl(uint8_t port_id) {
-  auto port = std::make_shared<I2CPort>(port_id, this->master,
-                                        idf::I2CAddress(port_id));
-  return port;
-}
+ public:
+  ~SPIBus() override = default;
+  inline explicit SPIBus(idf::SPINum bus_id, idf::MOSI const mosi,
+                         idf::MISO const miso, idf::SCLK const sclk)
+      : master(bus_id, mosi, miso, sclk) {}
+  std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) override {
+    auto port =
+        std::make_shared<SPIPort>(port_id, this->master, (idf::CS)port_id);
+    return port;
+  }
+};
+
+class I2CBus : public Bus {
+  idf::I2CMaster master;
+
+ public:
+  ~I2CBus() override = default;
+  inline explicit I2CBus(idf::I2CNumber bus_id, idf::SDA_GPIO const sda,
+                         idf::SCL_GPIO const scl)
+      : master(bus_id, scl, sda, idf::Frequency::KHz(100)) {}
+
+  std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) override {
+    auto port = std::make_shared<I2CPort>(port_id, this->master,
+                                          idf::I2CAddress(port_id));
+    return port;
+  }
+};
 
 //* Proxy
 class Proxy::Impl {

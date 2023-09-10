@@ -8,9 +8,9 @@
 
 #include <i2c_cxx.hpp>
 
-#include "connection/data_link/base.hpp"
+#include <stream-base.hpp>
 
-namespace connection::data_link {
+namespace stream::datalink {
 
 class I2CError : public std::runtime_error {
  public:
@@ -31,7 +31,6 @@ class I2CDevice : public RecvAndSend {
 
   size_t Send(const std::vector<uint8_t> &buf) override;
 
-  size_t Recv(std::vector<uint8_t> &buf,
-              TickType_t timeout = 1000 / portTICK_PERIOD_MS) override;
+  size_t Recv(std::vector<uint8_t> &buf, DeltaTimeMs timeout = 1000) override;
 };
-}  // namespace connection::data_link
+}  // namespace stream

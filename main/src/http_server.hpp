@@ -5,12 +5,12 @@
 
 #include <memory>
 #include <vector>
-#include <connection/data_link/base.hpp>
+#include <stream/base.hpp>
 
 #include "config/config.hpp"
 #include "init/init.hpp"
 
-namespace connection::data_link {
+namespace stream::application {
 class HTTPdClient : public Receivable {
   httpd_req_t *req;
 
@@ -25,7 +25,7 @@ class HTTPdClient : public Receivable {
 
   ~HTTPdClient() { httpd_send(req, NULL, 0); }
 };
-}  // namespace connection::data_link
+}  // namespace stream::application
 
 namespace debug_httpd {
 struct STM32State {
@@ -276,7 +276,7 @@ class DebuggerHTTPServer {
 
   static esp_err_t NVS_Set(httpd_req_t *req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    auto client = new connection::data_link::HTTPdClient(req);
+    auto client = new stream::application::HTTPdClient(req);
 
     nvs_flash_init();
 

@@ -1,5 +1,7 @@
 #pragma once
 
+// Version: 1.0.0
+
 #include <esp_log.h>
 
 #include <vector>
@@ -9,10 +11,10 @@
 #include <map>
 #include <utility>
 
-#include <connection/data_link/base.hpp>
-#include <connection/data_link/spi.hpp>
-#include <connection/data_link/uart.hpp>
-#include <connection/data_link/i2c_dev.hpp>
+#include <stream/base.hpp>
+#include <stream/datalink/spi.hpp>
+#include <stream/datalink/uart.hpp>
+#include <stream/datalink/i2c_dev.hpp>
 #include <i2c_cxx.hpp>
 
 namespace data_proxy {
@@ -107,7 +109,7 @@ class Link {
       sizeof(Packet) - sizeof(uint32_t);
 
  private:
-  using T = std::shared_ptr<connection::data_link::RecvAndSend>;
+  using T = std::shared_ptr<stream::RecvAndSend>;
   T link;
 
  public:
@@ -118,7 +120,7 @@ class Link {
   Packet RecvPacket() const;
 };
 
-class Port : public connection::data_link::RecvAndSend {
+class Port : public stream::RecvAndSend {
   PortID id;
 
  public:
@@ -127,28 +129,6 @@ class Port : public connection::data_link::RecvAndSend {
   inline PortID GetID() const { return id; }
 };
 
-template <typename DataLink>
-class HWPort : public Port {
-  DataLink device;
-
-  size_t Recv(std::vector<uint8_t> &buf,
-              TickType_t timeout = 1000 / portTICK_PERIOD_MS) override {
-    return device.Recv(buf, timeout);
-  }
-
-  size_t Send(const std::vector<uint8_t> &buf) override {
-    return device.Send(buf);
-  }
-
- public:
-  template <typename... Args>
-  inline explicit HWPort(PortID id, Args &&...args)
-      : Port(id), device(std::forward<Args>(args)...) {}
-};
-
-using SPIPort = HWPort<connection::data_link::SPIDevice>;
-using I2CPort = HWPort<connection::data_link::I2CDevice>;
-
 class Bus {
   std::map<PortID, std::shared_ptr<Port>> ports;
   virtual std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) = 0;
@@ -156,29 +136,6 @@ class Bus {
  public:
   virtual ~Bus() = default;
   std::shared_ptr<Port> GetPort(PortID port_id, bool auto_generate);
-};
-
-class SPIBus : public Bus {
-  idf::SPIMaster master;
-
- public:
-  ~SPIBus() override = default;
-  inline explicit SPIBus(idf::SPINum bus_id, idf::MOSI const mosi,
-                         idf::MISO const miso, idf::SCLK const sclk)
-      : master(bus_id, mosi, miso, sclk) {}
-  std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) override;
-};
-
-class I2CBus : public Bus {
-  idf::I2CMaster master;
-
- public:
-  ~I2CBus() override = default;
-  inline explicit I2CBus(idf::I2CNumber bus_id, idf::SDA_GPIO const sda,
-                         idf::SCL_GPIO const scl)
-      : master(bus_id, scl, sda, idf::Frequency::KHz(100)) {}
-
-  std::shared_ptr<Port> CreatePortImpl(uint8_t port_id) override;
 };
 
 class Proxy {

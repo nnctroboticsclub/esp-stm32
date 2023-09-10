@@ -10,6 +10,8 @@
 
 #include "../raw_driver/raw_driver.hpp"
 
+#include <stream/datalink/uart.hpp>
+
 namespace stm32::session {
 class BootLoaderSession;
 }
@@ -48,7 +50,7 @@ class BLDriver {
       std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select);
 
   static inline std::shared_ptr<BLDriver> UARTDriver(
-      std::shared_ptr<connection::data_link::UART> uart) {
+      std::shared_ptr<stream::datalink::UART> uart) {
     auto raw_driver = std::make_shared<raw_driver::UartRawDriver>(uart);
     return std::make_shared<BLDriver>(raw_driver);
   }

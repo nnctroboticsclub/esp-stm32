@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "connection/data_link/base.hpp"
+#include <stream-base.hpp>
 
-namespace connection::data_link {
+namespace stream::datalink {
 
 class UARTError : public std::runtime_error {
  public:
@@ -33,4 +33,4 @@ class UART : public RecvAndSend {
 
   size_t Recv(std::vector<uint8_t> &buf, TickType_t timeout) override;
 };
-}  // namespace connection::data_link
+}  // namespace stream

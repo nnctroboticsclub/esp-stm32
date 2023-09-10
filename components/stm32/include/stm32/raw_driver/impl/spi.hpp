@@ -6,21 +6,21 @@
 
 #include <memory>
 
-#include <connection/data_link/spi.hpp>
+#include <stream/datalink/spi.hpp>
 
 #include "../types/error.hpp"
 #include "./base.hpp"
 
 namespace stm32::raw_driver::impl {
-using SpiDataLink = connection::data_link::SPIDevice;
+using SPIDataLink = stream::datalink::SPIDevice;
 
 class SPI : public RawDriverBase {
   static constexpr const char *TAG = "[STM32-BL] RawDriver<SPI>";
 
-  std::shared_ptr<SpiDataLink> device;
+  std::shared_ptr<SPIDataLink> device;
 
  public:
-  explicit SPI(std::shared_ptr<connection::data_link::SPIDevice> device);
+  explicit SPI(std::shared_ptr<SPIDataLink> device);
   SPI(std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select);
 
   ~SPI() override;

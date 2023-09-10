@@ -1,5 +1,5 @@
 idf_component_register(
   SRC_DIRS src
   INCLUDE_DIRS "include"
-  REQUIRES data_link
+  REQUIRES stream-datalink
 )

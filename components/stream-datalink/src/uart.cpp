@@ -1,4 +1,4 @@
-#include <connection/data_link/uart.hpp>
+#include <stream/datalink/uart.hpp>
 #include <esp_log.h>
 
 #include <freertos/FreeRTOS.h>
@@ -7,7 +7,7 @@
 #include <memory>
 #include <sdkconfig.h>
 
-namespace connection::data_link {
+namespace stream::datalink {
 UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
            uart_parity_t parity)
     : port(port) {
@@ -57,4 +57,4 @@ size_t UART::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
 
   return bytes;
 }
-}  // namespace connection::data_link
+}  // namespace stream::datalink

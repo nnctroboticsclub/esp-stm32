@@ -4,13 +4,11 @@
 #include <stm32/raw_driver/impl/spi.hpp>
 
 namespace stm32::raw_driver::impl {
-using SPIDevice = connection::data_link::SPIDevice;
-
-SPI::SPI(std::shared_ptr<SPIDevice> device) : device(device) {
+SPI::SPI(std::shared_ptr<SPIDataLink> device) : device(device) {
   // this->device->SetTraceEnabled(true);
 }
 SPI::SPI(std::shared_ptr<idf::SPIMaster> master, idf::CS chip_select)
-    : SPI(std::make_shared<SPIDevice>(master, chip_select)) {}
+    : SPI(std::make_shared<SPIDataLink>(master, chip_select)) {}
 
 SPI::~SPI() = default;
 

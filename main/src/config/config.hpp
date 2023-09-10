@@ -6,8 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include <connection/data_link/spi.hpp>
-#include <connection/data_link/uart.hpp>
+#include <stream/datalink/spi.hpp>
+#include <stream/datalink/uart.hpp>
 
 #include "../libs/nvs_proxy.hpp"
 
@@ -210,7 +210,7 @@ class Config {
     return nullptr;
   }
 
-  static std::shared_ptr<connection::data_link::UART> GetUARTPort(uint8_t id) {
+  static std::shared_ptr<stream::datalink::UART> GetUARTPort(uint8_t id) {
     for (auto& bus : instance->uart_buses) {
       if (bus.GetPort() == id) {
         return bus.GetDevice();

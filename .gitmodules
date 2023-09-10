@@ -1,0 +1,2 @@
+[submodule "components/stream-base"]
+	url = git@github.com:syoch/stream-base.git

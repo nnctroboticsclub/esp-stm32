@@ -140,11 +140,11 @@ class App {
   [[noreturn]] void Run() {
     I2CDump();
 
-    auto uart_dev = new connection::data_link::UART(
-        UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16, 9600,
-        uart_parity_t::UART_PARITY_DISABLE);
-    auto dev_ = dynamic_cast<connection::data_link::RecvAndSend*>(uart_dev);
-    auto dev = std::shared_ptr<connection::data_link::RecvAndSend>(dev_);
+    auto uart_dev =
+        new stream::datalink::UART(UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16, 9600,
+                                   uart_parity_t::UART_PARITY_DISABLE);
+    auto dev_ = dynamic_cast<stream::RecvAndSend*>(uart_dev);
+    auto dev = std::shared_ptr<stream::RecvAndSend>(dev_);
     auto link = data_proxy::Link(dev);
     data_proxy::Proxy proxy{link};
 

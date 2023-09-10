@@ -4,8 +4,7 @@
 #include <vector>
 
 namespace stm32::raw_driver::impl {
-UART::UART(std::shared_ptr<connection::data_link::UART> device)
-    : device(device) {
+UART::UART(std::shared_ptr<UARTDataLink> device) : device(device) {
   this->info.use_legacy_get_version = true;
 }
 

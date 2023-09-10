@@ -1,8 +1,8 @@
-#include <connection/data_link/i2c_dev.hpp>
+#include <stream/datalink/i2c_dev.hpp>
 
 #include <esp_log.h>
 
-namespace connection::data_link {
+namespace stream::datalink {
 using idf::I2CAddress;
 using idf::I2CMaster;
 
@@ -22,7 +22,7 @@ size_t I2CDevice::Send(const std::vector<uint8_t> &buf) {
   return buf.size();
 }
 
-size_t I2CDevice::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
+size_t I2CDevice::Recv(std::vector<uint8_t> &buf, DeltaTimeMs) {
   // received iterator is not valid after sync_read returns
   for (auto received =
            this->master->sync_read(this->device_address, buf.size());
@@ -35,4 +35,4 @@ size_t I2CDevice::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
 
   return buf.size();
 }
-}  // namespace connection::data_link
+}  // namespace stream::datalink

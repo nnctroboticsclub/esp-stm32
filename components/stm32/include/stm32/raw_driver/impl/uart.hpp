@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-#include <connection/data_link/uart.hpp>
+#include <stream/datalink/uart.hpp>
 
 #include "../types/error.hpp"
 #include "../types/inbounddata.hpp"
@@ -14,15 +14,15 @@
 #include "./base.hpp"
 
 namespace stm32::raw_driver::impl {
-using UartDataLink = connection::data_link::UART;
+using UARTDataLink = stream::datalink::UART;
 
 class UART : public RawDriverBase {
   static constexpr const char *TAG = "[STM32-BL] RawDriver<UART>";
 
-  std::shared_ptr<UartDataLink> device;
+  std::shared_ptr<UARTDataLink> device;
 
  public:
-  explicit UART(std::shared_ptr<connection::data_link::UART> device);
+  explicit UART(std::shared_ptr<UARTDataLink> device);
   ~UART() override;
 
   void ACK(TickType_t timeout = portMAX_DELAY) override;

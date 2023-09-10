@@ -1,8 +1,8 @@
-#include <connection/data_link/spi.hpp>
+#include <stream/datalink/spi.hpp>
 
 #include <esp_log.h>
 
-namespace connection::data_link {
+namespace stream::datalink {
 using idf::CS;
 using idf::SPIMaster;
 
@@ -33,7 +33,7 @@ size_t SPIDevice::Send(const std::vector<uint8_t> &buf) {
   return buf.size();
 }
 
-size_t SPIDevice::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
+size_t SPIDevice::Recv(std::vector<uint8_t> &buf, DeltaTimeMs timeout) {
   if (this->queue.size() < buf.size()) {
     throw SPIError("No data to read");
   }
@@ -47,4 +47,4 @@ size_t SPIDevice::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
 
   return buf.size();
 }
-}  // namespace connection::data_link
+}  // namespace stream::datalink

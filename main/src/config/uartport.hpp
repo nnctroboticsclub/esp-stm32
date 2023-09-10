@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <connection/data_link/uart.hpp>
+#include <stream/datalink/uart.hpp>
 
 #include "../libs/nvs_proxy.hpp"
 
@@ -16,7 +16,7 @@ struct AliasProxyTable<uart_parity_t> {
 
 namespace profile {
 class UartPort : public nvs::Namespace {
-  std::shared_ptr<connection::data_link::UART> dev;
+  std::shared_ptr<stream::datalink::UART> dev;
 
   nvs::Proxy<uint8_t> port;
   nvs::Proxy<gpio_num_t> tx;
@@ -27,9 +27,9 @@ class UartPort : public nvs::Namespace {
  public:
   explicit UartPort(std::string const& ns);
 
-  std::shared_ptr<connection::data_link::UART> GetDevice() const;
+  std::shared_ptr<stream::datalink::UART> GetDevice() const;
 
-  inline uint8_t GetPort()  { return port; }
+  inline uint8_t GetPort() { return port; }
 
   inline UartPort& SetPort(uint8_t port_) {
     this->port = port_;
