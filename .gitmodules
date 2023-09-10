@@ -1,3 +1,7 @@
 [submodule "components/stream-base"]
 	url = git@github.com:nnctroboticsclub/stream-base.git
 	path = components/stream-base
+
+[submodule "components/data_proxy"]
+	url = git@github.com:nnctroboticsclub/data-proxy.git
+	path = components/data_proxy
