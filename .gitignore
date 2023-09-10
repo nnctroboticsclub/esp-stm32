@@ -9,3 +9,5 @@ managed_components
 .embuild
 
 build.log
+
+workspace.code-workspace
