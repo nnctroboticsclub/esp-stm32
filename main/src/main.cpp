@@ -9,7 +9,7 @@
 
 #include <stm32.hpp>
 #include <stm32/raw_driver/impl/uart.hpp>
-#include <data_proxy.hpp>
+#include <data_proxy/master.hpp>
 #include <spi_host_cxx.hpp>
 
 #include "./http_server.hpp"
@@ -145,8 +145,8 @@ class App {
                                    uart_parity_t::UART_PARITY_DISABLE);
     auto dev_ = dynamic_cast<stream::RecvAndSend*>(uart_dev);
     auto dev = std::shared_ptr<stream::RecvAndSend>(dev_);
-    auto link = data_proxy::Link(dev);
-    data_proxy::Proxy proxy{link};
+    auto link = esp_stm32::data_proxy::Link(dev);
+    esp_stm32::data_proxy::Master proxy{link};
 
     proxy.Start().join();
 

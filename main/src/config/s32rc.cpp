@@ -6,7 +6,7 @@
 #include "./config.hpp"
 
 namespace profile {
-using data_proxy::Proxy;
+using esp_stm32::data_proxy::Proxy;
 using nvs::Namespace;
 
 using stream::RecvAndSend;
@@ -30,7 +30,7 @@ std::shared_ptr<Proxy> DataProxyProfile::Get() {
   }
 
   auto io = std::shared_ptr<RecvAndSend>(io_);
-  data_proxy::Link link{io};
+  esp_stm32::data_proxy::Link link{io};
   return std::make_shared<Proxy>(link);
 }
 }  // namespace profile

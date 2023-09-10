@@ -6,16 +6,30 @@ dependencies:
       type: service
     version: 1.0.0-beta
   espressif/mdns:
-    component_hash: 53b22a3b01d0b61180369a5dab00e271f1e725164b6affbc73af85e80b043658
+    component_hash: d6665090cf41eb399c184aab6f34234251a773e052fb53ca044dcb576264c646
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 1.2.0
+    version: 1.2.1
   idf:
     component_hash: null
     source:
       type: idf
     version: 5.0.2
-manifest_hash: 318cff030fe620881ee3b69809d1167773192721797189f988ad8c4a598dd075
+  nnctroboticsclub/data-proxy:
+    component_hash: 5f6e05e6c8057220a43cb725431b045360ef35593c4ca1c53970bcb6564a6288
+    source:
+      git: ssh://git@github.com/nnctroboticsclub/data-proxy.git
+      path: .
+      type: git
+    version: 566fa92b1a05f8477d9642fd778d2a9cde4f0f68
+  nnctroboticsclub/stream-base:
+    component_hash: b3777d62e6abc5a7f33cbee173f13e1972e4f77627431046e8dbb3d16fb07a48
+    source:
+      git: ssh://git@github.com/nnctroboticsclub/stream-base.git
+      path: .
+      type: git
+    version: eda69815b1644edec5745e2c99645c79ca45544c
+manifest_hash: 3b96c236566d8c43be3650f1db336fe874d25af7a56c573d19050745548c6bca
 target: esp32
 version: 1.0.0

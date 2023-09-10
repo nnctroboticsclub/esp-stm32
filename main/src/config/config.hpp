@@ -12,7 +12,6 @@
 #include "../libs/nvs_proxy.hpp"
 
 #include <wifi.hpp>
-#include <data_proxy.hpp>
 #include <stm32.hpp>
 #include "types/bus_type.hpp"
 

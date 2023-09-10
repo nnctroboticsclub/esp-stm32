@@ -5,6 +5,13 @@ dependencies:
   ## Required IDF version
   idf:
     version: ">=4.1.0"
+
+  nnctroboticsclub/stream-base:
+    git: ssh://git@github.com/nnctroboticsclub/stream-base.git
+
+  nnctroboticsclub/data-proxy:
+    git: ssh://git@github.com/nnctroboticsclub/data-proxy.git
+
   # # Put list of dependencies here
   # # For components maintained by Espressif:
   # component: "~1.0.0"
