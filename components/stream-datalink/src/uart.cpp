@@ -55,4 +55,8 @@ size_t UART::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
 
   return bytes;
 }
+
+void UART::OnReceive(std::function<void(void *)> function, void *arg) {
+  this->rx_callbacks.emplace_back(CallbackObject{function, arg});
+}
 }  // namespace stream::datalink
