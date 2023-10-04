@@ -43,6 +43,7 @@
 | ^         | ^      | Res | 0   | Bus List       | u8[]             |
 | ^         | BusId  | Req | 0   | List Port      | None             |
 | ^         | ^      | Res | 0   | Port List      | u16[]            |
+| >         | >      | >   | >   | >              | Ingraph          |
 
 #### Command Byte
 
