@@ -48,12 +48,10 @@ size_t UART::Recv(std::vector<uint8_t> &buf, TickType_t timeout) {
   size_t bytes =
       uart_read_bytes(this->port, (void *)buf.data(), buf.size(), timeout);
   if (bytes == 0) {
-    ESP_LOGE(TAG, "Failed to receive data (timeout)");
-    return ESP_ERR_TIMEOUT;
+    return 0;
   }
 
-  if (this->IsTraceEnabled())
-    ESP_LOG_BUFFER_HEX("UART<--", buf.data(), buf.size());
+  if (this->IsTraceEnabled()) ESP_LOG_BUFFER_HEX("UART<--", buf.data(), bytes);
 
   return bytes;
 }
