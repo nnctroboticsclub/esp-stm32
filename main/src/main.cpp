@@ -9,7 +9,7 @@
 
 #include <stm32.hpp>
 #include <stm32/raw_driver/impl/uart.hpp>
-#include <data_proxy/master.hpp>
+#include "data_proxy_master.hpp"
 #include <spi_host_cxx.hpp>
 
 #include "./http_server.hpp"
@@ -40,7 +40,7 @@ class App {
     i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 
     esp_err_t res;
-    printf("\nI2C Dump");
+    printf("\nI2C Dump\n");
     printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
     printf("00:         ");
     for (uint8_t i = 3; i < 0x78; i++) {
@@ -61,6 +61,8 @@ class App {
       i2c_cmd_link_delete(cmd);
     }
     printf("\n");
+
+    i2c_driver_delete(I2C_NUM_0);
   }
 
   void BootStrap() {
@@ -143,10 +145,11 @@ class App {
     auto uart_dev =
         new stream::datalink::UART(UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16, 9600,
                                    uart_parity_t::UART_PARITY_DISABLE);
+    uart_dev->SetTraceEnabled(true);
     auto dev_ = dynamic_cast<stream::RecvAndSend*>(uart_dev);
     auto dev = std::shared_ptr<stream::RecvAndSend>(dev_);
     auto link = esp_stm32::data_proxy::Link(dev);
-    esp_stm32::data_proxy::Master proxy{link};
+    esp_stm32::data_proxy::ESPMaster proxy{link};
 
     proxy.Start().join();
 
