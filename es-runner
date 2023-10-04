@@ -1,0 +1,66 @@
+#!/bin/fish
+
+set PWSH /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+
+set SELF (status filename)
+
+set task $argv[1]
+if test -z $task
+  echo "Usage: $0 <task>"
+  exit 1
+end
+
+switch $task
+case "count_lines"
+  eval $(echo wc -lc $(find . -regextype posix-egrep -regex '.\/(components|main)/.*\.[hc](pp)?' | sed "/*bin.h*/d")) | sort -rn
+case "update-data-proxy"
+  {
+   git -C ~/ghq/github.com/nnctroboticsclub/esp-stm32/components/data-proxy checkout .
+   git -C ~/ghq/github.com/nnctroboticsclub/esp-stm32/components/data-proxy pull
+  }&
+  {
+   git -C ~/Documents/PlatformIO/Projects/NW-R/third-party/data-proxy checkout .
+   git -C ~/Documents/PlatformIO/Projects/NW-R/third-party/data-proxy pull
+  }&
+  wait
+  printf "\e[32mDone!\e[m\n"
+case "attach-usb-hub"
+  $PWSH usbipd wsl attach -b 5-1
+  $PWSH usbipd wsl attach -b 5-2
+  $PWSH usbipd wsl attach -b 5-3
+case "monitor"
+  printf "\x1b[33mLoading environment...\x1b[m\n"
+  source ~/.platformio/penv/bin/activate.fish > /dev/null
+  source ~/.platformio/packages/framework-espidf/export.fish > /dev/null
+
+  printf "\x1b[33mSetuping serial...\x1b[m\n"
+  stty -F /dev/ttyACM0 9600 raw -echo
+  stty -F /dev/ttyUSB0 115200 raw -echo
+  stty -F /dev/ttyACM1 9600 raw -echo
+  sleep 0.5
+
+  printf "\x1b[1;31mInitialized!\x1b[m\n"
+
+  begin
+    # STM32 Monitor
+    cat /dev/ttyACM1 | sed -u 's/^/\x1b[31m[STM32]\x1b[m /'
+  end &
+
+  begin
+    # Arduino Monitor
+    cat /dev/ttyACM0 | sed -u 's/^/\x1b[33m[ AVR ]\x1b[m /'
+  end &
+
+  wait
+
+  kill $(jobs -p)
+case "s"
+  complete -c es-runner -x
+  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Count code base lines' -a 'count_lines'
+  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Update Data Proxy in 2 repositories' -a 'update-data-proxy'
+  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Attach USB (USB Hub)' -a 'attach-usb-hub'
+  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Start AVR/STM32 Monitor' -a 'monitor'
+  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Do fish complete' -a 'c'
+
+  set -ax PATH (dirname $SELF)
+end
