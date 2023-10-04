@@ -8,6 +8,29 @@
 #include <sdkconfig.h>
 
 namespace stream::datalink {
+void UART::UARTTask(void *arg) {
+  UART &self = *(UART *)arg;
+
+  uart_event_t event;
+
+  auto event_pointer = static_cast<void *>(&event);
+
+  while (1) {
+    xQueueReceive(self.uart_queue, event_pointer, portMAX_DELAY);
+
+    switch (event.type) {
+      case UART_DATA:
+        for (auto &callback : self.rx_callbacks) {
+          callback();
+        }
+        break;
+      default:
+        ESP_LOGI("UART", "Unhandled event type: %d", event.type);
+        break;
+    }
+  }
+}
+
 UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
            uart_parity_t parity)
     : port(port) {
@@ -24,7 +47,10 @@ UART::UART(uart_port_t port, int tx, int rx, int baud_rate,
   ESP_ERROR_CHECK(uart_param_config(this->port, &uart_config));
   uart_set_pin(this->port, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-  ESP_ERROR_CHECK(uart_driver_install(this->port, 2 * 1024, 0, 10, nullptr, 0));
+  ESP_ERROR_CHECK(
+      uart_driver_install(this->port, 2 * 1024, 0, 10, &this->uart_queue, 0));
+
+  xTaskCreate(UART::UARTTask, "UARTTask", 2048, this, 10, &this->uart_task);
 }
 
 size_t UART::GetRXBufferDataLength() const {

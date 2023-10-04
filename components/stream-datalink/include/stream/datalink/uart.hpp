@@ -20,6 +20,7 @@ class UARTError : public std::runtime_error {
 class UART : public RecvAndSend {
   static constexpr const char *TAG = "UART";
   uart_port_t port;
+  QueueHandle_t uart_queue;
 
   using Callback = std::function<void(void *)>;
 
@@ -35,7 +36,8 @@ class UART : public RecvAndSend {
   std::vector<CallbackObject> rx_callbacks;
 
  private:
-  static void EventLoop(void *);
+  TaskHandle_t uart_task;
+  static void UARTTask(void *);
 
  public:
   UART(uart_port_t port, int tx, int rx, int baud_rate, uart_parity_t parity);
