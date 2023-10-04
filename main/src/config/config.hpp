@@ -18,7 +18,7 @@
 #include "./spibus.hpp"
 #include "./uartport.hpp"
 #include "./network_profile.hpp"
-#include "./s32rc.hpp"
+#include "../data_proxy_master/s32rc.hpp"
 #include "./server_profile.hpp"
 
 namespace profile {

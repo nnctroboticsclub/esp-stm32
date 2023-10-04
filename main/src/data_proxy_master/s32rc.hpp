@@ -5,7 +5,7 @@
 #include <data_proxy/handler.hpp>
 
 #include "../libs/nvs_proxy.hpp"
-#include "types/bus_type.hpp"
+#include "../config/types/bus_type.hpp"
 
 namespace profile {
 class DataProxyProfile : public nvs::Namespace {

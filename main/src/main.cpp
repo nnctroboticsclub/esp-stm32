@@ -9,7 +9,7 @@
 
 #include <stm32.hpp>
 #include <stm32/raw_driver/impl/uart.hpp>
-#include "data_proxy_master.hpp"
+#include "data_proxy_master/data_proxy_master.hpp"
 #include <spi_host_cxx.hpp>
 
 #include "./http_server.hpp"
@@ -17,7 +17,6 @@
 #include "init/init.hpp"
 #include "libs/gpio.hpp"
 #include "libs/button.hpp"
-#include "console/wifi.hpp"
 
 #include <driver/i2c.h>
 const char* const TAG = "Main";
@@ -67,7 +66,6 @@ class App {
 
   void BootStrap() {
     ESP_LOGI(TAG, "Booting up (stage1: BootStrap)");
-    nvs::DumpNVS();
 
     idf::GPIOInput flag(idf::GPIONum(22));
     flag.set_pull_mode(idf::GPIOPullMode::PULLDOWN());
@@ -142,20 +140,21 @@ class App {
   [[noreturn]] void Run() {
     I2CDump();
 
-    auto uart_dev =
-        new stream::datalink::UART(UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16, 9600,
-                                   uart_parity_t::UART_PARITY_DISABLE);
-    uart_dev->SetTraceEnabled(true);
-    auto dev_ = dynamic_cast<stream::RecvAndSend*>(uart_dev);
-    auto dev = std::shared_ptr<stream::RecvAndSend>(dev_);
-    auto link = esp_stm32::data_proxy::Link(dev);
-    esp_stm32::data_proxy::ESPMaster proxy{link};
+    // auto uart_dev =
+    //     new stream::datalink::UART(UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16,
+    //     9600,
+    //                                uart_parity_t::UART_PARITY_DISABLE);
+    // uart_dev->SetTraceEnabled(true);
+    // auto dev_ = dynamic_cast<stream::RecvAndSend*>(uart_dev);
+    // auto dev = std::shared_ptr<stream::RecvAndSend>(dev_);
+    // auto link = esp_stm32::data_proxy::Link(dev);
+    // esp_stm32::data_proxy::ESPMaster proxy{link};
+    //
+    // proxy.Start().join();
 
-    proxy.Start().join();
-
-    // BootStrap();
-    // Init();
-    // Main();
+    BootStrap();
+    Init();
+    Main();
 
     Halt();
   }
@@ -164,20 +163,6 @@ class App {
 extern "C" int app_main() {
   App app;
   app.Run();
-
-  // std::jthread t([]() {
-  //   vTaskDelay(1000 / portTICK_PERIOD_MS);
-  //   esp_console_repl_t* repl = nullptr;
-  //   esp_console_repl_config_t repl_config =
-  //   ESP_CONSOLE_REPL_CONFIG_DEFAULT(); repl_config.prompt = "esp32-ru> ";
-  //   esp_console_register_help_command();
-  //   cmd::wifi::RegisterCommands();
-  //   esp_console_dev_uart_config_t uart_config =
-  //       ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
-  //   ESP_ERROR_CHECK(
-  //       esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
-  //   ESP_ERROR_CHECK(esp_console_start_repl(repl));
-  // });
 
   return 0;
 }
