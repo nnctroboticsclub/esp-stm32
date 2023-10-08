@@ -20,7 +20,7 @@ void init::init_wifi() {
     config::network.Start();
   } else {
     wifi::WifiConnectionProfile prof{
-        .auth_mode = WIFI_AUTH_WPA2_PSK,
+        .auth_mode = WIFI_AUTH_WPA_WPA2_PSK,
         .ssid = profile->GetSSID(),
         .password = profile->GetPassword(),
         .user = "",
