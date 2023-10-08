@@ -35,8 +35,8 @@ class SPIBus : public Bus {
     return port;
   }
 
-  void HandleTscPort(const Packet& packet) final { throw NotImplemented(); }
-  void HandleTscBus(const Packet& packet) final { throw NotImplemented(); }
+  void HandleTscPort(const Packet& packet) final { throw error::NotImplemented(); }
+  void HandleTscBus(const Packet& packet) final { throw error::NotImplemented(); }
 };
 
 class I2CBus : public Bus {
@@ -56,7 +56,7 @@ class I2CBus : public Bus {
                                           idf::I2CAddress(port_id));
     return port;
   }
-  void HandleTscPort(const Packet& packet) final { throw NotImplemented(); }
+  void HandleTscPort(const Packet& packet) final { throw error::NotImplemented(); }
   void HandleTscBus(const Packet& packet) final {
     auto number = packet.GetTscBusCommandNumber();
 
@@ -92,7 +92,7 @@ std::shared_ptr<Bus> ESPMaster::NewBus(Packet const& packet) {
           case 1:
             return idf::I2CNumber::I2C1();
           default:
-            throw InvalidBusID();
+            throw error::InvalidBusID();
         }
       })(bus_id);
 
