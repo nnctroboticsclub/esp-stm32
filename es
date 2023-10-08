@@ -20,14 +20,14 @@ case "stm32-flash"
   cd $STM32
   pio run -t upload
 case "update-data-proxy"
-  {
+  begin
    git -C ~/ghq/github.com/nnctroboticsclub/esp-stm32/components/data-proxy checkout .
    git -C ~/ghq/github.com/nnctroboticsclub/esp-stm32/components/data-proxy pull
-  }&
-  {
+  end &
+  begin
    git -C ~/Documents/PlatformIO/Projects/NW-R/third-party/data-proxy checkout .
    git -C ~/Documents/PlatformIO/Projects/NW-R/third-party/data-proxy pull
-  }&
+  end &
   wait
   printf "\e[32mDone!\e[m\n"
 case "attach-usb-hub"
@@ -57,13 +57,13 @@ case "monitor"
 
   kill $(jobs -p)
 case "s"
-  complete -c es-runner -x
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Count code base lines' -a 'count_lines'
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Update Data Proxy in 2 repositories' -a 'update-data-proxy'
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Attach USB (USB Hub)' -a 'attach-usb-hub'
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Start AVR/STM32 Monitor' -a 'monitor'
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Do fish complete' -a 's'
-  complete -c es-runner -f -n '__fish_use_subcommand' -d 'Flash STM32' -a 'stm32-flash'
+  complete -c es -x
+  complete -c es -f -n '__fish_use_subcommand' -d 'Count code base lines' -a 'count_lines'
+  complete -c es -f -n '__fish_use_subcommand' -d 'Update Data Proxy in 2 repositories' -a 'update-data-proxy'
+  complete -c es -f -n '__fish_use_subcommand' -d 'Attach USB (USB Hub)' -a 'attach-usb-hub'
+  complete -c es -f -n '__fish_use_subcommand' -d 'Start AVR/STM32 Monitor' -a 'monitor'
+  complete -c es -f -n '__fish_use_subcommand' -d 'Do fish complete' -a 's'
+  complete -c es -f -n '__fish_use_subcommand' -d 'Flash STM32' -a 'stm32-flash'
 
   if test "$ES_RUNNER_LOADED_ENVIRONMENT" != "1"
     printf "\x1b[33mLoading environment...\x1b[m\n"
