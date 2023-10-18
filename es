@@ -34,6 +34,9 @@ case "attach-usb-hub"
   $PWSH usbipd wsl attach -b 5-1
   $PWSH usbipd wsl attach -b 5-2
   $PWSH usbipd wsl attach -b 5-3
+case "attach-usb-pc"
+  $PWSH usbipd wsl attach -b 1-1
+  $PWSH usbipd wsl attach -b 1-2
 case "monitor"
   printf "\x1b[33mSetuping serial...\x1b[m\n"
   stty -F /dev/ttyACM0 9600 raw -echo
