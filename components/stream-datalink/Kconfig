@@ -1,7 +1,0 @@
-menu "UART"
-  config UART_WRAPPER_ENABLE_DEBUG
-    bool "Enable debug"
-    default n
-    help
-      Enable debug output for UART wrapper
-endmenu

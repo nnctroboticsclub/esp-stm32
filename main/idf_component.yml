@@ -1,25 +1,13 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  espressif/mdns: "*"
-  espressif/esp-idf-cxx: "1.0.0-beta"
-  ## Required IDF version
   idf:
     version: ">=4.1.0"
 
-  nnctroboticsclub/stream-base:
-    git: ssh://git@github.com/nnctroboticsclub/stream-base.git
+  libstm-ota:
+    path: ../components/libstm-ota
+
+  # nnctroboticsclub/libstm-ota:
+  #   git: ssh://git@github.com/nnctroboticsclub/libstm-ota.git
 
   # nnctroboticsclub/data-proxy:
   #   git: ssh://git@github.com/nnctroboticsclub/data-proxy.git
-
-  # # Put list of dependencies here
-  # # For components maintained by Espressif:
-  # component: "~1.0.0"
-  # # For 3rd party components:
-  # username/component: ">=1.0.0,<2.0.0"
-  # username2/component2:
-  #   version: "~1.0.0"
-  #   # For transient dependencies `public` flag can be set.
-  #   # `public` flag doesn't have an effect dependencies of the `main` component.
-  #   # All dependencies of `main` are public by default.
-  #   public: true

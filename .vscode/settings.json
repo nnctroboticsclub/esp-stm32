@@ -57,7 +57,8 @@
     "gpio_types.h": "c",
     "init_wifi": "cpp",
     "stm_pro_mode.h": "c",
-    "esp_log.h": "c"
+    "esp_log.h": "c",
+    "thread": "cpp"
   },
   "cSpell.words": [
     "authmode",
