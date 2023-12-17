@@ -38,7 +38,7 @@ export default class Client {
       const data = e.data;
       if (data instanceof ArrayBuffer) {
         const view = new Uint8Array(data);
-        const str = [...view].map(x => String.fromCharCode(x)).join("");
+        const str = [...view].map(x => String.fromCharCode(x)).join("").trim();
         console.log(str);
       } else {
         console.log("[SP]", data, typeof data);
