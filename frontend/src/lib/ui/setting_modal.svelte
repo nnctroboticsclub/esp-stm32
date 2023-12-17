@@ -93,9 +93,13 @@
 			<EntryNum key="id" name="ID" type="int" />
 			<EntryNum key="tx" name="TX" type="pin" />
 			<EntryNum key="rx" name="RX" type="pin" />
-			<EntryNum key="baudrate" name="Baud Rate" type="int" />
+			<EntryNum key="baud_rate" name="Baud Rate" type="int" />
 
 			<EntrySelect key="parity" name="Parity" labels={['None', 'Even', 'Odd']} />
+		</AsTab>
+		<AsTab ns_list={config.serial_proxy_list.map((x) => ({ ...x }))} name="Serial Proxy">
+			<EntryNum key="id" name="ID" type="int" />
+			<EntryNum key="port" name="Uart Port" type="int" />
 		</AsTab>
 	</TabLayout>
 	<div style="position: absolute; bottom: 10px; right: 10px">

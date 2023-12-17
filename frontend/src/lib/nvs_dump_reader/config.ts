@@ -89,6 +89,19 @@ class STM32 {
     return `STM32[${this.id}] (reset: ${this.reset}, boot0: ${this.boot0}, bid: ${this.bid}, rid: ${this.rid})`;
   }
 }
+class SerialProxy {
+  id: NVSEntry<number>;
+  port: NVSEntry<number>;
+
+  constructor(ns: NVSNamespace) {
+    this.id = ns.entry("id", NVSType.U8);
+    this.port = ns.entry("uart", NVSType.U8);
+  }
+
+  toString(): string {
+    return `SerialProxy[${this.port}]`;
+  }
+}
 
 class Network {
   id: NVSEntry<number>;
@@ -124,6 +137,7 @@ class Master {
   csb: NVSEntry<number>;
   cs3: NVSEntry<number>;
   cn: NVSEntry<number>;
+  csp: NVSEntry<number>;
 
   constructor(ns: NVSNamespace) {
     this.cds = ns.entry("cds", NVSType.U8);
@@ -131,10 +145,11 @@ class Master {
     this.csb = ns.entry("csb", NVSType.U8);
     this.cs3 = ns.entry("cs3", NVSType.U8);
     this.cn = ns.entry("cn", NVSType.U8);
+    this.csp = ns.entry("csp", NVSType.U8);
   }
 
   toString(): string {
-    return `Master (cds: ${this.cds}, cdu: ${this.cdu}, csb: ${this.csb}, cs3: ${this.cs3}, cn: ${this.cn})`;
+    return `Master (cds: ${this.cds}, cdu: ${this.cdu}, csb: ${this.csb}, cs3: ${this.cs3}, cn: ${this.cn}, csp: ${this.csp})`;
   }
 }
 
@@ -148,6 +163,7 @@ export class Config {
   bootloaders: STM32Bootloader[];
   stm32_list: STM32[];
   network_list: Network[];
+  serial_proxy_list: SerialProxy[];
 
 
   constructor(nvs: NVS | number[]) {
@@ -173,6 +189,10 @@ export class Config {
 
     this.network_list = [...Array(this.master.cn.get() ?? 0).keys()]
       .map((i) => new Network(this.nvs.GetNS(`a_nw${i + 1}`)));
+
+
+    this.serial_proxy_list = [...Array(this.master.csp.get() ?? 0).keys()]
+      .map((i) => new SerialProxy(this.nvs.GetNS(`a_sp${i + 1}`)));
 
   }
 

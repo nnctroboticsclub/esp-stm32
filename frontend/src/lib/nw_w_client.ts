@@ -14,8 +14,36 @@ function fetch_wrapper(url: string, data: string | ArrayBuffer | undefined = und
 }
 
 export default class Client {
+  private sp_socket: WebSocket;
+
   constructor(private ip_addr: string) {
     this.ip_addr = ip_addr;
+
+    this.sp_socket = new WebSocket(`ws://${this.ip_addr}/sp/watch`);
+    this.sp_socket.binaryType = "arraybuffer";
+
+    this.sp_socket.onopen = () => {
+      console.log("[Client] Serial Proxy WebSocket Opened");
+    };
+
+    this.sp_socket.onclose = () => {
+      console.log("[Client] Serial Proxy WebSocket Closed");
+    };
+
+    this.sp_socket.onerror = (e) => {
+      console.error("[Client] Serial Proxy WebSocket Error", e);
+    };
+
+    this.sp_socket.onmessage = (e) => {
+      const data = e.data;
+      if (data instanceof ArrayBuffer) {
+        const view = new Uint8Array(data);
+        const str = [...view].map(x => String.fromCharCode(x)).join("");
+        console.log(str);
+      } else {
+        console.log("[SP]", data, typeof data);
+      }
+    };
   }
 
   async S3reset() {
