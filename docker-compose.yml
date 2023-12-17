@@ -2,7 +2,7 @@ version: "3.1"
 services:
   frontend-dev:
     build: ./frontend
-    command: pnpm run dev --host 0.0.0.0
+    command: bash -c 'pnpm install && pnpm run dev --host 0.0.0.0'
     volumes:
       - ./frontend:/usr/src/app
     ports:
