@@ -5,12 +5,13 @@
 		"context": "."
 	},
 	"mounts": [
-		"source=/dev,target=/hdev,type=bind,consistency=cached",
-		"source=${localWorkspaceFolder}/../libstm-ota,target=/workspaces/libstm-ota,type=bind,consistency=cached"
+		"type=bind,source=/dev/bus/usb,target=/dev/bus/usb",
+		"source=${localWorkspaceFolder}/../libstm-ota,target=/workspaces/libstm-ota,type=bind,consistency=cached",
+		"source=/dev/disk/by-id,target=/dev/disk/by-id,type=bind",
+		"source=/dev/serial/by-id,target=/dev/serial/by-id,type=bind",
+		"source=/run/udev,target=/run/udev,readonly,type=bind"
 	],
-	"capAdd": [
-		"SYS_ADMIN"
-	],
+	"privileged": true,
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -19,7 +20,10 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-vscode.cpptools"
+				"ms-vscode.cpptools",
+				"GitHub.copilot",
+				"SonarSource.sonarlint-vscode",
+				"ms-vscode.cpptools-extension-pack"
 			]
 		}
 	}

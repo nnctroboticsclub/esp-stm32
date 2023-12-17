@@ -49,7 +49,7 @@
 </script>
 
 <div class="log">
-	{@html buffer.replace(/\n/g, '<br />')}
+	{@html buffer.replace(/\n/g, '<br />').split(' ').map((x) => x.trim()).join(' ')}
 </div>
 
 <style>
