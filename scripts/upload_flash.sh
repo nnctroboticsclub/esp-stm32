@@ -18,7 +18,13 @@ if [ ! -f "$FILE" ]; then
     exit 1
 fi
 
-printf "\e[33mBooting Bootloader\n"
+printf "\n\e[33mBooting Bootloader\n"
 curl -X POST http://${SERVER}/api/stm32/bootloader/boot
-printf "\e[32mUploading $FILE to $SERVER\n"
-curl -X POST -d $FILE http://${SERVER}/api/stm32/bootloader/upload
+
+printf "\n\e[32mUploading $FILE to $SERVER\n"
+curl --data-binary @$FILE http://${SERVER}/api/stm32/bootloader/upload
+
+printf "\n\e[33mResetting MCU...\n"
+curl -X POST http://${SERVER}/api/stm32/reset
+
+printf "\n\e[32mFlashing Done!\n"
