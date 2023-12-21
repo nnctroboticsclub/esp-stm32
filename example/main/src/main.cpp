@@ -56,7 +56,9 @@ extern "C" void app_main() {
                                .ip = 0,
                                .subnet = 0,
                                .gateway = 0,
-                           }}};
+                           }},
+      .active_network_profile_id = 3,
+      .primary_stm32_id = 2};
 
   stm32::ota::OTAServer server(idf::GPIONum(22), init_config);
 
