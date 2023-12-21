@@ -446,23 +446,10 @@ CONFIG_TWAI_ERRATA_FIX_LISTEN_ONLY_DOM=y
 # end of TWAI Configuration
 
 #
-# UART Configuration
-#
-# CONFIG_UART_ISR_IN_IRAM is not set
-# end of UART Configuration
-
-#
 # LEDC Configuration
 #
 # CONFIG_LEDC_CTRL_FUNC_IN_IRAM is not set
 # end of LEDC Configuration
-
-#
-# I2C Configuration
-#
-# CONFIG_I2C_ISR_IRAM_SAFE is not set
-# CONFIG_I2C_ENABLE_DEBUG_LOG is not set
-# end of I2C Configuration
 # end of Driver Configurations
 
 #
@@ -515,6 +502,13 @@ CONFIG_GPTIMER_ISR_HANDLER_IN_IRAM=y
 # end of ESP-Driver:GPTimer Configurations
 
 #
+# ESP-Driver:I2C Configurations
+#
+# CONFIG_I2C_ISR_IRAM_SAFE is not set
+# CONFIG_I2C_ENABLE_DEBUG_LOG is not set
+# end of ESP-Driver:I2C Configurations
+
+#
 # ESP-Driver:I2S Configurations
 #
 # CONFIG_I2S_ISR_IRAM_SAFE is not set
@@ -565,6 +559,12 @@ CONFIG_SPI_MASTER_ISR_IN_IRAM=y
 # CONFIG_SPI_SLAVE_IN_IRAM is not set
 CONFIG_SPI_SLAVE_ISR_IN_IRAM=y
 # end of ESP-Driver:SPI Configurations
+
+#
+# ESP-Driver:UART Configurations
+#
+# CONFIG_UART_ISR_IN_IRAM is not set
+# end of ESP-Driver:UART Configurations
 
 #
 # Event Loop Library

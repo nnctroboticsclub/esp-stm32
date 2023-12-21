@@ -4,7 +4,8 @@ dependencies:
     version: ">=4.1.0"
 
   nnctroboticsclub/libstm-ota:
-    git: ssh://git@github.com/nnctroboticsclub/libstm-ota.git
+    path: /workspaces/libstm-ota
+  #   git: ssh://git@github.com/nnctroboticsclub/libstm-ota.git
 
   # nnctroboticsclub/data-proxy:
   #   git: ssh://git@github.com/nnctroboticsclub/data-proxy.git
