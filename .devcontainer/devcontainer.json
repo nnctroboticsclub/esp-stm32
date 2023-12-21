@@ -9,8 +9,12 @@
 		"source=${localWorkspaceFolder}/../libstm-ota,target=/workspaces/libstm-ota,type=bind,consistency=cached",
 		"source=/dev/disk/by-id,target=/dev/disk/by-id,type=bind",
 		"source=/dev/serial/by-id,target=/dev/serial/by-id,type=bind",
-		"source=/run/udev,target=/run/udev,readonly,type=bind"
+		"source=/run/udev,target=/run/udev,readonly,type=bind",
+		"source=${env:SSH_AUTH_SOCK},target=/tmp/ssh-agent,type=bind,consistency=cached"
 	],
+	"remoteEnv": {
+		"SSH_AUTH_SOCK": "/tmp/ssh-agent"
+	},
 	"privileged": true,
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
