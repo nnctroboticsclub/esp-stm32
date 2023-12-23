@@ -5,6 +5,7 @@
 
 #include <esp_log.h>
 #include <driver/gpio.h>
+#include <esp_http_server.h>
 
 using stm32::ota::InitConfig;
 
@@ -61,6 +62,20 @@ extern "C" void app_main() {
       .primary_stm32_id = 2};
 
   stm32::ota::OTAServer server(idf::GPIONum(22), init_config);
+
+  server.OnHTTPDStart([](httpd_handle_t handle) {
+    ESP_LOGI("OTA", "HTTPD started");
+    httpd_uri_t uri = {
+        .uri = "/hello",
+        .method = HTTP_GET,
+        .handler =
+            [](httpd_req_t *req) {
+              httpd_resp_send(req, "Hello World!", 12);
+              return ESP_OK;
+            },
+    };
+    httpd_register_uri_handler(handle, &uri);
+  });
 
   while (1) vTaskDelay(1);
 }
