@@ -1,35 +1,30 @@
 {
-	"name": "ESP-IDF & MBedOS 6",
-	"build": {
-		"dockerfile": "Dockerfile",
-		"context": "."
-	},
-	"mounts": [
-		"type=bind,source=/dev/bus/usb,target=/dev/bus/usb",
-		"source=${localWorkspaceFolder}/../libstm-ota,target=/workspaces/libstm-ota,type=bind,consistency=cached",
-		"source=/dev/disk/by-id,target=/dev/disk/by-id,type=bind",
-		"source=/dev/serial/by-id,target=/dev/serial/by-id,type=bind",
-		"source=/run/udev,target=/run/udev,readonly,type=bind"
-	],
-	"privileged": true,
-	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker": {}
-	},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-vscode.cpptools",
-				"GitHub.copilot",
-				"SonarSource.sonarlint-vscode",
-				"ms-vscode.cpptools-extension-pack"
-			]
-		}
-	}
-	// Configure tool-specific properties.
-	// "customizations": {},
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  "name": "ESP-IDF & MBedOS 6",
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    "ghcr.io/syoch/devcontainers/device-forward:1.0.1": {},
+    "ghcr.io/syoch/devcontainers/mbed-cli:1.0.1": {},
+    "ghcr.io/syoch/devcontainers/esp-idf:1.0.3": {}
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/../libstm-ota,target=/workspaces/libstm-ota,type=bind,consistency=cached",
+  ],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "GitHub.copilot",
+        "SonarSource.sonarlint-vscode",
+        "ms-vscode.cpptools-extension-pack"
+      ]
+    }
+  }
+  // Configure tool-specific properties.
+  // "customizations": {},
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }
